@@ -22,18 +22,20 @@
     msg: "Chezmoi version: {{ chezmoi_version_output.stdout }}"
 
 - name: Initialize Chezmoi with dotfiles repository
+  become: true
   become_user: "{{ chezmoi_user }}"
   command: "{{ chezmoi_install_path }} init {{ chezmoi_repo_url }}"
   args:
     creates: "/home/{{ chezmoi_user }}/.local/share/chezmoi/.git"
-  when: 
+  when:
     - chezmoi_repo_url | length > 0
     - chezmoi_init_apply
 
 - name: Apply Chezmoi dotfiles
+  become: true
   become_user: "{{ chezmoi_user }}"
   command: "{{ chezmoi_install_path }} apply"
-  when: 
+  when:
     - chezmoi_repo_url | length > 0
     - chezmoi_init_apply
   register: chezmoi_apply

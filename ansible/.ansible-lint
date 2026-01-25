@@ -4,6 +4,7 @@ skip_list:
   - yaml[line-length]
   - name[casing]
   - fqcn-builtins  # Allow use of built-in modules without FQCN
+  - fqcn[action-core]  # Allow use of built-in modules without FQCN
 
 exclude_paths:
   - .github/

@@ -8,7 +8,7 @@
   pre_tasks:
     - name: Update apt cache (Debian/Ubuntu)
       apt:
-        update_cache: yes
+        update_cache: true
         cache_valid_time: 3600
       when: ansible_os_family == "Debian"
       tags: always
@@ -30,7 +30,7 @@
     - name: Ensure system is up to date
       apt:
         upgrade: dist
-        autoremove: yes
-        autoclean: yes
+        autoremove: true
+        autoclean: true
       when: ansible_os_family == "Debian"
       tags: maintenance

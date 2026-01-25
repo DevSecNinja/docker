@@ -4,4 +4,4 @@
   community.docker.docker_container:
     name: "{{ traefik_container_name }}"
     state: started
-    restart: yes
+    restart: true
