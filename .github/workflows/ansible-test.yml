@@ -15,10 +15,15 @@ on:
       - '.github/workflows/ansible-test.yml'
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   lint:
     name: Lint Ansible Files
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -45,6 +50,8 @@ jobs:
     name: Ansible Syntax Check
     runs-on: ubuntu-latest
     needs: lint
+    permissions:
+      contents: read
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -75,6 +82,8 @@ jobs:
     name: Test SVLAZDOCK1 Provisioning
     runs-on: ubuntu-latest
     needs: syntax-check
+    permissions:
+      contents: read
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -141,6 +150,8 @@ jobs:
     name: Test Ansible Pull Script
     runs-on: ubuntu-latest
     needs: syntax-check
+    permissions:
+      contents: read
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -154,17 +165,17 @@ jobs:
         run: |
           # Make script executable
           chmod +x ansible/scripts/ansible-pull.sh
-          
+
           # Test script syntax
           bash -n ansible/scripts/ansible-pull.sh
-          
+
           echo "Ansible pull script syntax is valid"
 
       - name: Run ansible-pull
         run: |
           # Install required collections first
           ansible-galaxy collection install community.general ansible.posix community.docker
-          
+
           # Create a temporary inventory for localhost
           mkdir -p /tmp/ansible-pull-test
           cat > /tmp/ansible-pull-test/hosts.yml <<EEOF
@@ -180,7 +191,7 @@ jobs:
                       - docker
                       - chezmoi
           EEOF
-          
+
           # Run ansible-pull from the current checkout
           sudo ansible-pull \
             --url file://$(pwd) \
@@ -196,6 +207,8 @@ jobs:
     name: All Tests Passed
     runs-on: ubuntu-latest
     needs: [lint, syntax-check, test-svlazdock1, test-ansible-pull]
+    permissions:
+      contents: read
     steps:
       - name: Success
         run: echo "All Ansible tests passed successfully!"
