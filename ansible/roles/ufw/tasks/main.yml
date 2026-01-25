@@ -1,0 +1,63 @@
+---
+# Tasks for UFW role
+- name: Install UFW
+  apt:
+    name: ufw
+    state: present
+    update_cache: true
+  when: ansible_os_family == "Debian"
+
+- name: Set UFW default policies
+  community.general.ufw:
+    direction: "{{ item.direction }}"
+    policy: "{{ item.policy }}"
+  loop:
+    - direction: incoming
+      policy: "{{ ufw_default_policy_incoming }}"
+    - direction: outgoing
+      policy: "{{ ufw_default_policy_outgoing }}"
+    - direction: routed
+      policy: "{{ ufw_default_policy_routed }}"
+
+- name: Allow SSH access (critical to prevent lockout)
+  community.general.ufw:
+    rule: allow
+    port: "{{ ufw_ssh_port }}"
+    proto: tcp
+    comment: "SSH access"
+  when: ufw_allow_ssh
+
+- name: Allow common service ports
+  community.general.ufw:
+    rule: allow
+    port: "{{ item }}"
+    proto: tcp
+  loop: "{{ ufw_allowed_ports }}"
+  when: ufw_allowed_ports | length > 0
+
+- name: Apply custom UFW rules
+  community.general.ufw:
+    rule: "{{ item.rule | default('allow') }}"
+    port: "{{ item.port }}"
+    proto: "{{ item.protocol | default('tcp') }}"
+    comment: "{{ item.comment | default(omit) }}"
+  loop: "{{ ufw_rules }}"
+  when: ufw_rules | length > 0
+
+- name: Enable UFW logging
+  community.general.ufw:
+    logging: "{{ ufw_logging }}"
+
+- name: Enable UFW
+  community.general.ufw:
+    state: "{{ ufw_state }}"
+  when: ufw_state == "enabled"
+
+- name: Display UFW status
+  command: ufw status verbose
+  register: ufw_status
+  changed_when: false
+
+- name: Show UFW status
+  debug:
+    var: ufw_status.stdout_lines

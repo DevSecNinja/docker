@@ -13,6 +13,8 @@ This setup uses **Ansible Pull** for automated configuration management, allowin
 - ✅ Docker installation (using geerlingguy.docker role)
 - ✅ Traefik reverse proxy deployment
 - ✅ Chezmoi dotfiles management
+- ✅ UFW firewall configuration
+- ✅ Automated ansible-pull setup (cron or systemd)
 - ✅ Well-structured for future growth
 
 ### Architecture
@@ -39,8 +41,10 @@ ansible/
 
 Primary Docker host with the following features:
 - Docker Engine (via geerlingguy.docker role)
+- UFW firewall with HTTP/HTTPS/SSH access
 - Traefik reverse proxy
 - Chezmoi dotfiles management
+- Automated ansible-pull updates
 
 ## Getting Started
 

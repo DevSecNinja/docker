@@ -1,0 +1,5 @@
+---
+# Handlers for Ansible Pull Setup role
+- name: Reload systemd
+  systemd:
+    daemon_reload: true
