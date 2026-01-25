@@ -1,0 +1,52 @@
+---
+# Tasks for Traefik role
+- name: Create Traefik configuration directory
+  file:
+    path: "{{ traefik_config_dir }}"
+    state: directory
+    mode: '0755'
+
+- name: Create Traefik data directory
+  file:
+    path: "{{ traefik_data_dir }}"
+    state: directory
+    mode: '0755'
+
+- name: Create Traefik static configuration
+  template:
+    src: traefik.yml.j2
+    dest: "{{ traefik_config_dir }}/traefik.yml"
+    mode: '0644'
+  notify: Restart Traefik
+
+- name: Create Traefik dynamic configuration directory
+  file:
+    path: "{{ traefik_config_dir }}/dynamic"
+    state: directory
+    mode: '0755'
+
+- name: Create Docker network for Traefik
+  community.docker.docker_network:
+    name: "{{ traefik_network_name }}"
+    state: present
+
+- name: Deploy Traefik container
+  community.docker.docker_container:
+    name: "{{ traefik_container_name }}"
+    image: "{{ traefik_image }}"
+    state: started
+    restart_policy: unless-stopped
+    ports:
+      - "{{ traefik_http_port }}:80"
+      - "{{ traefik_https_port }}:443"
+      - "{{ traefik_dashboard_port }}:8080"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+      - "{{ traefik_config_dir }}:/etc/traefik:ro"
+      - "{{ traefik_data_dir }}:/data"
+    networks:
+      - name: "{{ traefik_network_name }}"
+    labels:
+      traefik.enable: "true"
+      traefik.http.routers.dashboard.rule: "Host(`traefik.localhost`)"
+      traefik.http.routers.dashboard.service: "api@internal"

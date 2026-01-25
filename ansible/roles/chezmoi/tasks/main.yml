@@ -1,0 +1,40 @@
+---
+# Tasks for Chezmoi role
+- name: Check if Chezmoi is already installed
+  stat:
+    path: "{{ chezmoi_install_path }}"
+  register: chezmoi_binary
+
+- name: Download Chezmoi binary
+  get_url:
+    url: "{{ chezmoi_binary_url }}"
+    dest: "{{ chezmoi_install_path }}"
+    mode: '0755'
+  when: not chezmoi_binary.stat.exists
+
+- name: Verify Chezmoi installation
+  command: "{{ chezmoi_install_path }} --version"
+  register: chezmoi_version_output
+  changed_when: false
+
+- name: Display Chezmoi version
+  debug:
+    msg: "Chezmoi version: {{ chezmoi_version_output.stdout }}"
+
+- name: Initialize Chezmoi with dotfiles repository
+  become_user: "{{ chezmoi_user }}"
+  command: "{{ chezmoi_install_path }} init {{ chezmoi_repo_url }}"
+  args:
+    creates: "/home/{{ chezmoi_user }}/.local/share/chezmoi/.git"
+  when: 
+    - chezmoi_repo_url | length > 0
+    - chezmoi_init_apply
+
+- name: Apply Chezmoi dotfiles
+  become_user: "{{ chezmoi_user }}"
+  command: "{{ chezmoi_install_path }} apply"
+  when: 
+    - chezmoi_repo_url | length > 0
+    - chezmoi_init_apply
+  register: chezmoi_apply
+  changed_when: chezmoi_apply.stdout | length > 0

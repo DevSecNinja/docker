@@ -1,0 +1,39 @@
+# Ansible
+*.retry
+*.log
+.ansible/
+ansible/.galaxy_cache/
+ansible/roles/geerlingguy.*
+/var/lib/ansible/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temporary files
+/tmp/
+*.tmp
+*.bak
+
+# Secrets (even though we don't have them yet)
+*.secret
+*.key
+*.pem
+vault-password

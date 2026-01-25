@@ -1,0 +1,11 @@
+---
+# External roles from Ansible Galaxy
+roles:
+  - name: geerlingguy.docker
+    version: 7.4.1
+
+collections:
+  - name: community.general
+    version: ">=9.0.0"
+  - name: ansible.posix
+    version: ">=1.5.0"

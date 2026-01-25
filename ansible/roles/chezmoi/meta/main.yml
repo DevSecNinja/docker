@@ -1,0 +1,17 @@
+---
+# Chezmoi role - Install and configure Chezmoi dotfiles management
+dependencies: []
+
+galaxy_info:
+  author: DevSecNinja
+  description: Install and configure Chezmoi dotfiles
+  company: DevSecNinja
+  license: MIT
+  min_ansible_version: "2.9"
+  platforms:
+    - name: Debian
+      versions:
+        - all
+    - name: Ubuntu
+      versions:
+        - all
