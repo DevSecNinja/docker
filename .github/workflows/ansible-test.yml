@@ -39,7 +39,7 @@ jobs:
       - name: Run ansible-lint
         run: |
           cd ansible
-          ansible-lint playbooks/ roles/ || true
+          ansible-lint playbooks/ roles/
 
   syntax-check:
     name: Ansible Syntax Check

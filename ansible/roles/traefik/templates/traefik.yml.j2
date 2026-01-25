@@ -16,7 +16,10 @@ accessLog:
 {% if traefik_enable_api %}
 api:
   dashboard: {{ traefik_enable_dashboard | lower }}
-  insecure: true  # Note: In production, use proper authentication
+  # SECURITY WARNING: insecure mode disables authentication
+  # For production, set this to false and configure proper authentication
+  # via middleware (BasicAuth, ForwardAuth, etc.)
+  insecure: true
 {% endif %}
 
 entryPoints:

@@ -31,6 +31,9 @@
     state: present
 
 - name: Deploy Traefik container
+  # SECURITY NOTE: Mounting Docker socket provides root-level host access
+  # This is required for Traefik's Docker provider but should be secured in production
+  # Consider using Docker Socket Proxy or Traefik Pilot for enhanced security
   community.docker.docker_container:
     name: "{{ traefik_container_name }}"
     image: "{{ traefik_image }}"

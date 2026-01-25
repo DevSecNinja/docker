@@ -25,6 +25,11 @@ log "Starting ansible-pull run"
 # Install Ansible if not present
 if ! command -v ansible-pull &> /dev/null; then
     log "Ansible not found, installing..."
+    # Check if running as root
+    if [ "$EUID" -ne 0 ]; then
+        echo "Error: Script must be run as root or with sudo" >&2
+        exit 1
+    fi
     apt-get update
     apt-get install -y ansible git
 fi
