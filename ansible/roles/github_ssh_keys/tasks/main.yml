@@ -37,7 +37,7 @@
     user: "{{ github_ssh_keys_target_user }}"
     key: "{{ github_keys_response.content }}"
     exclusive: "{{ github_ssh_keys_exclusive }}"
-    comment: "Keys from GitHub user {{ github_ssh_keys_username }}"
+    comment: "github:{{ github_ssh_keys_username }}"
   when: github_keys_response.status == 200 and github_keys_response.content | default('') | trim != ''
   tags: github_ssh_keys
 
