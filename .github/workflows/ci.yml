@@ -1,7 +1,7 @@
 ---
 name: CI - Bats Tests
 
-on:
+'on':
   push:
     branches:
       - main
@@ -18,7 +18,8 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  group: >-
+    ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 permissions:
@@ -55,7 +56,7 @@ jobs:
         with:
           files: tests/bash/test-results.xml
           check_name: Bats Test Results
-          comment_mode: off
+          comment_mode: 'off'
 
       - name: Upload test results artifact
         uses: actions/upload-artifact@v4
