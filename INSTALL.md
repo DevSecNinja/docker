@@ -83,44 +83,45 @@ For SVLAZDOCK1, ensure the following:
 
 ### SVLAZDEV1 Configuration
 
-For SVLAZDEV1 (Development/Management Server), ensure the following:
+For SVLAZDEV1 (Development/Management Server), the following steps are largely automated by the `user_setup` role:
 
-1. Hostname is set correctly:
+**Automated Steps:**
+- ✅ Ansible user creation with sudo privileges
+- ✅ Docker group membership for ansible user
+- ✅ SSH service configuration
+
+**Manual Steps:**
+
+1. Set hostname (run before first ansible-pull):
    ```bash
    sudo hostnamectl set-hostname SVLAZDEV1
    ```
 
-2. Create an `ansible` user (recommended):
+2. (Optional) Customize server-specific variables by creating a host_vars file:
    ```bash
-   sudo adduser ansible
-   sudo usermod -aG sudo ansible
-   echo "ansible ALL=(ALL) NOPASSWD:ALL" | sudo tee /etc/sudoers.d/ansible
-   ```
-
-3. Add your user to the docker group for VS Code Remote Devcontainers:
-   ```bash
-   sudo usermod -aG docker $USER
-   newgrp docker
-   ```
-
-4. (Optional) Set up Chezmoi dotfiles repository URL in host variables:
-   ```bash
-   # Create host_vars file
+   # Create host_vars file for server-specific configuration
    sudo mkdir -p /var/lib/ansible/local/ansible/inventory/host_vars
    sudo tee /var/lib/ansible/local/ansible/inventory/host_vars/SVLAZDEV1.yml <<EOF
    ---
+   # Chezmoi dotfiles configuration
    chezmoi_repo_url: "https://github.com/YourUsername/dotfiles.git"
+   
+   # Additional users to add to docker group (besides ansible user)
+   docker_group_users:
+     - ansible
+     - jean-paul
+   
+   # Any other server-specific variables
    EOF
    ```
 
-5. Ensure SSH access is properly configured for VS Code Remote Development:
+3. Verify SSH access after provisioning (for VS Code Remote Development):
    ```bash
-   # Verify SSH service is running
-   sudo systemctl status ssh
-   
    # Test SSH access from your local machine
    ssh ansible@svlazdev1.local
    ```
+
+**Note:** The ansible user and docker group membership are automatically configured when the server is provisioned with ansible-pull. If running under a different initial user (e.g., jean-paul), ansible-pull will create the ansible user and subsequent runs can use that user.
 
 ## Automated Runs with Cron
 

@@ -71,6 +71,7 @@ Primary Docker host configured with:
 ### SVLAZDEV1 (Debian)
 
 Development/management server configured with:
+- ✅ Automated user setup (ansible user, sudo, docker group)
 - ✅ Docker Engine (geerlingguy.docker)
 - ✅ UFW Firewall (SSH)
 - ✅ Chezmoi dotfiles management

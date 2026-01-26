@@ -1,0 +1,49 @@
+---
+# Tasks for User Setup role
+- name: Ensure ansible user exists
+  user:
+    name: "{{ ansible_user_name }}"
+    groups: "{{ ansible_user_groups }}"
+    shell: "{{ ansible_user_shell }}"
+    create_home: "{{ ansible_user_create_home }}"
+    append: true
+    state: present
+  tags: [user_setup, ansible_user]
+
+- name: Configure passwordless sudo for ansible user
+  template:
+    src: sudoers.j2
+    dest: "/etc/sudoers.d/{{ ansible_user_name }}"
+    mode: '0440'
+    validate: 'visudo -cf %s'
+  when: ansible_user_passwordless_sudo
+  tags: [user_setup, ansible_user, sudo]
+
+- name: Add users to docker group
+  user:
+    name: "{{ item }}"
+    groups: docker
+    append: true
+  loop: "{{ docker_group_users }}"
+  when:
+    - docker_group_users is defined
+    - docker_group_users | length > 0
+  tags: [user_setup, docker_group]
+
+- name: Ensure SSH service is enabled and running
+  systemd:
+    name: ssh
+    enabled: true
+    state: started
+  when: ensure_ssh_service
+  tags: [user_setup, ssh]
+
+- name: Display user setup information
+  debug:
+    msg: >
+      User setup completed.
+      Ansible user: {{ ansible_user_name }}
+      {% if docker_group_users | length > 0 %}
+      Docker group members: {{ docker_group_users | join(', ') }}
+      {% endif %}
+  tags: [user_setup]

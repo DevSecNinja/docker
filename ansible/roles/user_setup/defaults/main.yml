@@ -1,0 +1,16 @@
+---
+# Default variables for User Setup role
+# Ansible user configuration
+ansible_user_name: "ansible"
+ansible_user_groups:
+  - sudo
+ansible_user_shell: "/bin/bash"
+ansible_user_create_home: true
+ansible_user_passwordless_sudo: true
+
+# Docker group membership
+# Users to add to docker group (can include ansible user and other users)
+docker_group_users: []
+
+# SSH service configuration
+ensure_ssh_service: true
