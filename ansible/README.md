@@ -59,7 +59,7 @@ The repository includes a GitHub Actions workflow that tests the Ansible setup i
 - Ansible 2.9+
 - Git
 - Python 3.6+
-- Target systems: Debian 11+ or Ubuntu 20.04+
+- Target systems: Debian 13 (Trixy) or Ubuntu 20.04+
 
 ## License
 

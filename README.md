@@ -150,7 +150,7 @@ The GitHub Actions workflow (`ansible-test.yml`) runs on every push and PR:
 
 - **Ansible**: 2.9 or higher
 - **Python**: 3.6 or higher
-- **Target OS**: Debian 11+ or Ubuntu 20.04+
+- **Target OS**: Debian 13 (Trixy) or Ubuntu 20.04+
 - **Git**: For ansible-pull functionality
 
 ## Roadmap
