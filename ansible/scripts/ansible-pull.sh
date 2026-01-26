@@ -38,8 +38,34 @@ fi
 log "Ensuring required Ansible collections are installed..."
 ansible-galaxy collection install community.general --force 2>&1 | tee -a "$LOG_FILE"
 ansible-galaxy collection install community.docker --force 2>&1 | tee -a "$LOG_FILE"
+ansible-galaxy collection install ansible.posix --force 2>&1 | tee -a "$LOG_FILE"
 
-# Run ansible-pull with git commit checking
+# Clone or update the repository first to get requirements.yml
+log "Ensuring repository is up to date..."
+if [ ! -d "$WORKDIR/.git" ]; then
+    log "Cloning repository for the first time..."
+    git clone "$REPO_URL" "$WORKDIR" 2>&1 | tee -a "$LOG_FILE"
+    cd "$WORKDIR"
+    git checkout main 2>&1 | tee -a "$LOG_FILE"
+else
+    log "Updating existing repository..."
+    cd "$WORKDIR"
+    git fetch origin 2>&1 | tee -a "$LOG_FILE"
+    git checkout main 2>&1 | tee -a "$LOG_FILE"
+    git pull origin main 2>&1 | tee -a "$LOG_FILE"
+fi
+
+# Install required Ansible roles from requirements.yml
+log "Installing required Ansible roles..."
+if [ -f "$WORKDIR/ansible/requirements.yml" ]; then
+    ansible-galaxy install -r "$WORKDIR/ansible/requirements.yml" --force 2>&1 | tee -a "$LOG_FILE"
+else
+    log "Warning: requirements.yml not found at $WORKDIR/ansible/requirements.yml"
+fi
+
+# Run ansible-pull (it will detect if changes were made and run only-if-changed)
+log "Running ansible-pull..."
+cd "$WORKDIR"
 ansible-pull \
     --url "$REPO_URL" \
     --checkout main \
