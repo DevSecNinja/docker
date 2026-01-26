@@ -44,6 +44,7 @@
     - chezmoi_repo_url | length > 0
     - chezmoi_init_apply
     - getent_passwd is succeeded
+    - getent_passwd is not skipped
 
 - name: Apply Chezmoi dotfiles
   become: true
