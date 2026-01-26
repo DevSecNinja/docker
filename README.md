@@ -15,6 +15,7 @@ This repository contains Ansible configurations for automated server provisionin
 - 🌐 **Traefik Module**: Reverse proxy as a compose module
 - 📦 **Chezmoi Integration**: Dotfiles management support
 - ⚙️ **Automated Updates**: Self-configuring ansible-pull with cron or systemd
+- 🔧 **Automated Maintenance**: Daily and weekly OS patch schedules
 - 🧪 **CI/CD Testing**: GitHub Actions with reusable test scripts
 - 📈 **Scalable Structure**: Easy to add new servers and modules
 
@@ -32,12 +33,16 @@ For Ansible documentation and structure, see [ansible/README.md](ansible/README.
 │   ├── ansible.cfg            # Ansible configuration
 │   ├── requirements.yml       # External roles and collections
 │   ├── playbooks/             # Ansible playbooks
-│   │   └── main.yml          # Main playbook for ansible-pull
+│   │   ├── main.yml          # Main playbook for ansible-pull
+│   │   ├── maintenance-update.yml   # Update config & images
+│   │   ├── maintenance-daily.yml    # Daily OS patches
+│   │   └── maintenance-weekly.yml   # Weekly patches & reboot
 │   ├── inventory/             # Inventory and host variables
 │   │   ├── hosts.yml         # Server inventory
 │   │   └── host_vars/        # Host-specific variables
 │   ├── roles/                 # Custom Ansible roles
 │   │   ├── chezmoi/          # Chezmoi dotfiles management
+│   │   ├── maintenance/      # Automated maintenance
 │   │   └── traefik/          # Traefik reverse proxy
 │   └── scripts/               # Helper scripts
 │       └── ansible-pull.sh   # Ansible-pull wrapper
@@ -59,6 +64,7 @@ Primary Docker host configured with:
 - ✅ Traefik (via compose module)
 - ✅ Chezmoi dotfiles management
 - ✅ Automated ansible-pull updates
+- ✅ Automated maintenance (daily and weekly patches)
 
 **Compose Modules**: `traefik`
 
