@@ -3,7 +3,7 @@ Description=Daily Maintenance Timer
 Requires=maintenance-daily.service
 
 [Timer]
-OnCalendar=*-*-* {{ maintenance_daily_schedule }}:00
+OnCalendar=*-*-* {{ maintenance_daily_schedule }}
 Persistent=true
 
 [Install]

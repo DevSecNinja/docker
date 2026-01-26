@@ -5,10 +5,16 @@
   hosts: "{{ target_host | default('all') }}"
   become: true
 
+  vars:
+    repo_url: >-
+      {{ maintenance_ansible_pull_repo_url | default(ansible_pull_repo_url) |
+         default('https://github.com/DevSecNinja/docker.git') }}
+    chezmoi_binary: "{{ maintenance_chezmoi_binary | default('/usr/local/bin/chezmoi') }}"
+
   tasks:
     - name: Pull latest Ansible configuration
       ansible.builtin.git:
-        repo: https://github.com/DevSecNinja/docker.git
+        repo: "{{ repo_url }}"
         dest: /var/lib/ansible/local
         version: main
         force: true
@@ -18,14 +24,21 @@
       ansible.builtin.debug:
         msg: "Ansible configuration updated: {{ 'Yes' if git_pull_result.changed else 'No changes' }}"
 
+    - name: Check if chezmoi is installed
+      ansible.builtin.stat:
+        path: "{{ chezmoi_binary }}"
+      register: chezmoi_exists
+
     - name: Update chezmoi dotfiles
       become: true
       become_user: "{{ ansible_user }}"
-      ansible.builtin.command: /usr/local/bin/chezmoi update
+      ansible.builtin.command: "{{ chezmoi_binary }} update"
       register: chezmoi_update
       changed_when: chezmoi_update.stdout | length > 0
       failed_when: false
-      when: ansible_user is defined
+      when:
+        - ansible_user is defined
+        - chezmoi_exists.stat.exists
 
     - name: Find all docker-compose.yml files
       ansible.builtin.find:

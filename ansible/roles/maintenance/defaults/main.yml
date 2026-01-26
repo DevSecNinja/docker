@@ -3,8 +3,12 @@
 
 # Ansible Pull maintenance settings
 maintenance_ansible_pull_enabled: true
+maintenance_ansible_pull_repo_url: "https://github.com/DevSecNinja/docker.git"
 maintenance_workdir: "/var/lib/ansible/local"
 maintenance_log_dir: "/var/log/maintenance"
+
+# Chezmoi settings
+maintenance_chezmoi_binary: "/usr/local/bin/chezmoi"
 
 # Docker image update settings
 maintenance_docker_update_enabled: true
@@ -28,4 +32,3 @@ maintenance_daily_exclude_packages:
 maintenance_weekly_enabled: true
 maintenance_weekly_schedule: "Sat *-*-* 08:00:00"  # Saturday 8 AM
 maintenance_weekly_reboot_enabled: true
-maintenance_weekly_reboot_delay: "+5"  # Reboot 5 minutes after updates if needed
