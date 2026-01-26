@@ -38,7 +38,9 @@
     key: "{{ github_keys_response.content }}"
     exclusive: "{{ github_ssh_keys_exclusive }}"
     comment: "github:{{ github_ssh_keys_username }}"
-  when: github_keys_response.status == 200
+  when: >
+    github_keys_response.status == 200 and
+    github_keys_response.content | default('') | trim != ''
   tags: github_ssh_keys
 
 - name: Display Success Message
