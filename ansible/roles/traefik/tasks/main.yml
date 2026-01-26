@@ -25,31 +25,62 @@
     state: directory
     mode: '0755'
 
-- name: Create Docker network for Traefik
-  community.docker.docker_network:
-    name: "{{ traefik_network_name }}"
-    state: present
+# Docker Compose deployment
+- name: Deploy Traefik using Docker Compose
+  when: traefik_use_compose
+  block:
+    - name: Create Docker Compose directory
+      file:
+        path: "{{ traefik_compose_dir }}"
+        state: directory
+        mode: '0755'
 
-- name: Deploy Traefik container
-  # SECURITY NOTE: Mounting Docker socket provides root-level access
-  # Required for Traefik's Docker provider but should be secured
-  # Consider using Docker Socket Proxy for enhanced security
-  community.docker.docker_container:
-    name: "{{ traefik_container_name }}"
-    image: "{{ traefik_image }}"
-    state: started
-    restart_policy: unless-stopped
-    ports:
-      - "{{ traefik_http_port }}:80"
-      - "{{ traefik_https_port }}:443"
-      - "{{ traefik_dashboard_port }}:8080"
-    volumes:
-      - "/var/run/docker.sock:/var/run/docker.sock:ro"
-      - "{{ traefik_config_dir }}:/etc/traefik:ro"
-      - "{{ traefik_data_dir }}:/data"
-    networks:
-      - name: "{{ traefik_network_name }}"
-    labels:
-      traefik.enable: "true"
-      traefik.http.routers.dashboard.rule: "Host(`traefik.localhost`)"
-      traefik.http.routers.dashboard.service: "api@internal"
+    - name: Create Docker Compose file for Traefik
+      template:
+        src: docker-compose.yml.j2
+        dest: "{{ traefik_compose_dir }}/docker-compose.yml"
+        mode: '0644'
+      notify: Restart Traefik Compose
+
+    - name: Deploy Traefik with Docker Compose
+      community.docker.docker_compose_v2:
+        project_src: "{{ traefik_compose_dir }}"
+        state: present
+      register: traefik_compose_output
+
+    - name: Display Traefik deployment status
+      debug:
+        msg: "Traefik deployed via Docker Compose"
+
+# Standalone Docker container deployment (legacy)
+- name: Deploy Traefik using standalone container
+  when: not traefik_use_compose
+  block:
+    - name: Create Docker network for Traefik
+      community.docker.docker_network:
+        name: "{{ traefik_network_name }}"
+        state: present
+
+    - name: Deploy Traefik container
+      # SECURITY NOTE: Mounting Docker socket provides root-level access
+      # Required for Traefik's Docker provider but should be secured
+      # Consider using Docker Socket Proxy for enhanced security
+      community.docker.docker_container:
+        name: "{{ traefik_container_name }}"
+        image: "{{ traefik_image }}"
+        state: started
+        restart_policy: unless-stopped
+        ports:
+          - "{{ traefik_http_port }}:80"
+          - "{{ traefik_https_port }}:443"
+          - "{{ traefik_dashboard_port }}:8080"
+        volumes:
+          - "/var/run/docker.sock:/var/run/docker.sock:ro"
+          - "{{ traefik_config_dir }}:/etc/traefik:ro"
+          - "{{ traefik_data_dir }}:/data"
+        networks:
+          - name: "{{ traefik_network_name }}"
+        labels:
+          traefik.enable: "true"
+          traefik.http.routers.dashboard.rule: "Host(`traefik.localhost`)"
+          traefik.http.routers.dashboard.service: "api@internal"
