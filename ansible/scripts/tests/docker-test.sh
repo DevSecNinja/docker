@@ -6,13 +6,13 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ANSIBLE_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
 echo "==> Installing Ansible..."
-pip install -q ansible
+pip install ansible
 
 echo "==> Installing Ansible collections..."
-ansible-galaxy collection install -q community.general ansible.posix community.docker
+ansible-galaxy collection install community.general ansible.posix community.docker
 
 echo "==> Installing required roles..."
-ansible-galaxy install -q -r "$ANSIBLE_DIR/requirements.yml" || {
+ansible-galaxy install -r "$ANSIBLE_DIR/requirements.yml" || {
     echo "Note: Some roles may not be available in offline mode"
 }
 
