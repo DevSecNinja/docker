@@ -21,6 +21,7 @@
     return_content: true
     status_code: [200, 404]
   register: github_keys_response
+  check_mode: false
   tags: github_ssh_keys
 
 - name: Fail if GitHub user not found or no keys available
