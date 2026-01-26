@@ -81,6 +81,48 @@ For SVLAZDOCK1, ensure the following:
    EOF
    ```
 
+### SVLAZDEV1 Configuration
+
+For SVLAZDEV1 (Development/Management Server), the following steps are largely automated:
+
+**Automated Steps:**
+- ✅ Ansible user creation with sudo privileges (`system_setup` role)
+- ✅ Docker group membership for specified users (`geerlingguy.docker` role)
+- ✅ SSH service configuration (`system_setup` role)
+
+**Manual Steps:**
+
+1. Set hostname (run before first ansible-pull):
+   ```bash
+   sudo hostnamectl set-hostname SVLAZDEV1
+   ```
+
+2. (Optional) Customize server-specific variables by creating a host_vars file:
+   ```bash
+   # Create host_vars file for server-specific configuration
+   sudo mkdir -p /var/lib/ansible/local/ansible/inventory/host_vars
+   sudo tee /var/lib/ansible/local/ansible/inventory/host_vars/SVLAZDEV1.yml <<EOF
+   ---
+   # Chezmoi dotfiles configuration
+   chezmoi_repo_url: "https://github.com/YourUsername/dotfiles.git"
+   
+   # Users to add to docker group (managed by geerlingguy.docker role)
+   docker_users:
+     - ansible
+     - jean-paul
+   
+   # Any other server-specific variables
+   EOF
+   ```
+
+3. Verify SSH access after provisioning (for VS Code Remote Development):
+   ```bash
+   # Test SSH access from your local machine
+   ssh ansible@svlazdev1.local
+   ```
+
+**Note:** The ansible user is created by the `system_setup` role, and docker group membership is managed by the `geerlingguy.docker` role. If running under a different initial user (e.g., jean-paul), ansible-pull will create the ansible user and subsequent runs can use that user.
+
 ## Automated Runs with Cron
 
 To automatically check for configuration updates, set up a cron job:

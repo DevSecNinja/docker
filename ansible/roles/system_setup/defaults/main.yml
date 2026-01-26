@@ -1,0 +1,13 @@
+---
+# Default variables for System Setup role
+# Ansible user configuration
+ansible_user_name: "ansible"
+ansible_user_groups:
+  - sudo
+ansible_user_shell: "/bin/bash"
+ansible_user_create_home: true
+ansible_user_passwordless_sudo: true
+
+# SSH service configuration
+ensure_ssh_service: true
+ssh_service_name: "ssh"  # Use "sshd" for RedHat-based systems
