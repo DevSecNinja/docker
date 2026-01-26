@@ -177,6 +177,12 @@ MIT License - see [LICENSE](LICENSE) file for details.
 
 Jean-Paul van Ravensberg (DevSecNinja)
 
+## Maintenance
+
+### Automated Dependency Updates
+
+This repository uses [Renovate](https://www.mend.io/renovate/) to automatically keep dependencies up to date. If you encounter issues with Renovate, see [RENOVATE_TROUBLESHOOTING.md](RENOVATE_TROUBLESHOOTING.md).
+
 ## Support
 
 For issues or questions, please open an issue in this repository.
