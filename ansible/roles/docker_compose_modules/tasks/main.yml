@@ -1,0 +1,14 @@
+---
+# Tasks for Docker Compose Modules role
+- name: Ensure base compose directory exists
+  file:
+    path: "{{ compose_modules_base_dir }}"
+    state: directory
+    mode: '0755'
+
+- name: Deploy compose modules
+  include_tasks: "deploy_module.yml"
+  loop: "{{ compose_modules }}"
+  loop_control:
+    loop_var: module_name
+  when: compose_modules | length > 0

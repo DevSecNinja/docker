@@ -1,0 +1,18 @@
+---
+# Docker Compose Modules role
+dependencies:
+  - geerlingguy.docker
+
+galaxy_info:
+  author: DevSecNinja
+  description: Deploy Docker Compose modules
+  company: DevSecNinja
+  license: MIT
+  min_ansible_version: "2.9"
+  platforms:
+    - name: Debian
+      versions:
+        - all
+    - name: Ubuntu
+      versions:
+        - all

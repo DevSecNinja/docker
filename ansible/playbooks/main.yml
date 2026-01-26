@@ -1,0 +1,44 @@
+---
+# Main playbook for ansible-pull
+# Designed for automated configuration management via ansible-pull
+- name: Provision and configure servers
+  hosts: "{{ target_host | default('all') }}"
+  become: true
+
+  pre_tasks:
+    - name: Update apt cache (Debian/Ubuntu)
+      apt:
+        update_cache: true
+        cache_valid_time: 3600
+      when: ansible_os_family == "Debian"
+      tags: always
+
+  roles:
+    - role: geerlingguy.docker
+      when: "'docker' in group_names or 'docker_servers' in group_names"
+      tags: docker
+
+    - role: ufw
+      when: "'ufw' in server_features or 'firewall' in server_features"
+      tags: [ufw, firewall]
+
+    - role: chezmoi
+      when: "'chezmoi' in server_features"
+      tags: chezmoi
+
+    - role: docker_compose_modules
+      when: "compose_modules is defined and compose_modules | length > 0"
+      tags: [docker_compose, services]
+
+    - role: ansible_pull_setup
+      when: "'ansible_pull_setup' in server_features"
+      tags: [ansible_pull, automation]
+
+  post_tasks:
+    - name: Ensure system is up to date
+      apt:
+        upgrade: dist
+        autoremove: true
+        autoclean: true
+      when: ansible_os_family == "Debian"
+      tags: maintenance

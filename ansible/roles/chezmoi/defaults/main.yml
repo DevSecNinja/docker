@@ -1,0 +1,10 @@
+---
+# Default variables for Chezmoi role
+chezmoi_version: "latest"
+# URL for downloading Chezmoi binary
+chezmoi_binary_url: >-
+  https://github.com/twpayne/chezmoi/releases/latest/download/chezmoi-linux-amd64
+chezmoi_install_path: "/usr/local/bin/chezmoi"
+chezmoi_repo_url: ""  # Set this in host_vars or inventory
+chezmoi_user: "{{ ansible_user }}"
+chezmoi_init_apply: true

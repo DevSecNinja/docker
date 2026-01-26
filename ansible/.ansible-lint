@@ -1,0 +1,22 @@
+---
+# Ansible Lint Configuration
+skip_list:
+  - yaml[line-length]
+  - name[casing]
+  - fqcn-builtins  # Allow use of built-in modules without FQCN
+  - fqcn[action-core]  # Allow use of built-in modules without FQCN
+  - var-naming[no-role-prefix]  # Allow variables without role prefix
+  - key-order  # Allow flexible task key ordering
+
+exclude_paths:
+  - .github/
+  - roles/geerlingguy.docker/
+  - playbooks/  # Exclude playbooks from lint (external role check)
+
+warn_list:
+  - experimental
+  - no-changed-when
+  - args
+
+# Enable offline mode to avoid issues in CI
+offline: true

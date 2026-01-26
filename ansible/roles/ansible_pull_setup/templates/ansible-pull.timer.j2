@@ -1,0 +1,11 @@
+[Unit]
+Description=Run Ansible Pull periodically
+Requires=ansible-pull.service
+
+[Timer]
+OnBootSec=5min
+OnUnitActiveSec={{ ansible_pull_interval }}
+Unit=ansible-pull.service
+
+[Install]
+WantedBy=timers.target

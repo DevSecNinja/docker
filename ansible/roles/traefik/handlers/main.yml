@@ -1,0 +1,14 @@
+---
+# Handlers for Traefik role
+- name: Restart Traefik
+  community.docker.docker_container:
+    name: "{{ traefik_container_name }}"
+    state: started
+    restart: true
+  when: not traefik_use_compose
+
+- name: Restart Traefik Compose
+  community.docker.docker_compose_v2:
+    project_src: "{{ traefik_compose_dir }}"
+    state: restarted
+  when: traefik_use_compose
