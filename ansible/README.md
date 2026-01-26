@@ -21,8 +21,9 @@ This setup uses **Ansible Pull** for automated configuration management, allowin
 ### Architecture
 
 ```
+../ansible.cfg               # Ansible configuration (for ansible-pull from repo root)
 ansible/
-├── ansible.cfg              # Ansible configuration
+├── ansible.cfg              # Ansible configuration (for local development)
 ├── requirements.yml         # External roles and collections
 ├── playbooks/
 │   ├── main.yml            # Main playbook for ansible-pull

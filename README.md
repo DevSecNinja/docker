@@ -30,8 +30,9 @@ For Ansible documentation and structure, see [ansible/README.md](ansible/README.
 
 ```
 .
+├── ansible.cfg                 # Ansible configuration (for ansible-pull)
 ├── ansible/                    # Ansible configuration directory
-│   ├── ansible.cfg            # Ansible configuration
+│   ├── ansible.cfg            # Ansible configuration (for local runs)
 │   ├── requirements.yml       # External roles and collections
 │   ├── playbooks/             # Ansible playbooks
 │   │   ├── main.yml          # Main playbook for ansible-pull
