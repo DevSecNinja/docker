@@ -1,0 +1,10 @@
+[Unit]
+Description=Daily Maintenance Timer
+Requires=maintenance-daily.service
+
+[Timer]
+OnCalendar=*-*-* {{ maintenance_daily_schedule }}
+Persistent=true
+
+[Install]
+WantedBy=timers.target

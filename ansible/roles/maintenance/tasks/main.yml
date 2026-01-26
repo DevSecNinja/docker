@@ -1,0 +1,33 @@
+---
+# Main tasks for Maintenance role
+- name: Set system timezone
+  community.general.timezone:
+    name: "{{ maintenance_timezone }}"
+  when: maintenance_timezone is defined
+
+- name: Ensure maintenance log directory exists
+  file:
+    path: "{{ maintenance_log_dir }}"
+    state: directory
+    mode: '0755'
+
+- name: Include daily maintenance setup
+  include_tasks: setup_daily_maintenance.yml
+  when: maintenance_daily_enabled
+
+- name: Include weekly maintenance setup
+  include_tasks: setup_weekly_maintenance.yml
+  when: maintenance_weekly_enabled
+
+- name: Display maintenance information
+  debug:
+    msg: |
+      Maintenance automation configured:
+      - Timezone: {{ maintenance_timezone | default('not set') }}
+      - Daily patches:
+        {{ 'Enabled' if maintenance_daily_enabled else 'Disabled' }}
+        ({{ maintenance_daily_schedule if maintenance_daily_enabled else 'N/A' }})
+      - Weekly patches:
+        {{ 'Enabled' if maintenance_weekly_enabled else 'Disabled' }}
+        ({{ maintenance_weekly_schedule if maintenance_weekly_enabled else 'N/A' }})
+      Check timers: systemctl list-timers maintenance-*

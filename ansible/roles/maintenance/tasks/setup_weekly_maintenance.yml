@@ -1,0 +1,24 @@
+---
+# Setup for weekly maintenance (full patches with reboot)
+- name: Create weekly maintenance systemd service
+  template:
+    src: maintenance-weekly.service.j2
+    dest: /etc/systemd/system/maintenance-weekly.service
+    mode: '0644'
+  notify: Reload systemd
+
+- name: Create weekly maintenance systemd timer
+  template:
+    src: maintenance-weekly.timer.j2
+    dest: /etc/systemd/system/maintenance-weekly.timer
+    mode: '0644'
+  notify: Reload systemd
+
+- name: Flush handlers to reload systemd
+  meta: flush_handlers
+
+- name: Enable and start weekly maintenance timer
+  systemd:
+    name: maintenance-weekly.timer
+    enabled: true
+    state: started
