@@ -5,7 +5,6 @@ name: CI - Bats Tests
   push:
     branches:
       - main
-      - 'copilot/**'
     paths:
       - 'ansible/**'
       - 'tests/**'
