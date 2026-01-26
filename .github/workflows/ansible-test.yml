@@ -5,7 +5,6 @@ on:
   push:
     branches:
       - main
-      - 'copilot/**'
     paths:
       - 'ansible/**'
       - '.github/workflows/ansible-test.yml'
