@@ -17,7 +17,7 @@ ansible-galaxy install -r "$ANSIBLE_DIR/requirements.yml" || {
 }
 
 echo "==> Creating test inventory..."
-mkdir -p /tmp/test-inventory
+mkdir -p /tmp/test-inventory/group_vars
 cat > /tmp/test-inventory/hosts.yml <<'EEOF'
 ---
 all:
@@ -31,6 +31,19 @@ all:
             - docker
             - chezmoi
           compose_modules: []
+EEOF
+
+# Create group_vars for docker_servers to override package list
+cat > /tmp/test-inventory/group_vars/docker_servers.yml <<'EEOF'
+---
+# Override geerlingguy.docker role defaults for v8.0.0
+# The docker-ce-rootless-extras package is not available in all Ubuntu versions
+docker_packages:
+  - "docker-{{ docker_edition }}"
+  - "docker-{{ docker_edition }}-cli"
+
+# Disable compose plugin installation as it's not available in all repos
+docker_install_compose_plugin: false
 EEOF
 
 echo "==> Running playbook in check mode..."

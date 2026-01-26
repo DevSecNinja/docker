@@ -1,0 +1,12 @@
+---
+# Variables for docker_servers group
+
+# Override geerlingguy.docker role defaults for v8.0.0
+# The docker-ce-rootless-extras package is not available in all Ubuntu versions
+# See: https://github.com/geerlingguy/ansible-role-docker/issues
+docker_packages:
+  - "docker-{{ docker_edition }}"
+  - "docker-{{ docker_edition }}-cli"
+
+# Disable compose plugin installation as it's not available in all repos
+docker_install_compose_plugin: false
