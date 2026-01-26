@@ -73,7 +73,8 @@
         ports:
           - "{{ traefik_http_port }}:80"
           - "{{ traefik_https_port }}:443"
-          - "{{ traefik_dashboard_port }}:8080"
+          # Note: Dashboard port not exposed by default for security
+          # Set traefik_expose_dashboard_port: true to expose (not recommended)
         volumes:
           - "/var/run/docker.sock:/var/run/docker.sock:ro"
           - "{{ traefik_config_dir }}:/etc/traefik:ro"
