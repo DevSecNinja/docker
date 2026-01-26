@@ -26,9 +26,9 @@
       when: "'chezmoi' in server_features"
       tags: chezmoi
 
-    - role: traefik
-      when: "'traefik' in server_features"
-      tags: traefik
+    - role: docker_compose_modules
+      when: "compose_modules is defined and compose_modules | length > 0"
+      tags: [docker_compose, services]
 
     - role: ansible_pull_setup
       when: "'ansible_pull_setup' in server_features"

@@ -10,13 +10,13 @@ This repository contains Ansible configurations for automated server provisionin
 
 - 🔄 **Ansible Pull Configuration**: Servers automatically pull and apply configurations
 - 🐳 **Docker Management**: Automated Docker installation and configuration
-- 🐙 **Docker Compose Support**: Container orchestration with Docker Compose
+- 🐙 **Modular Docker Compose**: Easily add/remove compose modules per server
 - 🔥 **UFW Firewall**: Automated firewall configuration with sensible defaults
-- 🌐 **Traefik Reverse Proxy**: Containerized reverse proxy setup via Docker Compose
+- 🌐 **Traefik Module**: Reverse proxy as a compose module
 - 📦 **Chezmoi Integration**: Dotfiles management support
 - ⚙️ **Automated Updates**: Self-configuring ansible-pull with cron or systemd
-- 🧪 **CI/CD Testing**: GitHub Actions workflow for testing configurations
-- 📈 **Scalable Structure**: Easy to add new servers and roles
+- 🧪 **CI/CD Testing**: GitHub Actions with reusable test scripts
+- 📈 **Scalable Structure**: Easy to add new servers and modules
 
 ## Quick Start
 
@@ -56,9 +56,11 @@ For Ansible documentation and structure, see [ansible/README.md](ansible/README.
 Primary Docker host configured with:
 - ✅ Docker Engine (geerlingguy.docker)
 - ✅ UFW Firewall (HTTP, HTTPS, SSH, Traefik dashboard)
-- ✅ Traefik reverse proxy (Docker Compose)
+- ✅ Traefik (via compose module)
 - ✅ Chezmoi dotfiles management
 - ✅ Automated ansible-pull updates
+
+**Compose Modules**: `traefik`
 
 ## Testing
 

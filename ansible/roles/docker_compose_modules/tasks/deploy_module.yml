@@ -1,0 +1,46 @@
+---
+# Deploy a single compose module
+- name: "Create {{ module_name }} module directory"
+  file:
+    path: "{{ compose_modules_base_dir }}/{{ module_name }}"
+    state: directory
+    mode: '0755'
+
+- name: "Include {{ module_name }} module variables"
+  include_vars:
+    file: "modules/{{ module_name }}.yml"
+    name: "{{ module_name }}_config"
+
+- name: "Create {{ module_name }} configuration directories"
+  file:
+    path: "{{ item }}"
+    state: directory
+    mode: '0755'
+  loop: >-
+    {{ lookup('vars', module_name + '_config').config_dirs | default([]) }}
+
+- name: "Deploy {{ module_name }} configuration files"
+  template:
+    src: "modules/{{ module_name }}/{{ item.src }}"
+    dest: "{{ item.dest }}"
+    mode: "{{ item.mode | default('0644') }}"
+  loop: >-
+    {{ lookup('vars', module_name + '_config').config_files | default([]) }}
+  when: lookup('vars', module_name + '_config').config_files is defined
+
+- name: "Deploy {{ module_name }} docker-compose.yml"
+  template:
+    src: "modules/{{ module_name }}/docker-compose.yml.j2"
+    dest: "{{ compose_modules_base_dir }}/{{ module_name }}/docker-compose.yml"
+    mode: '0644'
+  register: compose_file_changed
+
+- name: "Start {{ module_name }} with Docker Compose"
+  community.docker.docker_compose_v2:
+    project_src: "{{ compose_modules_base_dir }}/{{ module_name }}"
+    state: present
+  register: compose_output
+
+- name: "Display {{ module_name }} deployment status"
+  debug:
+    msg: "{{ module_name }} deployed successfully"

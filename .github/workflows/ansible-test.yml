@@ -33,18 +33,9 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Install Ansible and tools
+      - name: Run lint test script
         run: |
-          pip install ansible ansible-lint yamllint
-
-      - name: Lint YAML files
-        run: |
-          yamllint ansible/
-
-      - name: Run ansible-lint
-        run: |
-          cd ansible
-          ansible-lint playbooks/ roles/
+          bash ansible/scripts/tests/lint-test.sh
 
   syntax-check:
     name: Ansible Syntax Check
@@ -61,22 +52,9 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Install Ansible
+      - name: Run syntax test script
         run: |
-          pip install ansible
-
-      - name: Install Ansible collections
-        run: |
-          ansible-galaxy collection install community.general ansible.posix community.docker
-
-      - name: Install required roles
-        run: |
-          ansible-galaxy install -r ansible/requirements.yml
-
-      - name: Syntax check playbooks
-        run: |
-          cd ansible
-          ansible-playbook --syntax-check playbooks/main.yml
+          bash ansible/scripts/tests/syntax-test.sh
 
   test-svlazdock1:
     name: Test SVLAZDOCK1 Provisioning
@@ -93,58 +71,9 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Install Ansible
+      - name: Run Docker provisioning test
         run: |
-          pip install ansible
-
-      - name: Install Ansible collections
-        run: |
-          ansible-galaxy collection install community.general ansible.posix community.docker
-
-      - name: Install required roles
-        run: |
-          ansible-galaxy install -r ansible/requirements.yml
-
-      - name: Create test inventory
-        run: |
-          mkdir -p /tmp/test-inventory
-          cat > /tmp/test-inventory/hosts.yml <<EEOF
-          ---
-          all:
-            children:
-              docker_servers:
-                hosts:
-                  localhost:
-                    ansible_connection: local
-                    ansible_become: true
-                    server_features:
-                      - docker
-                      - chezmoi
-          EEOF
-
-      - name: Run playbook in check mode
-        run: |
-          cd ansible
-          ansible-playbook \
-            --check \
-            --inventory /tmp/test-inventory/hosts.yml \
-            --extra-vars "target_host=localhost" \
-            --skip-tags traefik \
-            playbooks/main.yml
-
-      - name: Test Docker role
-        run: |
-          cd ansible
-          ansible-playbook \
-            --inventory /tmp/test-inventory/hosts.yml \
-            --extra-vars "target_host=localhost" \
-            --tags docker \
-            playbooks/main.yml
-
-      - name: Verify Docker installation
-        run: |
-          docker --version
-          sudo systemctl status docker --no-pager
+          bash ansible/scripts/tests/docker-test.sh
 
   test-ansible-pull:
     name: Test Ansible Pull Script

@@ -1,0 +1,8 @@
+---
+# Default variables for Docker Compose Modules role
+compose_modules_base_dir: "/opt/docker-compose"
+compose_modules: []
+# Example:
+# compose_modules:
+#   - traefik
+#   - portainer
