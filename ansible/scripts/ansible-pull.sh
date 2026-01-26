@@ -10,7 +10,7 @@ PLAYBOOK_PATH="${ANSIBLE_PULL_PLAYBOOK:-ansible/playbooks/main.yml}"
 INVENTORY_PATH="${ANSIBLE_PULL_INVENTORY:-ansible/inventory/hosts.yml}"
 WORKDIR="${ANSIBLE_PULL_WORKDIR:-/var/lib/ansible/local}"
 LOG_FILE="${ANSIBLE_PULL_LOG:-/var/log/ansible-pull.log}"
-TARGET_HOST="${ANSIBLE_PULL_TARGET:-$(hostname | tr '[:ùpper:]' '[:lower:]')}"
+TARGET_HOST="${ANSIBLE_PULL_TARGET:-$(hostname | tr '[:upper:]' '[:lower:]')}"
 
 # Ensure log directory exists
 mkdir -p "$(dirname "$LOG_FILE")"
