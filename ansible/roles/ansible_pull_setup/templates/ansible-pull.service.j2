@@ -11,7 +11,7 @@ Environment="ANSIBLE_PULL_PLAYBOOK={{ ansible_pull_playbook }}"
 Environment="ANSIBLE_PULL_INVENTORY={{ ansible_pull_inventory }}"
 Environment="ANSIBLE_PULL_WORKDIR={{ ansible_pull_workdir }}"
 Environment="ANSIBLE_PULL_LOG={{ ansible_pull_log_file }}"
-Environment="ANSIBLE_PULL_TARGET={{ ansible_hostname }}"
+Environment="ANSIBLE_PULL_TARGET={{ inventory_hostname }}"
 ExecStart=/bin/bash {{ ansible_pull_workdir }}/ansible/scripts/ansible-pull.sh
 StandardOutput=journal
 StandardError=journal

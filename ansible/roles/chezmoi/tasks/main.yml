@@ -21,12 +21,18 @@
   debug:
     msg: "Chezmoi version: {{ chezmoi_version_output.stdout }}"
 
+- name: Get home directory for chezmoi_user
+  getent:
+    database: passwd
+    key: "{{ chezmoi_user }}"
+  register: getent_passwd
+
 - name: Initialize Chezmoi with dotfiles repository
   become: true
   become_user: "{{ chezmoi_user }}"
   command: "{{ chezmoi_install_path }} init {{ chezmoi_repo_url }}"
   args:
-    creates: "/home/{{ chezmoi_user }}/.local/share/chezmoi/.git"
+    creates: "{{ getent_passwd.ansible_facts.getent_passwd[chezmoi_user][4] }}/.local/share/chezmoi/.git"
   when:
     - chezmoi_repo_url | length > 0
     - chezmoi_init_apply

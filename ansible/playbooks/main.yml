@@ -15,7 +15,7 @@
 
   roles:
     - role: geerlingguy.docker
-      when: "'docker' in group_names or 'docker_servers' in group_names"
+      when: "'docker' in server_features"
       tags: docker
 
     - role: ufw
@@ -40,5 +40,7 @@
         upgrade: dist
         autoremove: true
         autoclean: true
-      when: ansible_os_family == "Debian"
+      when:
+        - ansible_os_family == "Debian"
+        - ansible_pull_do_system_upgrade | default(false)
       tags: maintenance

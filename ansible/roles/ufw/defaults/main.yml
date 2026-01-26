@@ -14,7 +14,6 @@ ufw_ssh_port: 22
 ufw_allowed_ports:
   - 80    # HTTP
   - 443   # HTTPS
-  - 8080  # Traefik Dashboard
 
 # Custom rules (list of dicts with port, protocol, rule)
 ufw_rules: []
