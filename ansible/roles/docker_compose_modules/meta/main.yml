@@ -8,7 +8,7 @@ galaxy_info:
   description: Deploy Docker Compose modules
   company: DevSecNinja
   license: MIT
-  min_ansible_version: "2.9"
+  min_ansible_version: "2.20"
   platforms:
     - name: Debian
       versions:

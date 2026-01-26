@@ -56,7 +56,7 @@ The repository includes a GitHub Actions workflow that tests the Ansible setup i
 
 ## Requirements
 
-- Ansible 2.9+
+- Ansible 2.20+
 - Git
 - Python 3.6+
 - Target systems: Debian 13 (Trixy) or Ubuntu 24.04+
