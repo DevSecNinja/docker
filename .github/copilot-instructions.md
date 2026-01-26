@@ -7,7 +7,7 @@ This is an Ansible-based infrastructure automation repository that manages Docke
 ## Technology Stack
 
 - **Ansible**: 2.20+ (Infrastructure as Code)
-- **Python**: 3.6+ (Ansible runtime)
+- **Python**: 3.8+ (Ansible runtime)
 - **Docker**: Container platform managed by Ansible
 - **YAML**: Configuration and playbook syntax
 - **Bash**: Helper scripts
