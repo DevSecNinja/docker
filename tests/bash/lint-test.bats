@@ -34,7 +34,9 @@ setup() {
 		pip install yamllint
 	fi
 
-	run yamllint "$ANSIBLE_DIR/"
+	cd "$ANSIBLE_DIR"
+	# Only lint our own files, exclude external roles
+	run bash -c "find . -name '*.yml' -o -name '*.yaml' | grep -v 'roles/geerlingguy' | xargs yamllint"
 	[ "$status" -eq 0 ]
 }
 
