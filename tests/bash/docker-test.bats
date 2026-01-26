@@ -138,11 +138,30 @@ EEOF
 
 @test "docker-test: docker service is running" {
 	# Check if docker service is running
-	if command -v docker >/dev/null 2>&1 && command -v systemctl >/dev/null 2>&1; then
-		run sudo systemctl is-active docker
-		# Accept if service is active or if systemctl is not available
-		[ "$status" -eq 0 ] || [[ "$output" =~ "active" ]] || skip "Docker service not managed by systemd"
-	else
-		skip "Docker or systemctl not available"
+	if ! command -v docker >/dev/null 2>&1; then
+		skip "Docker command not available (requires previous tests to install Docker)"
 	fi
+
+	if ! command -v systemctl >/dev/null 2>&1; then
+		skip "systemctl not available (systemd not managing services)"
+	fi
+
+	run sudo systemctl is-active docker
+
+	# Pass if the service is reported as active
+	if [ "$status" -eq 0 ] && [[ "$output" == "active" ]]; then
+		return 0
+	fi
+
+	# If systemctl indicates systemd is not managing services, skip
+	if [[ "$output" =~ "System has not been booted with systemd" ]] || \
+	   [[ "$output" =~ "Failed to connect to bus" ]] || \
+	   [[ "$output" =~ "could not be found" ]] || \
+	   [[ "$output" =~ "not-found" ]]; then
+		skip "Docker service not managed by systemd: ${output}"
+	fi
+
+	# At this point, Docker and systemd are available and the service exists but is not active
+	echo "Expected 'docker' service to be active under systemd, but 'systemctl is-active docker' returned status ${status} with output: ${output}" >&2
+	[ "$status" -eq 0 ]
 }
