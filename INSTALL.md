@@ -71,12 +71,46 @@ For SVLAZDOCK1, ensure the following:
    echo "ansible ALL=(ALL) NOPASSWD:ALL" | sudo tee /etc/sudoers.d/ansible
    ```
 
-3. (Optional) Set up Chezmoi dotfiles repository URL in host variables:
+3. (Optional) Configure GitHub SSH keys installation:
+   
+   To enable automatic SSH key installation from your GitHub profile, you need to:
+   - Add `github_ssh_keys` to your `server_features` list
+   - Set `github_ssh_keys_username` to your GitHub username
+   
+   You can add both settings to the same host_vars file:
+   
    ```bash
-   # Create host_vars file
+   # Create or update host_vars file
    sudo mkdir -p /var/lib/ansible/local/ansible/inventory/host_vars
    sudo tee /var/lib/ansible/local/ansible/inventory/host_vars/SVLAZDOCK1.yml <<EOF
    ---
+   # Your GitHub username for SSH key installation
+   github_ssh_keys_username: YourGitHubUsername
+   EOF
+   ```
+   
+   Then add `github_ssh_keys` to your server's `server_features` in the inventory
+   file (`ansible/inventory/hosts.yml`):
+   
+   ```yaml
+   SVLAZDOCK1:
+     ansible_host: svlazdock1.local
+     ansible_user: ansible
+     server_features:
+       - github_ssh_keys  # Add this line
+       - docker
+       - ufw
+       # ... other features
+   ```
+   
+   The role will fetch your public SSH keys from `https://github.com/YourGitHubUsername.keys`
+   and add them to the `ansible` user's `authorized_keys` file.
+
+4. (Optional) Set up Chezmoi dotfiles repository URL in host variables:
+   ```bash
+   # Create host_vars file (or add to existing one)
+   sudo mkdir -p /var/lib/ansible/local/ansible/inventory/host_vars
+   sudo tee -a /var/lib/ansible/local/ansible/inventory/host_vars/SVLAZDOCK1.yml <<EOF
    chezmoi_repo_url: "https://github.com/YourUsername/dotfiles.git"
    EOF
    ```
@@ -304,6 +338,9 @@ To add a new server to the infrastructure:
 
 ## Security Notes
 
+- **GitHub SSH Keys**: You must explicitly configure your GitHub username in `github_ssh_keys_username`
+  to use this feature. The role will fail if not configured, preventing unauthorized access.
+  Only your configured GitHub username's SSH keys will be installed.
 - This setup currently has no secrets management configured
 - Traefik dashboard is accessible without authentication in the default setup
 - For production use, implement:
@@ -311,10 +348,11 @@ To add a new server to the infrastructure:
   - Authentication for Traefik dashboard
   - SSL/TLS certificates (Let's Encrypt integration)
   - Firewall rules
-  - SSH key-based authentication
+  - SSH key-based authentication via GitHub keys
 
 ## Next Steps
 
+- Configure GitHub SSH keys with your own username for secure access
 - Configure Chezmoi with your dotfiles repository
 - Set up SSL certificates for Traefik
 - Add more services and containers

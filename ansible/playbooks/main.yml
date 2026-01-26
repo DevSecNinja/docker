@@ -14,6 +14,10 @@
       tags: always
 
   roles:
+    - role: github_ssh_keys
+      when: "'github_ssh_keys' in server_features"
+      tags: [github_ssh_keys, ssh]
+
     - role: system_setup
       when: "'system_setup' in server_features"
       tags: [system_setup, base]
