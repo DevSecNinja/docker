@@ -31,6 +31,13 @@ all:
             - docker
             - chezmoi
           compose_modules: []
+          # Override docker_packages to exclude rootless-extras which is not
+          # available on Ubuntu 24.04. See: https://github.com/geerlingguy/ansible-role-docker/issues/509
+          docker_packages:
+            - docker-ce
+            - docker-ce-cli
+            - containerd.io
+            - docker-buildx-plugin
 EEOF
 
 echo "==> Running playbook in check mode..."
