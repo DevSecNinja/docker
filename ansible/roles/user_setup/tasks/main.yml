@@ -43,7 +43,7 @@
     msg: >
       User setup completed.
       Ansible user: {{ ansible_user_name }}
-      {% if docker_group_users | length > 0 %}
+      {% if docker_group_users is defined and docker_group_users | length > 0 %}
       Docker group members: {{ docker_group_users | join(', ') }}
       {% endif %}
   tags: [user_setup]
