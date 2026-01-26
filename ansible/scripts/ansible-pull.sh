@@ -31,7 +31,7 @@ if ! command -v ansible-pull &> /dev/null; then
         exit 1
     fi
     apt-get update
-    apt-get install -y ansible git
+    apt-get install -y ansible git gpg
 fi
 
 # Install required Ansible collections
