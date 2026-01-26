@@ -47,10 +47,19 @@ For Ansible documentation and structure, see [ansible/README.md](ansible/README.
 │   │   ├── maintenance/      # Automated maintenance
 │   │   └── traefik/          # Traefik reverse proxy
 │   └── scripts/               # Helper scripts
-│       └── ansible-pull.sh   # Ansible-pull wrapper
+│       ├── ansible-pull.sh   # Ansible-pull wrapper
+│       └── tests/            # Test scripts (deprecated)
+├── tests/
+│   └── bash/                  # Bats test suite
+│       ├── run-tests.sh      # Test runner
+│       ├── lint-test.bats    # Linting tests
+│       ├── syntax-test.bats  # Syntax tests
+│       ├── docker-test.bats  # Docker provisioning tests
+│       └── ansible-pull-test.bats  # ansible-pull tests
 ├── .github/
 │   └── workflows/
-│       └── ansible-test.yml  # CI/CD testing pipeline
+│       ├── ansible-test.yml  # Legacy CI/CD pipeline
+│       └── ci.yml            # Bats test CI/CD pipeline
 ├── INSTALL.md                 # Installation guide
 ├── LICENSE                    # MIT License
 └── README.md                  # This file
@@ -70,22 +79,55 @@ Primary Docker host configured with:
 
 **Compose Modules**: `traefik`
 
+### SVLAZDEV1 (Debian)
+
+Development/management server configured with:
+- ✅ Automated system setup (ansible user, sudo, SSH)
+- ✅ Docker Engine with user group management (geerlingguy.docker)
+- ✅ UFW Firewall (SSH)
+- ✅ Chezmoi dotfiles management
+- ✅ Automated ansible-pull updates
+- ✅ Automated maintenance (daily and weekly patches)
+- ✅ VS Code Remote Development via SSH
+- ✅ Docker support for Remote Devcontainers
+
+**Compose Modules**: None (development server)
+
 ## Testing
 
-The repository includes comprehensive testing via GitHub Actions:
+The repository includes comprehensive testing using the [Bats testing framework](https://github.com/bats-core/bats-core):
+
+### Running Tests Locally
 
 ```bash
-# Tests are automatically run on:
-# - Push to main or copilot/** branches
-# - Pull requests
-# - Manual workflow dispatch
+# Run all tests
+./tests/bash/run-tests.sh
+
+# Run specific test file
+./tests/bash/run-tests.sh --test lint-test.bats
+
+# Run in CI mode (installs dependencies, generates JUnit XML)
+./tests/bash/run-tests.sh --ci
 ```
 
+### Test Suite
+
 Tests include:
-- YAML and Ansible linting
-- Syntax checking
-- Docker role installation
-- Ansible-pull functionality
+- **Linting**: yamllint and ansible-lint checks
+- **Syntax validation**: Ansible playbooks and shell scripts
+- **Docker provisioning**: Installation and configuration
+- **ansible-pull functionality**: Script validation and execution
+
+See [tests/bash/README.md](tests/bash/README.md) for detailed testing documentation.
+
+### CI/CD Pipeline
+
+Tests are automatically run via GitHub Actions on:
+- Push to `main` or `copilot/**` branches
+- Pull requests
+- Manual workflow dispatch
+
+Test results are published as GitHub check runs with detailed failure information.
 
 ## Usage
 
