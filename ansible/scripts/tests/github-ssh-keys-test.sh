@@ -8,6 +8,12 @@ ANSIBLE_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
 echo "==> Installing Ansible..."
 pip install ansible
 
+echo "==> Installing required Ansible roles..."
+cd "$ANSIBLE_DIR"
+ansible-galaxy install -r requirements.yml || {
+    echo "Note: Some roles may not be available in offline mode"
+}
+
 echo "==> Creating test inventory..."
 mkdir -p /tmp/test-inventory
 cat > /tmp/test-inventory/hosts.yml <<'EEOF'

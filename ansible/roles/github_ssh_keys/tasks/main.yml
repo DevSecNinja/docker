@@ -3,10 +3,12 @@
 - name: Fail if GitHub username is not configured
   fail:
     msg: >-
-      github_ssh_keys_username is not set. You must configure a GitHub username
-      in your host_vars or inventory to use this role. Set it to your own GitHub
-      username to fetch your public SSH keys.
-  when: github_ssh_keys_username is not defined or github_ssh_keys_username == ""
+      github_ssh_keys_username is not set. You must configure a GitHub
+      username in your host_vars or inventory to use this role. Set it to
+      your own GitHub username to fetch your public SSH keys.
+  when: >
+    github_ssh_keys_username is not defined or
+    github_ssh_keys_username == ""
   tags: github_ssh_keys
 
 - name: Ensure Target User Exists
@@ -26,7 +28,9 @@
 
 - name: Fail if GitHub user not found or no keys available
   fail:
-    msg: "GitHub user '{{ github_ssh_keys_username }}' not found or has no public SSH keys"
+    msg: >-
+      GitHub user '{{ github_ssh_keys_username }}' not found or has no
+      public SSH keys
   when: >
     github_keys_response.status == 404 or
     github_keys_response.content | default('') | trim == ''
@@ -47,5 +51,6 @@
   debug:
     msg: >-
       Successfully installed SSH keys from GitHub user
-      '{{ github_ssh_keys_username }}' for user '{{ github_ssh_keys_target_user }}'
+      '{{ github_ssh_keys_username }}' for user
+      '{{ github_ssh_keys_target_user }}'
   tags: github_ssh_keys
