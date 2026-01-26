@@ -71,12 +71,41 @@ For SVLAZDOCK1, ensure the following:
    echo "ansible ALL=(ALL) NOPASSWD:ALL" | sudo tee /etc/sudoers.d/ansible
    ```
 
-3. (Optional) Set up Chezmoi dotfiles repository URL in host variables:
+3. (Optional) Configure GitHub SSH keys installation:
+   
+   By default, the `github_ssh_keys` role will install SSH keys from the GitHub user
+   `DevSecNinja`. **You should change this to your own GitHub username** for security.
+   
+   To configure this, add `github_ssh_keys` to `server_features` and set your GitHub username:
+   
    ```bash
    # Create host_vars file
    sudo mkdir -p /var/lib/ansible/local/ansible/inventory/host_vars
    sudo tee /var/lib/ansible/local/ansible/inventory/host_vars/SVLAZDOCK1.yml <<EOF
    ---
+   # IMPORTANT: Change this to your GitHub username!
+   github_ssh_keys_username: YourGitHubUsername
+   EOF
+   ```
+   
+   Then add `github_ssh_keys` to the server features in the inventory:
+   
+   ```yaml
+   server_features:
+     - github_ssh_keys
+     - docker
+     - ufw
+     # ... other features
+   ```
+   
+   The role will fetch your public SSH keys from `https://github.com/YourGitHubUsername.keys`
+   and add them to the `ansible` user's `authorized_keys` file.
+
+4. (Optional) Set up Chezmoi dotfiles repository URL in host variables:
+   ```bash
+   # Create host_vars file (or add to existing one)
+   sudo mkdir -p /var/lib/ansible/local/ansible/inventory/host_vars
+   sudo tee -a /var/lib/ansible/local/ansible/inventory/host_vars/SVLAZDOCK1.yml <<EOF
    chezmoi_repo_url: "https://github.com/YourUsername/dotfiles.git"
    EOF
    ```
@@ -262,6 +291,9 @@ To add a new server to the infrastructure:
 
 ## Security Notes
 
+- **GitHub SSH Keys**: The default configuration uses `DevSecNinja` as the GitHub username.
+  **Always change this to your own GitHub username** to ensure only your keys can access
+  the server. The role will display a warning if you forget to change the default.
 - This setup currently has no secrets management configured
 - Traefik dashboard is accessible without authentication in the default setup
 - For production use, implement:
@@ -269,10 +301,11 @@ To add a new server to the infrastructure:
   - Authentication for Traefik dashboard
   - SSL/TLS certificates (Let's Encrypt integration)
   - Firewall rules
-  - SSH key-based authentication
+  - SSH key-based authentication via GitHub keys
 
 ## Next Steps
 
+- Configure GitHub SSH keys with your own username for secure access
 - Configure Chezmoi with your dotfiles repository
 - Set up SSL certificates for Traefik
 - Add more services and containers

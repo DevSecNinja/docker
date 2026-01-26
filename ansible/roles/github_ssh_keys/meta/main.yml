@@ -1,0 +1,17 @@
+---
+# GitHub SSH Keys role
+dependencies: []
+
+galaxy_info:
+  author: DevSecNinja
+  description: Install SSH public keys from GitHub profiles
+  company: DevSecNinja
+  license: MIT
+  min_ansible_version: "2.20"
+  platforms:
+    - name: Debian
+      versions:
+        - trixie
+    - name: Ubuntu
+      versions:
+        - noble

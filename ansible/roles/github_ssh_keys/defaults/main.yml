@@ -1,0 +1,10 @@
+---
+# Default variables for github_ssh_keys role
+# IMPORTANT: Change github_ssh_keys_username to your own GitHub username!
+github_ssh_keys_username: DevSecNinja
+
+# Target user to install SSH keys for (defaults to the ansible_user)
+github_ssh_keys_target_user: "{{ ansible_user }}"
+
+# Whether to fetch keys exclusively (removes other keys)
+github_ssh_keys_exclusive: false
