@@ -83,12 +83,12 @@ For SVLAZDOCK1, ensure the following:
 
 ### SVLAZDEV1 Configuration
 
-For SVLAZDEV1 (Development/Management Server), the following steps are largely automated by the `user_setup` role:
+For SVLAZDEV1 (Development/Management Server), the following steps are largely automated:
 
 **Automated Steps:**
-- ✅ Ansible user creation with sudo privileges
-- ✅ Docker group membership for ansible user
-- ✅ SSH service configuration
+- ✅ Ansible user creation with sudo privileges (`system_setup` role)
+- ✅ Docker group membership for specified users (`geerlingguy.docker` role)
+- ✅ SSH service configuration (`system_setup` role)
 
 **Manual Steps:**
 
@@ -106,8 +106,8 @@ For SVLAZDEV1 (Development/Management Server), the following steps are largely a
    # Chezmoi dotfiles configuration
    chezmoi_repo_url: "https://github.com/YourUsername/dotfiles.git"
    
-   # Additional users to add to docker group (besides ansible user)
-   docker_group_users:
+   # Users to add to docker group (managed by geerlingguy.docker role)
+   docker_users:
      - ansible
      - jean-paul
    
@@ -121,7 +121,7 @@ For SVLAZDEV1 (Development/Management Server), the following steps are largely a
    ssh ansible@svlazdev1.local
    ```
 
-**Note:** The ansible user and docker group membership are automatically configured when the server is provisioned with ansible-pull. If running under a different initial user (e.g., jean-paul), ansible-pull will create the ansible user and subsequent runs can use that user.
+**Note:** The ansible user is created by the `system_setup` role, and docker group membership is managed by the `geerlingguy.docker` role. If running under a different initial user (e.g., jean-paul), ansible-pull will create the ansible user and subsequent runs can use that user.
 
 ## Automated Runs with Cron
 

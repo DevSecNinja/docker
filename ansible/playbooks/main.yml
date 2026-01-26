@@ -14,9 +14,9 @@
       tags: always
 
   roles:
-    - role: user_setup
-      when: "'user_setup' in server_features"
-      tags: [user_setup, users]
+    - role: system_setup
+      when: "'system_setup' in server_features"
+      tags: [system_setup, base]
 
     - role: geerlingguy.docker
       when: "'docker' in server_features"

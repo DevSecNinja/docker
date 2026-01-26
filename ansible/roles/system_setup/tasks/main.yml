@@ -1,0 +1,35 @@
+---
+# Tasks for System Setup role
+- name: Ensure ansible user exists
+  ansible.builtin.user:
+    name: "{{ ansible_user_name }}"
+    groups: "{{ ansible_user_groups }}"
+    shell: "{{ ansible_user_shell }}"
+    create_home: "{{ ansible_user_create_home }}"
+    append: true
+    state: present
+  tags: [system_setup, ansible_user]
+
+- name: Configure passwordless sudo for ansible user
+  ansible.builtin.template:
+    src: sudoers.j2
+    dest: "/etc/sudoers.d/{{ ansible_user_name }}"
+    mode: '0440'
+    validate: 'visudo -cf %s'
+  when: ansible_user_passwordless_sudo
+  tags: [system_setup, ansible_user, sudo]
+
+- name: Ensure SSH service is enabled and running
+  ansible.builtin.systemd:
+    name: "{{ ssh_service_name }}"
+    enabled: true
+    state: started
+  when: ensure_ssh_service
+  tags: [system_setup, ssh]
+
+- name: Display system setup information
+  ansible.builtin.debug:
+    msg: >
+      System setup completed.
+      Ansible user: {{ ansible_user_name }}
+  tags: [system_setup]
