@@ -39,16 +39,8 @@ log "Ensuring required Ansible collections are installed..."
 ansible-galaxy collection install community.general --force 2>&1 | tee -a "$LOG_FILE"
 ansible-galaxy collection install community.docker --force 2>&1 | tee -a "$LOG_FILE"
 
-# Install required external roles from requirements.yml
-if [ -f "$WORKDIR/ansible/requirements.yml" ]; then
-    log "Installing required external roles..."
-    cd "$WORKDIR"
-    ansible-galaxy role install -r ansible/requirements.yml 2>&1 | tee -a "$LOG_FILE"
-else
-    log "No requirements.yml found, skipping external role installation"
-fi
-
 # Run ansible-pull to enforce configuration state
+# Note: ansible-pull will clone the repo first if it doesn't exist
 ansible-pull \
     --url "$REPO_URL" \
     --checkout main \
@@ -56,6 +48,27 @@ ansible-pull \
     --inventory "$INVENTORY_PATH" \
     --extra-vars "target_host=$TARGET_HOST" \
     "$PLAYBOOK_PATH" 2>&1 | tee -a "$LOG_FILE"
+
+PULL_EXIT_CODE=${PIPESTATUS[0]}
+
+# Install required external roles from requirements.yml after repo is cloned
+if [ -f "$WORKDIR/ansible/requirements.yml" ]; then
+    log "Installing required external roles..."
+    cd "$WORKDIR"
+    ansible-galaxy role install -r ansible/requirements.yml 2>&1 | tee -a "$LOG_FILE"
+    
+    # Re-run ansible-pull after installing roles
+    log "Re-running ansible-pull with external roles installed..."
+    ansible-pull \
+        --url "$REPO_URL" \
+        --checkout main \
+        --directory "$WORKDIR" \
+        --inventory "$INVENTORY_PATH" \
+        --extra-vars "target_host=$TARGET_HOST" \
+        "$PLAYBOOK_PATH" 2>&1 | tee -a "$LOG_FILE"
+    
+    PULL_EXIT_CODE=${PIPESTATUS[0]}
+fi
 
 PULL_EXIT_CODE=${PIPESTATUS[0]}
 
