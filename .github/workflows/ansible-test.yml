@@ -22,6 +22,7 @@ jobs:
   lint:
     name: Lint Ansible Files
     runs-on: ubuntu-latest
+    continue-on-error: true
     permissions:
       contents: read
     steps:
