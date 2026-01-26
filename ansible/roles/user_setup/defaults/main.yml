@@ -10,7 +10,9 @@ ansible_user_passwordless_sudo: true
 
 # Docker group membership
 # Users to add to docker group (can include ansible user and other users)
+# Example: docker_group_users: ["ansible", "jean-paul"]
 docker_group_users: []
 
 # SSH service configuration
 ensure_ssh_service: true
+ssh_service_name: "ssh"  # Use "sshd" for RedHat-based systems
