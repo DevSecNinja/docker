@@ -1,0 +1,76 @@
+---
+name: CI - Bats Tests
+
+'on':
+  push:
+    branches:
+      - main
+    paths:
+      - 'ansible/**'
+      - 'tests/**'
+      - '.github/workflows/ci.yml'
+  pull_request:
+    paths:
+      - 'ansible/**'
+      - 'tests/**'
+      - '.github/workflows/ci.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: >-
+    ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  checks: write
+
+jobs:
+  test:
+    name: Run Bats Tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.14'
+
+      - name: Install Python dependencies
+        run: |
+          pip install ansible ansible-lint yamllint
+
+      - name: Run Bats tests
+        run: |
+          chmod +x tests/bash/run-tests.sh
+          ./tests/bash/run-tests.sh --ci
+
+      - name: Publish test results
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        if: always()
+        with:
+          files: tests/bash/test-results.xml
+          check_name: Bats Test Results
+          comment_mode: 'off'
+
+      - name: Upload test results artifact
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results
+          path: tests/bash/test-results.xml
+          retention-days: 30
+
+  all-tests-passed:
+    name: All Tests Passed
+    runs-on: ubuntu-24.04
+    needs: test
+    permissions:
+      contents: read
+    steps:
+      - name: Success
+        run: echo "All Bats tests passed successfully!"

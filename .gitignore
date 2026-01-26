@@ -32,6 +32,11 @@ Thumbs.db
 *.tmp
 *.bak
 
+# Test results
+test-results.xml
+test-results.tap
+*.tap
+
 # Secrets (even though we don't have them yet)
 *.secret
 *.key
