@@ -34,6 +34,11 @@ if ! command -v ansible-pull &> /dev/null; then
     apt-get install -y ansible git
 fi
 
+# Install required Ansible collections
+log "Ensuring required Ansible collections are installed..."
+ansible-galaxy collection install community.general --force 2>&1 | tee -a "$LOG_FILE"
+ansible-galaxy collection install community.docker --force 2>&1 | tee -a "$LOG_FILE"
+
 # Run ansible-pull with git commit checking
 ansible-pull \
     --url "$REPO_URL" \
