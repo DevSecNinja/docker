@@ -14,4 +14,4 @@ galaxy_info:
         - trixie
     - name: Ubuntu
       versions:
-        - focal
+        - noble

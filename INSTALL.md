@@ -4,7 +4,7 @@ This guide provides step-by-step instructions for setting up a new server with A
 
 ## Prerequisites
 
-- A fresh Debian 13 (Trixy) or Ubuntu 20.04+ server
+- A fresh Debian 13 (Trixy) or Ubuntu 24.04+ server
 - Root or sudo access
 - Internet connectivity
 - Git installed (if not, will be installed automatically)
