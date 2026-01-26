@@ -1,0 +1,66 @@
+---
+# Daily maintenance playbook for non-disturbing OS patches
+# Excludes Docker engine and packages that require reboot
+- name: Daily OS maintenance - Non-disturbing patches
+  hosts: "{{ target_host | default('all') }}"
+  become: true
+
+  vars:
+    exclude_packages:
+      - docker-ce
+      - docker-ce-cli
+      - containerd.io
+      - docker-buildx-plugin
+      - docker-compose-plugin
+      - linux-image-*
+      - linux-headers-*
+
+  tasks:
+    - name: Update apt cache
+      ansible.builtin.apt:
+        update_cache: true
+        cache_valid_time: 3600
+      when: ansible_os_family == "Debian"
+
+    - name: Get list of upgradable packages
+      ansible.builtin.shell: |
+        apt list --upgradable 2>/dev/null | grep -v '^Listing' | cut -d'/' -f1
+      register: upgradable_packages
+      changed_when: false
+      when: ansible_os_family == "Debian"
+
+    - name: Filter out excluded packages
+      ansible.builtin.set_fact:
+        safe_packages: >-
+          {{ upgradable_packages.stdout_lines |
+             reject('match', '^(docker-ce|containerd\\.io|linux-image-|linux-headers-).*') |
+             list }}
+      when:
+        - ansible_os_family == "Debian"
+        - upgradable_packages.stdout_lines | length > 0
+
+    - name: Install safe updates (non-disturbing)
+      ansible.builtin.apt:
+        name: "{{ safe_packages }}"
+        state: latest
+        only_upgrade: true
+      when:
+        - ansible_os_family == "Debian"
+        - safe_packages is defined
+        - safe_packages | length > 0
+      register: apt_upgrade_result
+
+    - name: Run autoremove and autoclean
+      ansible.builtin.apt:
+        autoremove: true
+        autoclean: true
+      when: ansible_os_family == "Debian"
+
+    - name: Log daily maintenance completion
+      ansible.builtin.lineinfile:
+        path: /var/log/maintenance/daily.log
+        line: >-
+          {{ ansible_date_time.iso8601 }} - Daily maintenance completed.
+          Packages updated: {{ safe_packages | default([]) | length }}
+        create: true
+        mode: '0644'

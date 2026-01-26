@@ -34,6 +34,10 @@
       when: "'ansible_pull_setup' in server_features"
       tags: [ansible_pull, automation]
 
+    - role: maintenance
+      when: "'maintenance' in server_features"
+      tags: [maintenance, automation]
+
   post_tasks:
     - name: Ensure system is up to date
       apt:

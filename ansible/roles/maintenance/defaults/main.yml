@@ -1,0 +1,31 @@
+---
+# Default variables for Maintenance role
+
+# Ansible Pull maintenance settings
+maintenance_ansible_pull_enabled: true
+maintenance_workdir: "/var/lib/ansible/local"
+maintenance_log_dir: "/var/log/maintenance"
+
+# Docker image update settings
+maintenance_docker_update_enabled: true
+maintenance_compose_dirs:
+  - "/opt/docker-compose"
+
+# OS update settings
+maintenance_os_update_enabled: true
+
+# Daily maintenance (non-disturbing updates)
+maintenance_daily_enabled: true
+maintenance_daily_schedule: "20:00"  # 8 PM
+maintenance_daily_exclude_packages:
+  - docker-ce
+  - docker-ce-cli
+  - containerd.io
+  - docker-buildx-plugin
+  - docker-compose-plugin
+
+# Weekly maintenance (full updates with reboot)
+maintenance_weekly_enabled: true
+maintenance_weekly_schedule: "Sat *-*-* 08:00:00"  # Saturday 8 AM
+maintenance_weekly_reboot_enabled: true
+maintenance_weekly_reboot_delay: "+5"  # Reboot 5 minutes after updates if needed

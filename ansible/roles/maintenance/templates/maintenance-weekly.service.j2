@@ -1,0 +1,10 @@
+[Unit]
+Description=Weekly Maintenance - Full OS Updates with Reboot
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/ansible-playbook {{ maintenance_workdir }}/ansible/playbooks/maintenance-weekly.yml --inventory {{ maintenance_workdir }}/ansible/inventory/hosts.yml --extra-vars "target_host={{ ansible_hostname }}"
+StandardOutput=append:{{ maintenance_log_dir }}/weekly.log
+StandardError=append:{{ maintenance_log_dir }}/weekly.log

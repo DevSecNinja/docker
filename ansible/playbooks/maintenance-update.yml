@@ -1,0 +1,58 @@
+---
+# Maintenance playbook for updating Ansible configuration and Docker images
+# This playbook pulls the latest Ansible config and updates Docker images
+- name: Update Ansible configuration and Docker images
+  hosts: "{{ target_host | default('all') }}"
+  become: true
+
+  tasks:
+    - name: Pull latest Ansible configuration
+      ansible.builtin.git:
+        repo: https://github.com/DevSecNinja/docker.git
+        dest: /var/lib/ansible/local
+        version: main
+        force: true
+      register: git_pull_result
+
+    - name: Display git pull result
+      ansible.builtin.debug:
+        msg: "Ansible configuration updated: {{ 'Yes' if git_pull_result.changed else 'No changes' }}"
+
+    - name: Update chezmoi dotfiles
+      become: true
+      become_user: "{{ ansible_user }}"
+      ansible.builtin.command: /usr/local/bin/chezmoi update
+      register: chezmoi_update
+      changed_when: chezmoi_update.stdout | length > 0
+      failed_when: false
+      when: ansible_user is defined
+
+    - name: Find all docker-compose.yml files
+      ansible.builtin.find:
+        paths: /opt/docker-compose
+        patterns: "docker-compose.yml"
+        recurse: true
+      register: compose_files
+
+    - name: Pull latest Docker images for all compose projects
+      community.docker.docker_compose_v2_pull:
+        project_src: "{{ item.path | dirname }}"
+      loop: "{{ compose_files.files }}"
+      register: docker_pull_result
+      when: compose_files.files | length > 0
+
+    - name: Restart Docker compose services if images were updated
+      community.docker.docker_compose_v2:
+        project_src: "{{ item.path | dirname }}"
+        state: present
+      loop: "{{ compose_files.files }}"
+      when:
+        - compose_files.files | length > 0
+        - docker_pull_result.changed
+
+    - name: Log maintenance completion
+      ansible.builtin.lineinfile:
+        path: /var/log/maintenance/update.log
+        line: "{{ ansible_date_time.iso8601 }} - Ansible config and Docker images updated"
+        create: true
+        mode: '0644'

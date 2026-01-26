@@ -1,0 +1,22 @@
+---
+# Setup for daily maintenance (non-disturbing patches)
+- name: Create daily maintenance systemd service
+  template:
+    src: maintenance-daily.service.j2
+    dest: /etc/systemd/system/maintenance-daily.service
+    mode: '0644'
+  notify: Reload systemd
+
+- name: Create daily maintenance systemd timer
+  template:
+    src: maintenance-daily.timer.j2
+    dest: /etc/systemd/system/maintenance-daily.timer
+    mode: '0644'
+  notify: Reload systemd
+
+- name: Enable and start daily maintenance timer
+  systemd:
+    name: maintenance-daily.timer
+    enabled: true
+    state: started
+    daemon_reload: true
