@@ -59,10 +59,14 @@ sudo ansible-pull \
 
 For SVLAZDOCK1, ensure the following:
 
-1. Hostname is set correctly:
+1. (Optional) Set hostname to uppercase format:
    ```bash
    sudo hostnamectl set-hostname SVLAZDOCK1
    ```
+   
+   **Note:** The ansible-pull script automatically converts hostnames to uppercase
+   to match inventory entries, so this step is optional. However, setting it 
+   explicitly ensures consistency across your infrastructure.
 
 2. Create an `ansible` user (recommended):
    ```bash
@@ -126,10 +130,14 @@ For SVLAZDEV1 (Development/Management Server), the following steps are largely a
 
 **Manual Steps:**
 
-1. Set hostname (run before first ansible-pull):
+1. (Optional) Set hostname to uppercase format:
    ```bash
    sudo hostnamectl set-hostname SVLAZDEV1
    ```
+   
+   **Note:** The ansible-pull script automatically converts hostnames to uppercase
+   to match inventory entries, so this step is optional. However, setting it 
+   explicitly ensures consistency across your infrastructure.
 
 2. (Optional) Customize server-specific variables by creating a host_vars file:
    ```bash
