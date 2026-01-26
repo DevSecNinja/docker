@@ -17,7 +17,9 @@
     src: traefik.yml.j2
     dest: "{{ traefik_config_dir }}/traefik.yml"
     mode: '0644'
-  notify: Restart Traefik
+  notify:
+    - Restart Traefik
+    - Restart Traefik Compose
 
 - name: Create Traefik dynamic configuration directory
   file:

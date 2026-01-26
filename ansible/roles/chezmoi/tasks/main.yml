@@ -43,6 +43,7 @@
     - chezmoi_user is defined
     - chezmoi_repo_url | length > 0
     - chezmoi_init_apply
+    - getent_passwd is defined
     - getent_passwd is succeeded
     - getent_passwd is not skipped
 
