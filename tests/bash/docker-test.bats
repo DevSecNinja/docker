@@ -86,8 +86,8 @@ EEOF
 		--skip-tags traefik \
 		playbooks/main.yml
 
-	# Accept success or some expected warnings
-	[ "$status" -eq 0 ] || [[ "$output" =~ "WARNING" ]]
+	# Accept success (0) or check-mode specific warnings
+	[ "$status" -eq 0 ] || [[ "$output" =~ "check mode is not supported" ]]
 }
 
 @test "docker-test: docker role can be applied" {

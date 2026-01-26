@@ -48,8 +48,8 @@ setup() {
 	cd "$ANSIBLE_DIR"
 	# Try syntax check, but don't fail if external roles are missing
 	run ansible-playbook --syntax-check playbooks/main.yml
-	# Accept both success (0) and role-not-found errors
-	[ "$status" -eq 0 ] || [[ "$output" =~ "couldn't resolve module" ]] || [[ "$output" =~ "role" ]]
+	# Accept success or role-not-found errors (expected when external roles aren't installed)
+	[ "$status" -eq 0 ] || [[ "$output" =~ "role".*"could not be found" ]] || [[ "$output" =~ "couldn't resolve module" ]]
 }
 
 @test "syntax-test: all shell scripts have valid syntax" {
