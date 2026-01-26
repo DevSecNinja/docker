@@ -68,6 +68,19 @@ Primary Docker host configured with:
 
 **Compose Modules**: `traefik`
 
+### SVLAZDEV1 (Debian)
+
+Development/management server configured with:
+- ✅ Docker Engine (geerlingguy.docker)
+- ✅ UFW Firewall (SSH)
+- ✅ Chezmoi dotfiles management
+- ✅ Automated ansible-pull updates
+- ✅ Automated maintenance (daily and weekly patches)
+- ✅ VS Code Remote Development via SSH
+- ✅ Docker support for Remote Devcontainers
+
+**Compose Modules**: None (development server)
+
 ## Testing
 
 The repository includes comprehensive testing via GitHub Actions:

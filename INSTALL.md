@@ -81,6 +81,47 @@ For SVLAZDOCK1, ensure the following:
    EOF
    ```
 
+### SVLAZDEV1 Configuration
+
+For SVLAZDEV1 (Development/Management Server), ensure the following:
+
+1. Hostname is set correctly:
+   ```bash
+   sudo hostnamectl set-hostname SVLAZDEV1
+   ```
+
+2. Create an `ansible` user (recommended):
+   ```bash
+   sudo adduser ansible
+   sudo usermod -aG sudo ansible
+   echo "ansible ALL=(ALL) NOPASSWD:ALL" | sudo tee /etc/sudoers.d/ansible
+   ```
+
+3. Add your user to the docker group for VS Code Remote Devcontainers:
+   ```bash
+   sudo usermod -aG docker $USER
+   newgrp docker
+   ```
+
+4. (Optional) Set up Chezmoi dotfiles repository URL in host variables:
+   ```bash
+   # Create host_vars file
+   sudo mkdir -p /var/lib/ansible/local/ansible/inventory/host_vars
+   sudo tee /var/lib/ansible/local/ansible/inventory/host_vars/SVLAZDEV1.yml <<EOF
+   ---
+   chezmoi_repo_url: "https://github.com/YourUsername/dotfiles.git"
+   EOF
+   ```
+
+5. Ensure SSH access is properly configured for VS Code Remote Development:
+   ```bash
+   # Verify SSH service is running
+   sudo systemctl status ssh
+   
+   # Test SSH access from your local machine
+   ssh ansible@svlazdev1.local
+   ```
+
 ## Automated Runs with Cron
 
 To automatically check for configuration updates, set up a cron job:
