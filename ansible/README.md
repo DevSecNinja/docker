@@ -92,9 +92,13 @@ Performs comprehensive system updates:
 # Check timer status
 systemctl list-timers maintenance-*
 
-# View maintenance logs
-tail -f /var/log/maintenance/daily.log
-tail -f /var/log/maintenance/weekly.log
+# View maintenance logs from systemd journal
+journalctl -u maintenance-daily.service -f
+journalctl -u maintenance-weekly.service -f
+
+# View recent logs
+journalctl -u maintenance-daily.service --since today
+journalctl -u maintenance-weekly.service --since "1 week ago"
 
 # Manually run maintenance playbooks
 ansible-playbook playbooks/maintenance-daily.yml \
@@ -114,6 +118,7 @@ server_features:
 Customize maintenance settings in `host_vars/`:
 
 ```yaml
+maintenance_timezone: "Europe/Amsterdam"
 maintenance_daily_enabled: true
 maintenance_daily_schedule: "20:00"  # 8 PM
 maintenance_weekly_enabled: true

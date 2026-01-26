@@ -1,6 +1,9 @@
 ---
 # Default variables for Maintenance role
 
+# Timezone configuration
+maintenance_timezone: "Europe/Amsterdam"
+
 # Ansible Pull maintenance settings
 maintenance_ansible_pull_enabled: true
 maintenance_ansible_pull_repo_url: "https://github.com/DevSecNinja/docker.git"

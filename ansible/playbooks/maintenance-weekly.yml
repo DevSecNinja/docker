@@ -24,15 +24,6 @@
         path: /var/run/reboot-required
       register: reboot_required_file
 
-    - name: Log weekly maintenance completion
-      ansible.builtin.lineinfile:
-        path: /var/log/maintenance/weekly.log
-        line: >-
-          {{ ansible_date_time.iso8601 }} - Weekly maintenance completed.
-          Reboot required: {{ reboot_required_file.stat.exists }}
-        create: true
-        mode: '0644'
-
     - name: Reboot the system if required
       ansible.builtin.reboot:
         msg: "Rebooting for weekly maintenance updates"
@@ -41,16 +32,6 @@
         pre_reboot_delay: 0
         post_reboot_delay: 30
         test_command: uptime
-      when:
-        - reboot_required_file.stat.exists
-        - maintenance_weekly_reboot_enabled | default(true)
-
-    - name: Log reboot completion
-      ansible.builtin.lineinfile:
-        path: /var/log/maintenance/weekly.log
-        line: "{{ ansible_date_time.iso8601 }} - System rebooted successfully"
-        create: true
-        mode: '0644'
       when:
         - reboot_required_file.stat.exists
         - maintenance_weekly_reboot_enabled | default(true)

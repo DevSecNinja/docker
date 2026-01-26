@@ -5,6 +5,11 @@ Wants=network-online.target
 
 [Service]
 Type=oneshot
-ExecStart=/usr/bin/ansible-playbook {{ maintenance_workdir }}/ansible/playbooks/maintenance-daily.yml --inventory {{ maintenance_workdir }}/ansible/inventory/hosts.yml --extra-vars "target_host={{ ansible_hostname }}"
-StandardOutput=append:{{ maintenance_log_dir }}/daily.log
-StandardError=append:{{ maintenance_log_dir }}/daily.log
+User=root
+ExecStart=/usr/bin/ansible-playbook \
+  {{ maintenance_workdir }}/ansible/playbooks/maintenance-daily.yml \
+  --inventory {{ maintenance_workdir }}/ansible/inventory/hosts.yml \
+  --extra-vars "target_host={{ ansible_hostname }}"
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=maintenance-daily

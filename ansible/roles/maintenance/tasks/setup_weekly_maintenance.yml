@@ -14,9 +14,11 @@
     mode: '0644'
   notify: Reload systemd
 
+- name: Flush handlers to reload systemd
+  meta: flush_handlers
+
 - name: Enable and start weekly maintenance timer
   systemd:
     name: maintenance-weekly.timer
     enabled: true
     state: started
-    daemon_reload: true

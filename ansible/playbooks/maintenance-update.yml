@@ -7,22 +7,50 @@
 
   vars:
     repo_url: >-
-      {{ maintenance_ansible_pull_repo_url | default(ansible_pull_repo_url) |
-         default('https://github.com/DevSecNinja/docker.git') }}
-    chezmoi_binary: "{{ maintenance_chezmoi_binary | default('/usr/local/bin/chezmoi') }}"
+      {{
+        maintenance_ansible_pull_repo_url |
+        default(ansible_pull_repo_url) |
+        default('https://github.com/DevSecNinja/docker.git')
+      }}
+    chezmoi_binary: >-
+      {{ maintenance_chezmoi_binary | default('/usr/local/bin/chezmoi') }}
+    workdir: >-
+      {{
+        maintenance_workdir |
+        default(ansible_pull_workdir) |
+        default('/var/lib/ansible/local')
+      }}
+    compose_base: >-
+      {{ maintenance_compose_dirs | default(['/opt/docker-compose']) }}
 
   tasks:
+    - name: Check for local changes in repository
+      ansible.builtin.command:
+        cmd: git -C {{ workdir }} status --porcelain
+      register: git_status
+      changed_when: false
+      failed_when: false
+
+    - name: Fail if local changes exist
+      ansible.builtin.fail:
+        msg: >-
+          Local changes detected in {{ workdir }}.
+          Commit or stash changes before running maintenance.
+      when: git_status.stdout | length > 0
+
     - name: Pull latest Ansible configuration
       ansible.builtin.git:
         repo: "{{ repo_url }}"
-        dest: /var/lib/ansible/local
+        dest: "{{ workdir }}"
         version: main
         force: true
       register: git_pull_result
 
     - name: Display git pull result
       ansible.builtin.debug:
-        msg: "Ansible configuration updated: {{ 'Yes' if git_pull_result.changed else 'No changes' }}"
+        msg: >-
+          Ansible configuration updated:
+          {{ 'Yes' if git_pull_result.changed else 'No changes' }}
 
     - name: Check if chezmoi is installed
       ansible.builtin.stat:
@@ -42,7 +70,7 @@
 
     - name: Find all docker-compose.yml files
       ansible.builtin.find:
-        paths: /opt/docker-compose
+        paths: "{{ compose_base }}"
         patterns: "docker-compose.yml"
         recurse: true
       register: compose_files
@@ -56,16 +84,12 @@
 
     - name: Restart Docker compose services if images were updated
       community.docker.docker_compose_v2:
-        project_src: "{{ item.path | dirname }}"
+        project_src: "{{ item.item.path | dirname }}"
         state: present
-      loop: "{{ compose_files.files }}"
+      loop: "{{ docker_pull_result.results | default([]) }}"
+      loop_control:
+        label: "{{ item.item.path }}"
       when:
         - compose_files.files | length > 0
-        - docker_pull_result.changed
-
-    - name: Log maintenance completion
-      ansible.builtin.lineinfile:
-        path: /var/log/maintenance/update.log
-        line: "{{ ansible_date_time.iso8601 }} - Ansible config and Docker images updated"
-        create: true
-        mode: '0644'
+        - docker_pull_result is defined
+        - item.changed

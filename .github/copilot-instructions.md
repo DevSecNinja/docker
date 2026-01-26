@@ -107,15 +107,18 @@ ansible/
 ## Testing Requirements
 
 ### Before Making Changes
-1. Always run linting first: `bash ansible/scripts/tests/lint-test.sh`
+1. **ALWAYS run linting first**: `bash ansible/scripts/tests/lint-test.sh`
+   - This is a required step before committing any Ansible or YAML changes
+   - Fix all linting errors before proceeding
 2. Check syntax: `bash ansible/scripts/tests/syntax-test.sh`
 3. For Docker-related changes, run: `bash ansible/scripts/tests/docker-test.sh`
 
 ### After Making Changes
-- All YAML files must pass yamllint
-- All Ansible files must pass ansible-lint
+- **All YAML files must pass yamllint** (no errors, warnings acceptable)
+- **All Ansible files must pass ansible-lint** (no errors, warnings acceptable)
 - Playbooks must pass syntax-check
 - GitHub Actions workflow must succeed
+- **Run linting again before final commit** to ensure all issues are resolved
 
 ### CI/CD Pipeline
 The repository includes comprehensive GitHub Actions testing:
@@ -214,12 +217,13 @@ Workflows trigger on:
 ## Common Pitfalls to Avoid
 
 1. Don't use tabs in YAML files (use 2 spaces)
-2. Don't skip linting and syntax checks
+2. **Don't skip linting and syntax checks** - Always run before committing
 3. Don't break ansible-pull functionality (it's core to this repo)
 4. Don't hardcode values that should be variables
 5. Don't remove or modify unrelated tests
 6. Don't add unnecessary dependencies
 7. Always use `--no-pager` with git commands in scripts to avoid interactive prompts
+8. **Always verify linting passes** before marking work as complete
 
 ## Additional Resources
 

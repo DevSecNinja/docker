@@ -6,7 +6,7 @@
   become: true
 
   vars:
-    exclude_packages: "{{ maintenance_daily_exclude_packages | default([
+    exclude_pkgs: "{{ maintenance_daily_exclude_packages | default([
       'docker-ce',
       'docker-ce-cli',
       'containerd.io',
@@ -15,6 +15,10 @@
       'linux-image-*',
       'linux-headers-*'
     ]) }}"
+    exclude_pattern: >-
+      ^(docker-ce|docker-ce-cli|docker-buildx-plugin|
+      docker-compose-plugin|containerd\.io|linux-image-|
+      linux-headers-).*
 
   tasks:
     - name: Update apt cache
@@ -25,16 +29,18 @@
 
     - name: Get list of upgradable packages
       ansible.builtin.shell: |
-        apt list --upgradable 2>/dev/null | grep -v '^Listing' | cut -d'/' -f1
+        apt list --upgradable 2>/dev/null | \
+        grep -v '^Listing' | cut -d'/' -f1
       register: upgradable_packages
       changed_when: false
+      failed_when: false
       when: ansible_os_family == "Debian"
 
     - name: Filter out excluded packages
       ansible.builtin.set_fact:
         safe_packages: >-
           {{ upgradable_packages.stdout_lines |
-             reject('match', '^(docker-ce|containerd\\.io|linux-image-|linux-headers-).*') |
+             reject('match', exclude_pattern) |
              list }}
       when:
         - ansible_os_family == "Debian"
@@ -56,12 +62,3 @@
         autoremove: true
         autoclean: true
       when: ansible_os_family == "Debian"
-
-    - name: Log daily maintenance completion
-      ansible.builtin.lineinfile:
-        path: /var/log/maintenance/daily.log
-        line: >-
-          {{ ansible_date_time.iso8601 }} - Daily maintenance completed.
-          Packages updated: {{ safe_packages | default([]) | length }}
-        create: true
-        mode: '0644'
