@@ -19,9 +19,11 @@ all:
         localhost:
           ansible_connection: local
           ansible_become: true
+          # Using 'runner' as ansible_user - this is the default user in GitHub Actions
           ansible_user: runner
           server_features:
             - github_ssh_keys
+          # Using DevSecNinja for testing - in production, set to your GitHub username
           github_ssh_keys_username: DevSecNinja
 EEOF
 

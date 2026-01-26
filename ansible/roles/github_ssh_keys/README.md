@@ -18,8 +18,8 @@ Available variables are listed below, along with default values (see `defaults/m
 
 ```yaml
 # GitHub username to fetch SSH keys from
-# IMPORTANT: Change this to your own GitHub username!
-github_ssh_keys_username: DevSecNinja
+# REQUIRED: Must be set per-host in inventory or host_vars
+github_ssh_keys_username: YourGitHubUsername
 
 # Target user to install SSH keys for (defaults to ansible_user)
 github_ssh_keys_target_user: "{{ ansible_user }}"
@@ -53,19 +53,19 @@ github_ssh_keys_target_user: ansible
 
 ## Security Considerations
 
-- **Always change the default username**: The default username `DevSecNinja` is only for demonstration. Using the default in production would grant access to the wrong person.
+- **GitHub username is required**: You must explicitly set `github_ssh_keys_username` to your own GitHub username in your host_vars or inventory. The role will fail if this is not configured, preventing unauthorized access.
 - **Verify your keys**: Make sure your GitHub account only has the SSH keys you want to use for server access.
-- **Exclusive mode**: When `github_ssh_keys_exclusive` is `true`, all other keys will be removed from the user's `authorized_keys` file.
+- **Exclusive mode**: When `github_ssh_keys_exclusive` is `true`, all other keys will be removed from the user's `authorized_keys` file, including any keys not managed via GitHub (for example, manually installed emergency access keys or the key you originally used to access the server). If that key is not present in the configured GitHub account, enabling exclusive mode can immediately lock you out, especially during unattended `ansible-pull` execution. Only enable exclusive mode after confirming that your GitHub account contains at least one valid key that will continue to provide administrative access.
 - **Public information**: Remember that anyone can view your public SSH keys on GitHub at `https://github.com/{username}.keys`.
 
 ## Warning Message
 
-If you use the default username (`DevSecNinja`), the role will display a warning message:
+If you forget to set `github_ssh_keys_username`, the role will fail with an error message:
 
 ```
-WARNING: Using default GitHub username 'DevSecNinja'.
-For security, you should change 'github_ssh_keys_username' to your own GitHub username
-in your host_vars or inventory configuration.
+github_ssh_keys_username is not set. You must configure a GitHub username
+in your host_vars or inventory to use this role. Set it to your own GitHub
+username to fetch your public SSH keys.
 ```
 
 ## License

@@ -1,15 +1,15 @@
 ---
 # Tasks for github_ssh_keys role
-- name: Display warning about default GitHub username
-  debug:
-    msg: |
-      WARNING: Using default GitHub username '{{ github_ssh_keys_username }}'.
-      For security, you should change 'github_ssh_keys_username' to your own GitHub username
-      in your host_vars or inventory configuration.
-  when: github_ssh_keys_username == "DevSecNinja"
+- name: Fail if GitHub username is not configured
+  fail:
+    msg: >-
+      github_ssh_keys_username is not set. You must configure a GitHub username
+      in your host_vars or inventory to use this role. Set it to your own GitHub
+      username to fetch your public SSH keys.
+  when: github_ssh_keys_username is not defined or github_ssh_keys_username == ""
   tags: github_ssh_keys
 
-- name: Ensure target user exists
+- name: Ensure Target User Exists
   user:
     name: "{{ github_ssh_keys_target_user }}"
     state: present
@@ -38,10 +38,10 @@
     key: "{{ github_keys_response.content }}"
     exclusive: "{{ github_ssh_keys_exclusive }}"
     comment: "github:{{ github_ssh_keys_username }}"
-  when: github_keys_response.status == 200 and github_keys_response.content | default('') | trim != ''
+  when: github_keys_response.status == 200
   tags: github_ssh_keys
 
-- name: Display success message
+- name: Display Success Message
   debug:
     msg: >-
       Successfully installed SSH keys from GitHub user

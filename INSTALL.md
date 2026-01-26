@@ -73,29 +73,34 @@ For SVLAZDOCK1, ensure the following:
 
 3. (Optional) Configure GitHub SSH keys installation:
    
-   By default, the `github_ssh_keys` role will install SSH keys from the GitHub user
-   `DevSecNinja`. **You should change this to your own GitHub username** for security.
+   To enable automatic SSH key installation from your GitHub profile, you need to:
+   - Add `github_ssh_keys` to your `server_features` list
+   - Set `github_ssh_keys_username` to your GitHub username
    
-   To configure this, add `github_ssh_keys` to `server_features` and set your GitHub username:
+   You can add both settings to the same host_vars file:
    
    ```bash
-   # Create host_vars file
+   # Create or update host_vars file
    sudo mkdir -p /var/lib/ansible/local/ansible/inventory/host_vars
    sudo tee /var/lib/ansible/local/ansible/inventory/host_vars/SVLAZDOCK1.yml <<EOF
    ---
-   # IMPORTANT: Change this to your GitHub username!
+   # Your GitHub username for SSH key installation
    github_ssh_keys_username: YourGitHubUsername
    EOF
    ```
    
-   Then add `github_ssh_keys` to the server features in the inventory:
+   Then add `github_ssh_keys` to your server's `server_features` in the inventory
+   file (`ansible/inventory/hosts.yml`):
    
    ```yaml
-   server_features:
-     - github_ssh_keys
-     - docker
-     - ufw
-     # ... other features
+   SVLAZDOCK1:
+     ansible_host: svlazdock1.local
+     ansible_user: ansible
+     server_features:
+       - github_ssh_keys  # Add this line
+       - docker
+       - ufw
+       # ... other features
    ```
    
    The role will fetch your public SSH keys from `https://github.com/YourGitHubUsername.keys`
@@ -291,9 +296,9 @@ To add a new server to the infrastructure:
 
 ## Security Notes
 
-- **GitHub SSH Keys**: The default configuration uses `DevSecNinja` as the GitHub username.
-  **Always change this to your own GitHub username** to ensure only your keys can access
-  the server. The role will display a warning if you forget to change the default.
+- **GitHub SSH Keys**: You must explicitly configure your GitHub username in `github_ssh_keys_username`
+  to use this feature. The role will fail if not configured, preventing unauthorized access.
+  Only your configured GitHub username's SSH keys will be installed.
 - This setup currently has no secrets management configured
 - Traefik dashboard is accessible without authentication in the default setup
 - For production use, implement:

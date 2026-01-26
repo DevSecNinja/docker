@@ -132,10 +132,29 @@ jobs:
             --only-if-changed \
             ansible/playbooks/main.yml || true
 
+  test-github-ssh-keys:
+    name: Test GitHub SSH Keys Role
+    runs-on: ubuntu-24.04
+    needs: syntax-check
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.14'
+
+      - name: Run GitHub SSH keys test
+        run: |
+          bash ansible/scripts/tests/github-ssh-keys-test.sh
+
   all-tests-passed:
     name: All Tests Passed
     runs-on: ubuntu-24.04
-    needs: [lint, syntax-check, test-svlazdock1, test-ansible-pull]
+    needs: [lint, syntax-check, test-svlazdock1, test-ansible-pull, test-github-ssh-keys]
     permissions:
       contents: read
     steps:

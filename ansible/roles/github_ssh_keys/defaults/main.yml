@@ -1,7 +1,11 @@
 ---
 # Default variables for github_ssh_keys role
-# IMPORTANT: Change github_ssh_keys_username to your own GitHub username!
-github_ssh_keys_username: DevSecNinja
+
+# GitHub username to fetch SSH keys from
+# This variable MUST be set per-host in inventory or host_vars
+# No default is provided to prevent accidental unauthorized access
+# Example: github_ssh_keys_username: YourGitHubUsername
+github_ssh_keys_username: ""
 
 # Target user to install SSH keys for (defaults to the ansible_user)
 github_ssh_keys_target_user: "{{ ansible_user }}"

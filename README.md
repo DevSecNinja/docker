@@ -9,7 +9,7 @@ This repository contains Ansible configurations for automated server provisionin
 ## Features
 
 - 🔄 **Ansible Pull Configuration**: Servers automatically pull and apply configurations
-- 🔑 **GitHub SSH Keys**: Automatically install SSH keys from GitHub profiles
+- 🔑 **GitHub SSH Keys**: Automatically install SSH keys from GitHub profiles; enable by adding `github_ssh_keys` to `server_features` in your inventory
 - 🐳 **Docker Management**: Automated Docker installation and configuration
 - 🐙 **Modular Docker Compose**: Easily add/remove compose modules per server
 - 🔥 **UFW Firewall**: Automated firewall configuration with sensible defaults
