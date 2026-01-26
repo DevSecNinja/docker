@@ -1,6 +1,5 @@
 ---
 # Docker Compose file for Traefik
-version: '3.8'
 
 services:
   traefik:
@@ -14,7 +13,9 @@ services:
     ports:
       - "{{ traefik_http_port }}:80"
       - "{{ traefik_https_port }}:443"
-      - "{{ traefik_dashboard_port }}:8080"
+      # Note: Dashboard port not exposed by default for security
+      # Uncomment and secure with authentication if needed
+      # - "{{ traefik_dashboard_port }}:8080"
     volumes:
       # SECURITY NOTE: Mounting Docker socket provides root-level access
       # Required for Traefik's Docker provider but should be secured
