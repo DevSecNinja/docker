@@ -12,7 +12,7 @@ galaxy_info:
   platforms:
     - name: Debian
       versions:
-        - all
+        - trixie
     - name: Ubuntu
       versions:
-        - all
+        - focal
