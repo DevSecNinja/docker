@@ -45,8 +45,6 @@ log "Ensuring repository is up to date..."
 if [ ! -d "$WORKDIR/.git" ]; then
     log "Cloning repository for the first time..."
     git clone "$REPO_URL" "$WORKDIR" 2>&1 | tee -a "$LOG_FILE"
-    cd "$WORKDIR"
-    git checkout main 2>&1 | tee -a "$LOG_FILE"
 else
     log "Updating existing repository..."
     cd "$WORKDIR"
