@@ -23,6 +23,7 @@
         "ms-azuretools.vscode-docker"
       ],
       "settings": {
+        "dotfiles.repository": "https://github.com/DevSecNinja/dotfiles",
         "editor.formatOnSave": true,
         "files.eol": "\n",
         "files.insertFinalNewline": true,
