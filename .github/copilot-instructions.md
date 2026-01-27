@@ -9,15 +9,49 @@ This is an Ansible-based infrastructure automation repository that manages Docke
 - **Ansible**: 2.20+ (Infrastructure as Code)
 - **Python**: 3.8+ (Ansible runtime)
 - **Docker**: Container platform managed by Ansible
+- **Task**: Task runner / build tool (taskfile.dev)
 - **YAML**: Configuration and playbook syntax
 - **Bash**: Helper scripts
+- **Bats**: Testing framework
 - **GitHub Actions**: CI/CD pipeline
 
 ## Key Commands
 
+### Task Runner (Recommended)
+```bash
+# Show all available tasks
+task --list
+
+# Install all dependencies
+task install
+
+# Run all tests
+task test
+
+# Run linting and syntax checks
+task ci:quick
+
+# Run full CI pipeline locally
+task ci:local
+
+# Check what would change without applying
+task ansible:check
+
+# Show detailed help
+task help
+```
+
 ### Testing
 ```bash
-# Run all Bats tests
+# Run all Bats tests (with Task)
+task test
+
+# Run specific test suite
+task test:lint
+task test:syntax
+task test:docker
+
+# Run all Bats tests (without Task)
 ./tests/bash/run-tests.sh
 
 # Run specific test
@@ -29,6 +63,12 @@ This is an Ansible-based infrastructure automation repository that manages Docke
 
 ### Running Ansible
 ```bash
+# Dry-run with Task
+task ansible:check
+
+# Apply configuration with Task
+task ansible:pull
+
 # Manual ansible-pull execution
 sudo ansible-pull \
     --url https://github.com/DevSecNinja/docker.git \
@@ -42,6 +82,9 @@ sudo ansible-pull \
 
 ### Local Development
 ```bash
+# Install all dependencies (with Task)
+task install
+
 # Install required Ansible collections
 ansible-galaxy collection install -r ansible/requirements.yml
 
@@ -53,7 +96,6 @@ ansible-playbook ansible/playbooks/main.yml --syntax-check
 
 ```
 ansible/
-├── ansible.cfg              # Ansible configuration
 ├── requirements.yml         # External roles and collections
 ├── playbooks/
 │   └── main.yml            # Main playbook for ansible-pull

@@ -37,6 +37,9 @@ test-results.xml
 test-results.tap
 *.tap
 
+# Task runner
+.task/
+
 # Secrets (even though we don't have them yet)
 *.secret
 *.key

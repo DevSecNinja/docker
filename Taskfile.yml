@@ -1,0 +1,402 @@
+version: "3"
+
+# Task runner for Docker Infrastructure repository
+# Install Task: https://taskfile.dev/installation
+# Usage: task [task-name]
+# List all tasks: task --list
+
+vars:
+  REPO_ROOT:
+    sh: pwd
+  ANSIBLE_DIR: "{{.REPO_ROOT}}/ansible"
+  TEST_DIR: "{{.REPO_ROOT}}/tests/bash"
+  PYTHON_BIN:
+    sh: which python3 || which python
+  ANSIBLE_PLAYBOOK: "{{.ANSIBLE_DIR}}/playbooks/main.yml"
+  ANSIBLE_INVENTORY: "{{.ANSIBLE_DIR}}/inventory/hosts.yml"
+
+env:
+  ANSIBLE_CONFIG: "{{.REPO_ROOT}}/ansible.cfg"
+
+tasks:
+  default:
+    desc: Show available tasks
+    cmds:
+      - task --list
+    silent: true
+
+  # Setup and Installation
+  install:
+    desc: Install all dependencies (Python packages, Ansible collections, Task)
+    cmds:
+      - task: install:python
+      - task: install:ansible-collections
+      - task: install:ansible-roles
+      - task: install:bats
+
+  install:python:
+    desc: Install Python dependencies from requirements.txt
+    cmds:
+      - "{{.PYTHON_BIN}} -m pip install -r requirements.txt"
+    sources:
+      - requirements.txt
+
+  install:ansible-collections:
+    desc: Install required Ansible collections
+    cmds:
+      - ansible-galaxy collection install -r {{.ANSIBLE_DIR}}/requirements.yml --force
+    sources:
+      - "{{.ANSIBLE_DIR}}/requirements.yml"
+
+  install:ansible-roles:
+    desc: Install required Ansible roles
+    cmds:
+      - ansible-galaxy role install geerlingguy.docker --force
+
+  install:bats:
+    desc: Install Bats testing framework
+    cmds:
+      - |
+        if ! command -v bats >/dev/null 2>&1; then
+          if command -v npm >/dev/null 2>&1; then
+            echo "Installing Bats via npm..."
+            npm install -g bats
+          elif command -v brew >/dev/null 2>&1; then
+            echo "Installing Bats via Homebrew..."
+            brew install bats-core
+          else
+            echo "Installing Bats from source..."
+            BATS_VERSION="1.11.0"
+            git clone --depth 1 --branch "v${BATS_VERSION}" https://github.com/bats-core/bats-core.git /tmp/bats-core
+            cd /tmp/bats-core && sudo ./install.sh /usr/local
+            rm -rf /tmp/bats-core
+          fi
+        else
+          echo "Bats is already installed"
+        fi
+    status:
+      - command -v bats
+
+  # Testing
+  test:
+    desc: Run all tests
+    cmds:
+      - task: test:all
+
+  test:all:
+    desc: Run all Bats tests
+    dir: "{{.TEST_DIR}}"
+    cmds:
+      - ./run-tests.sh
+
+  test:lint:
+    desc: Run linting tests (yamllint, ansible-lint)
+    dir: "{{.TEST_DIR}}"
+    cmds:
+      - ./run-tests.sh --test lint-test.bats
+
+  test:syntax:
+    desc: Run syntax validation tests
+    dir: "{{.TEST_DIR}}"
+    cmds:
+      - ./run-tests.sh --test syntax-test.bats
+
+  test:docker:
+    desc: Run Docker provisioning tests
+    dir: "{{.TEST_DIR}}"
+    cmds:
+      - ./run-tests.sh --test docker-test.bats
+
+  test:ansible-pull:
+    desc: Run ansible-pull functionality tests
+    dir: "{{.TEST_DIR}}"
+    cmds:
+      - ./run-tests.sh --test ansible-pull-test.bats
+
+  test:github-ssh-keys:
+    desc: Run GitHub SSH keys role tests
+    dir: "{{.TEST_DIR}}"
+    cmds:
+      - ./run-tests.sh --test github-ssh-keys-test.bats
+
+  test:ci:
+    desc: Run tests in CI mode (installs dependencies, generates JUnit XML)
+    dir: "{{.TEST_DIR}}"
+    cmds:
+      - ./run-tests.sh --ci
+
+  # Linting
+  lint:
+    desc: Run all linters (yamllint and ansible-lint)
+    cmds:
+      - task: lint:yaml
+      - task: lint:ansible
+
+  lint:yaml:
+    desc: Run yamllint on all YAML files
+    cmds:
+      - yamllint .
+
+  lint:ansible:
+    desc: Run ansible-lint on Ansible files
+    dir: "{{.ANSIBLE_DIR}}"
+    cmds:
+      - ansible-lint
+
+  lint:fix:
+    desc: Attempt to auto-fix linting issues
+    cmds:
+      - echo "Auto-fixing YAML formatting issues..."
+      - yamllint --format parsable . || true
+      - ansible-lint --write --fix-experimental || true
+
+  # Syntax Checking
+  syntax:
+    desc: Run all syntax checks
+    cmds:
+      - task: syntax:playbook
+      - task: syntax:scripts
+
+  syntax:playbook:
+    desc: Check Ansible playbook syntax
+    dir: "{{.ANSIBLE_DIR}}"
+    cmds:
+      - ansible-playbook --syntax-check {{.ANSIBLE_PLAYBOOK}} -i {{.ANSIBLE_INVENTORY}}
+
+  syntax:scripts:
+    desc: Check shell script syntax
+    cmds:
+      - |
+        for script in $(find . -name '*.sh' -type f); do
+          echo "Checking $script..."
+          bash -n "$script"
+        done
+
+  # Ansible Operations
+  ansible:pull:
+    desc: Run ansible-pull locally (requires sudo)
+    dir: "{{.ANSIBLE_DIR}}"
+    cmds:
+      - |
+        sudo ansible-pull \
+          --url https://github.com/DevSecNinja/docker.git \
+          --checkout main \
+          --directory /var/lib/ansible/local \
+          --inventory {{.ANSIBLE_INVENTORY}} \
+          --extra-vars "target_host=$(hostname)" \
+          --only-if-changed \
+          {{.ANSIBLE_PLAYBOOK}}
+
+  ansible:check:
+    desc: Run ansible-pull in check mode (dry-run, no changes)
+    dir: "{{.ANSIBLE_DIR}}"
+    cmds:
+      - |
+        sudo ansible-pull \
+          --check \
+          --url https://github.com/DevSecNinja/docker.git \
+          --checkout main \
+          --directory /var/lib/ansible/local \
+          --inventory {{.ANSIBLE_INVENTORY}} \
+          --extra-vars "target_host=$(hostname)" \
+          {{.ANSIBLE_PLAYBOOK}}
+
+  ansible:playbook:
+    desc: Run main playbook locally (requires sudo)
+    dir: "{{.ANSIBLE_DIR}}"
+    cmds:
+      - sudo ansible-playbook {{.ANSIBLE_PLAYBOOK}} -i {{.ANSIBLE_INVENTORY}} --extra-vars "target_host=$(hostname)"
+
+  ansible:playbook:check:
+    desc: Run main playbook in check mode (dry-run)
+    dir: "{{.ANSIBLE_DIR}}"
+    cmds:
+      - sudo ansible-playbook {{.ANSIBLE_PLAYBOOK}} -i {{.ANSIBLE_INVENTORY}} --extra-vars "target_host=$(hostname)" --check
+
+  ansible:playbook:tags:
+    desc: Run playbook with specific tags (usage - task ansible:playbook:tags -- TAG=docker)
+    dir: "{{.ANSIBLE_DIR}}"
+    cmds:
+      - sudo ansible-playbook {{.ANSIBLE_PLAYBOOK}} -i {{.ANSIBLE_INVENTORY}} --extra-vars "target_host=$(hostname)" --tags "{{.TAG}}"
+
+  # Maintenance
+  maintenance:update:
+    desc: Run maintenance update playbook (update config & images)
+    dir: "{{.ANSIBLE_DIR}}"
+    cmds:
+      - sudo ansible-playbook playbooks/maintenance-update.yml -i {{.ANSIBLE_INVENTORY}} --extra-vars "target_host=$(hostname)"
+
+  maintenance:daily:
+    desc: Run daily maintenance playbook (OS patches)
+    dir: "{{.ANSIBLE_DIR}}"
+    cmds:
+      - sudo ansible-playbook playbooks/maintenance-daily.yml -i {{.ANSIBLE_INVENTORY}} --extra-vars "target_host=$(hostname)"
+
+  maintenance:weekly:
+    desc: Run weekly maintenance playbook (patches & reboot)
+    dir: "{{.ANSIBLE_DIR}}"
+    cmds:
+      - sudo ansible-playbook playbooks/maintenance-weekly.yml -i {{.ANSIBLE_INVENTORY}} --extra-vars "target_host=$(hostname)"
+
+  # Development
+  dev:format:
+    desc: Format code (YAML files)
+    cmds:
+      - echo "YAML formatting is done via yamllint checks. Run 'task lint:yaml' to check."
+
+  dev:clean:
+    desc: Clean temporary files and caches
+    cmds:
+      - find . -type d -name '__pycache__' -exec rm -rf {} + 2>/dev/null || true
+      - find . -type f -name '*.pyc' -delete 2>/dev/null || true
+      - find . -type f -name '*.pyo' -delete 2>/dev/null || true
+      - find . -type f -name '.DS_Store' -delete 2>/dev/null || true
+      - rm -f test-results.tap test-results.xml 2>/dev/null || true
+      - echo "Cleaned temporary files"
+
+  dev:inventory:
+    desc: Display Ansible inventory
+    dir: "{{.ANSIBLE_DIR}}"
+    cmds:
+      - ansible-inventory -i {{.ANSIBLE_INVENTORY}} --list
+
+  dev:vars:
+    desc: Display variables for a host (usage - task dev:vars -- HOST=SVLAZDOCK1)
+    dir: "{{.ANSIBLE_DIR}}"
+    cmds:
+      - ansible-inventory -i {{.ANSIBLE_INVENTORY}} --host "{{.HOST}}"
+
+  # Documentation
+  docs:readme:
+    desc: Validate README links and structure
+    cmds:
+      - |
+        echo "Checking README.md structure..."
+        if ! grep -q "## Quick Start" README.md; then
+          echo "Warning: Quick Start section not found"
+        fi
+        echo "README.md validation complete"
+
+  # Git Operations
+  git:status:
+    desc: Show git status and current branch
+    cmds:
+      - git status --short --branch
+
+  git:log:
+    desc: Show recent git commits
+    cmds:
+      - git --no-pager log --oneline --graph --decorate -10
+
+  # CI/CD
+  ci:local:
+    desc: Run full CI pipeline locally
+    cmds:
+      - task: install
+      - task: lint
+      - task: syntax
+      - task: test:all
+      - echo "✅ All CI checks passed!"
+
+  ci:quick:
+    desc: Run quick CI checks (lint and syntax only)
+    cmds:
+      - task: lint
+      - task: syntax
+      - echo "✅ Quick checks passed!"
+
+  # Information
+  info:
+    desc: Display environment and tool information
+    cmds:
+      - |
+        echo "═══════════════════════════════════════"
+        echo "  Docker Infrastructure - System Info"
+        echo "═══════════════════════════════════════"
+        echo ""
+        echo "Repository: {{.REPO_ROOT}}"
+        echo "Hostname: $(hostname)"
+        echo ""
+        echo "--- Tool Versions ---"
+        echo "Ansible: $(ansible --version | head -n1)"
+        echo "Python: $({{.PYTHON_BIN}} --version)"
+        echo "Task: $(task --version)"
+        if command -v bats >/dev/null 2>&1; then
+          echo "Bats: $(bats --version)"
+        else
+          echo "Bats: Not installed"
+        fi
+        if command -v docker >/dev/null 2>&1; then
+          echo "Docker: $(docker --version)"
+        else
+          echo "Docker: Not installed"
+        fi
+        echo ""
+        echo "--- Ansible Configuration ---"
+        echo "Config file: $ANSIBLE_CONFIG"
+        echo "Inventory: {{.ANSIBLE_INVENTORY}}"
+        echo "Playbook: {{.ANSIBLE_PLAYBOOK}}"
+        echo ""
+    silent: true
+
+  help:
+    desc: Show detailed help and usage examples
+    cmds:
+      - |
+        echo "════════════════════════════════════════════════════"
+        echo "  Docker Infrastructure - Task Runner Help"
+        echo "════════════════════════════════════════════════════"
+        echo ""
+        echo "USAGE:"
+        echo "  task [task-name]           Run a specific task"
+        echo "  task --list                List all available tasks"
+        echo "  task help                  Show this help message"
+        echo ""
+        echo "COMMON WORKFLOWS:"
+        echo ""
+        echo "  Setup new environment:"
+        echo "    task install             Install all dependencies"
+        echo ""
+        echo "  Development:"
+        echo "    task lint                Run all linters"
+        echo "    task test                Run all tests"
+        echo "    task ci:quick            Quick CI checks (lint + syntax)"
+        echo "    task ci:local            Full local CI pipeline"
+        echo ""
+        echo "  Testing:"
+        echo "    task test:lint           Run linting tests only"
+        echo "    task test:syntax         Run syntax tests only"
+        echo "    task test:docker         Run Docker tests only"
+        echo ""
+        echo "  Ansible operations:"
+        echo "    task ansible:check       Dry-run ansible-pull"
+        echo "    task ansible:pull        Run ansible-pull (applies config)"
+        echo "    task ansible:playbook:check  Dry-run playbook locally"
+        echo ""
+        echo "  Maintenance:"
+        echo "    task maintenance:update  Update configs and images"
+        echo "    task maintenance:daily   Run daily patches"
+        echo ""
+        echo "  Information:"
+        echo "    task info                Show system information"
+        echo "    task dev:inventory       Display Ansible inventory"
+        echo ""
+        echo "EXAMPLES:"
+        echo ""
+        echo "  # Install dependencies and run tests"
+        echo "  task install && task test"
+        echo ""
+        echo "  # Check what would change without applying"
+        echo "  task ansible:check"
+        echo ""
+        echo "  # Run playbook with specific tags"
+        echo "  task ansible:playbook:tags -- TAG=docker"
+        echo ""
+        echo "  # Show variables for a specific host"
+        echo "  task dev:vars -- HOST=SVLAZDOCK1"
+        echo ""
+        echo "════════════════════════════════════════════════════"
+        echo ""
+        echo "For more information, see: https://taskfile.dev"
+        echo ""
+    silent: true

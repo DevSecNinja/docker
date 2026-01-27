@@ -31,6 +31,7 @@ For Ansible documentation and structure, see [ansible/README.md](ansible/README.
 ```
 .
 ├── ansible.cfg                 # Ansible configuration (for ansible-pull)
+├── Taskfile.yml                # Task runner configuration
 ├── ansible/                    # Ansible configuration directory
 │   ├── ansible.cfg            # Ansible configuration (for local runs)
 │   ├── requirements.yml       # External roles and collections
@@ -94,12 +95,90 @@ Development/management server configured with:
 
 **Compose Modules**: None (development server)
 
+## Task Runner
+
+This repository uses [Task](https://taskfile.dev) as a modern task runner / build tool. Task provides a simple way to run common development, testing, and deployment workflows.
+
+### Installation
+
+Install Task using one of these methods:
+
+```bash
+# macOS
+brew install go-task
+
+# Linux (using snap)
+snap install task --classic
+
+# Linux (script install)
+sh -c "$(curl --location https://taskfile.dev/install.sh)" -- -d -b /usr/local/bin
+
+# Go
+go install github.com/go-task/task/v3/cmd/task@latest
+
+# npm
+npm install -g @go-task/cli
+```
+
+For more installation options, see the [official documentation](https://taskfile.dev/installation).
+
+### Quick Start with Task
+
+```bash
+# Show all available tasks
+task --list
+
+# Install all dependencies
+task install
+
+# Run all tests
+task test
+
+# Run linting only
+task lint
+
+# Run full CI pipeline locally
+task ci:local
+
+# Show detailed help
+task help
+```
+
+### Common Task Commands
+
+| Command | Description |
+|---------|-------------|
+| `task install` | Install all dependencies (Python, Ansible, Bats) |
+| `task test` | Run all tests |
+| `task test:lint` | Run linting tests only |
+| `task test:syntax` | Run syntax validation tests |
+| `task lint` | Run yamllint and ansible-lint |
+| `task ansible:check` | Dry-run ansible-pull (no changes) |
+| `task ansible:pull` | Run ansible-pull (apply configuration) |
+| `task ci:local` | Run full CI pipeline locally |
+| `task info` | Display environment information |
+| `task help` | Show detailed help and examples |
+
+See [Taskfile.yml](Taskfile.yml) for all available tasks.
+
 ## Testing
 
 The repository includes comprehensive testing using the [Bats testing framework](https://github.com/bats-core/bats-core):
 
 ### Running Tests Locally
 
+With Task (recommended):
+```bash
+# Run all tests
+task test
+
+# Run specific test suite
+task test:lint
+task test:syntax
+task test:docker
+```
+
+Without Task:
 ```bash
 # Run all tests
 ./tests/bash/run-tests.sh
@@ -161,6 +240,29 @@ See [INSTALL.md](INSTALL.md) for detailed instructions.
 
 ## Development
 
+### Development Workflow with Task
+
+```bash
+# Install dependencies
+task install
+
+# Run quick checks before committing
+task ci:quick
+
+# Run full CI pipeline locally
+task ci:local
+
+# Check what would change on the system
+task ansible:check
+
+# Clean temporary files
+task dev:clean
+
+# View inventory and variables
+task dev:inventory
+task dev:vars -- HOST=SVLAZDOCK1
+```
+
 ### Adding a New Server
 
 1. Add to `ansible/inventory/hosts.yml`:
@@ -187,7 +289,11 @@ See [INSTALL.md](INSTALL.md) for detailed instructions.
 
 2. Add role to `ansible/playbooks/main.yml`
 
-3. Test with the CI pipeline
+3. Test with the CI pipeline or locally:
+   ```bash
+   task lint
+   task test
+   ```
 
 ## CI/CD Pipeline
 
