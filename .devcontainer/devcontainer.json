@@ -28,7 +28,7 @@
         "files.eol": "\n",
         "files.insertFinalNewline": true,
         "files.trimTrailingWhitespace": true,
-        "terminal.integrated.defaultProfile.linux": "bash",
+        "terminal.integrated.defaultProfile.linux": "fish",
         "[yaml]": {
           "editor.defaultFormatter": "redhat.vscode-yaml",
           "editor.tabSize": 2,
