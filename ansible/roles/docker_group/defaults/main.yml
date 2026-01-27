@@ -1,0 +1,4 @@
+---
+# Docker group GID (must be consistent across all servers)
+docker_group_gid: 780
+docker_group_name: docker

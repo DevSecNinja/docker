@@ -1,0 +1,7 @@
+---
+- name: Ensure docker group exists with static GID
+  ansible.builtin.group:
+    name: "{{ docker_group_name }}"
+    gid: "{{ docker_group_gid }}"
+    state: present
+    system: true

@@ -22,6 +22,10 @@
       when: "'system_setup' in server_features"
       tags: [system_setup, base]
 
+    - role: docker_group
+      when: "'docker' in server_features"
+      tags: [docker, docker_group]
+
     - role: geerlingguy.docker
       when: "'docker' in server_features"
       tags: docker
