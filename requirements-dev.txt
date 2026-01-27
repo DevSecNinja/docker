@@ -1,0 +1,14 @@
+# Development dependencies for Docker Infrastructure repository
+# Install with: pip install -r requirements-dev.txt
+
+# Ansible and related tools
+ansible>=2.20
+ansible-lint
+jinja2
+
+# YAML linting
+yamllint
+
+# Testing frameworks
+molecule
+molecule-docker
