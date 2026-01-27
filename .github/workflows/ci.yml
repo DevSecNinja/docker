@@ -50,12 +50,13 @@ jobs:
           ./tests/bash/run-tests.sh --ci
 
       - name: Publish test results
-        uses: EnricoMi/publish-unit-test-result-action@v2
+        uses: mikepenz/action-junit-report@v5
         if: always()
         with:
-          files: tests/bash/test-results.xml
+          report_paths: 'tests/bash/test-results.xml'
           check_name: Bats Test Results
-          comment_mode: 'off'
+          detailed_summary: true
+          include_passed: true
 
       - name: Upload test results artifact
         uses: actions/upload-artifact@v6
