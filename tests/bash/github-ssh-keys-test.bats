@@ -55,6 +55,11 @@ EEOF
 }
 
 @test "github-ssh-keys-test: playbook can run in check mode" {
+	# Skip in local environment as it requires sudo
+	if [ "$CI" != "true" ]; then
+		skip "Skipping playbook test in local environment (requires sudo)"
+	fi
+
 	# Create test inventory
 	mkdir -p /tmp/test-inventory
 	cat > /tmp/test-inventory/hosts.yml <<'EEOF'
@@ -76,7 +81,7 @@ EEOF
 
 	# Run playbook in check mode with github_ssh_keys tag from repository root
 	cd "$REPO_ROOT"
-	run ansible-playbook \
+	run timeout 60 ansible-playbook \
 		--check \
 		--inventory /tmp/test-inventory/hosts.yml \
 		--extra-vars "target_host=localhost" \
