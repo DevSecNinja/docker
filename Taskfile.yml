@@ -88,7 +88,7 @@ tasks:
             brew install bats-core
           else
             echo "Installing Bats from source..."
-            BATS_VERSION="1.11.0"
+            BATS_VERSION="1.13.0"
             git clone --depth 1 --branch "v${BATS_VERSION}" https://github.com/bats-core/bats-core.git /tmp/bats-core
             cd /tmp/bats-core && sudo ./install.sh /usr/local
             rm -rf /tmp/bats-core

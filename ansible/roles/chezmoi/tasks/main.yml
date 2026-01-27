@@ -1,28 +1,28 @@
 ---
 # Tasks for Chezmoi role
 - name: Check if Chezmoi is already installed
-  stat:
+  ansible.builtin.stat:
     path: "{{ chezmoi_install_path }}"
   register: chezmoi_binary
 
 - name: Download Chezmoi binary
-  get_url:
+  ansible.builtin.get_url:
     url: "{{ chezmoi_binary_url }}"
     dest: "{{ chezmoi_install_path }}"
     mode: '0755'
   when: not chezmoi_binary.stat.exists
 
 - name: Verify Chezmoi installation
-  command: "{{ chezmoi_install_path }} --version"
+  ansible.builtin.command: "{{ chezmoi_install_path }} --version"
   register: chezmoi_version_output
   changed_when: false
 
 - name: Display Chezmoi version
-  debug:
+  ansible.builtin.debug:
     msg: "Chezmoi version: {{ chezmoi_version_output.stdout }}"
 
 - name: Get home directory for chezmoi_user
-  getent:
+  ansible.builtin.getent:
     database: passwd
     key: "{{ chezmoi_user }}"
   register: getent_passwd
@@ -34,7 +34,7 @@
 - name: Initialize Chezmoi with dotfiles repository
   become: true
   become_user: "{{ chezmoi_user }}"
-  command: "{{ chezmoi_install_path }} init {{ chezmoi_repo_url }}"
+  ansible.builtin.command: "{{ chezmoi_install_path }} init {{ chezmoi_repo_url }}"
   args:
     creates: >-
       {{ getent_passwd.ansible_facts.getent_passwd[chezmoi_user][4] }}/
@@ -50,7 +50,7 @@
 - name: Apply Chezmoi dotfiles
   become: true
   become_user: "{{ chezmoi_user }}"
-  command: "{{ chezmoi_install_path }} apply"
+  ansible.builtin.command: "{{ chezmoi_install_path }} apply"
   when:
     - chezmoi_user is defined
     - chezmoi_repo_url | length > 0

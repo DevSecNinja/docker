@@ -2,13 +2,13 @@
 # Install with: pip install -r requirements.txt
 
 # Ansible and related tools
-ansible>=2.20
-ansible-lint
-jinja2
+ansible>=10.0.0,<14.0.0
+ansible-lint>=25.0.0
+jinja2>=3.0.0
 
 # YAML linting
-yamllint
+yamllint>=1.35.0
 
 # Testing frameworks
-molecule
-molecule-docker
+molecule>=25.0.0
+molecule-docker>=2.0.0

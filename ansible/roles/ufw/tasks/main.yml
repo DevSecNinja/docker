@@ -1,7 +1,7 @@
 ---
 # Tasks for UFW role
 - name: Install UFW
-  apt:
+  ansible.builtin.apt:
     name: ufw
     state: present
     update_cache: true
@@ -54,10 +54,10 @@
   when: ufw_state == "enabled"
 
 - name: Display UFW status
-  command: ufw status verbose
+  ansible.builtin.command: ufw status verbose
   register: ufw_status
   changed_when: false
 
 - name: Show UFW status
-  debug:
+  ansible.builtin.debug:
     var: ufw_status.stdout_lines
