@@ -82,6 +82,16 @@ git config --global pull.rebase false
 
 echo "✨ Development environment ready!"
 echo ""
+
+# Check if Docker is usable without sudo in THIS session
+if ! docker info >/dev/null 2>&1; then
+  echo "⚠️  Docker is not accessible in this session."
+  echo "   You were likely added to the 'docker' group after this shell started."
+  echo "   Run: sudo su - \$USER"
+  echo "   (or reopen the terminal) to refresh group membership."
+  echo ""
+fi
+
 echo "Quick commands:"
 echo "  • Run tests:          ./tests/bash/run-tests.sh"
 echo "  • Lint YAML:          bash ansible/scripts/tests/lint-test.sh"
