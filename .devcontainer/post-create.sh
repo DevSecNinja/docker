@@ -15,13 +15,9 @@ echo "📦 Installing Python packages..."
 pip install --no-cache-dir --upgrade pip
 pip install --no-cache-dir -r requirements-dev.txt
 
-# Install Ansible collections
-echo "📚 Installing Ansible collections..."
-ansible-galaxy collection install -r ansible/requirements.yml
-
-# Install Ansible roles
-echo "🎭 Installing Ansible roles..."
-ansible-galaxy role install geerlingguy.docker
+# Install Ansible collections and roles
+echo "📚 Installing Ansible collections and roles..."
+ansible-galaxy install -r ansible/requirements.yml
 
 # Install Bats testing framework
 echo "🧪 Installing Bats testing framework..."
