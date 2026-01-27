@@ -53,6 +53,10 @@ EEOF
 }
 
 @test "docker-test: playbook passes check mode" {
+	if [ "$CI" != "true" ]; then
+		skip "Skipping Docker installation test in local environment (can cause system hangs)"
+	fi
+
 	# Ensure ansible is installed
 	if ! command -v ansible-playbook >/dev/null 2>&1; then
 		pip install ansible
@@ -91,6 +95,10 @@ EEOF
 }
 
 @test "docker-test: docker role can be applied" {
+	if [ "$CI" != "true" ]; then
+		skip "Skipping Docker installation test in local environment (can cause system hangs)"
+	fi
+
 	# Ensure ansible is installed
 	if ! command -v ansible-playbook >/dev/null 2>&1; then
 		pip install ansible
