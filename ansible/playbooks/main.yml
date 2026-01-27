@@ -45,14 +45,3 @@
     - role: maintenance
       when: "'maintenance' in server_features"
       tags: [maintenance, automation]
-
-  post_tasks:
-    - name: Ensure system is up to date
-      apt:
-        upgrade: dist
-        autoremove: true
-        autoclean: true
-      when:
-        - ansible_os_family == "Debian"
-        - ansible_pull_do_system_upgrade | default(false)
-      tags: maintenance
