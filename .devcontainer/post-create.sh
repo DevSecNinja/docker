@@ -3,6 +3,13 @@ set -e
 
 echo "🚀 Setting up Docker Infrastructure development environment..."
 
+# Set Docker socket permissions
+echo "🐳 Configuring Docker permissions..."
+sudo groupadd -f docker
+sudo usermod -aG docker $USER
+sudo chown root:docker /var/run/docker.sock
+sudo chmod 660 /var/run/docker.sock
+
 # Install Python dependencies
 echo "📦 Installing Python packages..."
 pip install --no-cache-dir --upgrade pip
