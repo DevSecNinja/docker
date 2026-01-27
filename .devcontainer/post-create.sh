@@ -7,8 +7,8 @@ echo "🚀 Setting up Docker Infrastructure development environment..."
 echo "🐳 Configuring Docker permissions..."
 sudo groupadd -f docker
 sudo usermod -aG docker $USER
-sudo chown root:docker /var/run/docker.sock
-sudo chmod 660 /var/run/docker.sock
+# sudo chown root:docker /var/run/docker.sock
+# sudo chmod 660 /var/run/docker.sock
 
 # Install Python dependencies
 echo "📦 Installing Python packages..."
