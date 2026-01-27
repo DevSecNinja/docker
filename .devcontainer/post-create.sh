@@ -1,14 +1,54 @@
 #!/bin/bash
 set -e
 
+check_docker_sock() {
+    local sock="/var/run/docker.sock"
+
+    # Exists?
+    if [[ ! -S "$sock" ]]; then
+        echo "❌ Docker socket not found at $sock"
+        return 1
+    fi
+
+    # Read actual values
+    local owner group perms
+    owner=$(stat -c '%U' "$sock")
+    group=$(stat -c '%G' "$sock")
+    perms=$(stat -c '%a' "$sock")
+
+    local ok=true
+
+    if [[ "$owner" != "root" ]]; then
+        echo "❌ Owner is '$owner' (expected: root)"
+        ok=false
+    fi
+
+    if [[ "$group" != "docker" ]]; then
+        echo "❌ Group is '$group' (expected: docker)"
+        ok=false
+    fi
+
+    if [[ "$perms" != "660" ]]; then
+        echo "❌ Permissions are '$perms' (expected: 660)"
+        ok=false
+    fi
+
+    if [[ "$ok" == true ]]; then
+        echo "✅ Docker socket permissions are correct"
+        return 0
+    else
+        echo "⚠️ Docker daemon is misconfigured. Fix daemon config, not the socket."
+        return 2
+    fi
+}
+
 echo "🚀 Setting up Docker Infrastructure development environment..."
 
 # Set Docker socket permissions
 echo "🐳 Configuring Docker permissions..."
-sudo groupadd -f docker
+sudo groupadd -f docker --gid 780 # Note: this group ID aligns with the docker_group role
 sudo usermod -aG docker $USER
-# sudo chown root:docker /var/run/docker.sock
-# sudo chmod 660 /var/run/docker.sock
+check_docker_sock || exit 1
 
 # Install Python dependencies
 echo "📦 Installing Python packages..."
