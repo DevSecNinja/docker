@@ -1,19 +1,19 @@
 ---
 name: CI - Bats Tests
 
-'on':
+"on":
   push:
     branches:
       - main
     paths:
-      - 'ansible/**'
-      - 'tests/**'
-      - '.github/workflows/ci.yml'
+      - "ansible/**"
+      - "tests/**"
+      - ".github/workflows/ci.yml"
   pull_request:
     paths:
-      - 'ansible/**'
-      - 'tests/**'
-      - '.github/workflows/ci.yml'
+      - "ansible/**"
+      - "tests/**"
+      - ".github/workflows/ci.yml"
   workflow_dispatch:
 
 concurrency:
@@ -38,7 +38,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v6
         with:
-          python-version: '3.14'
+          python-version: "3.14"
 
       - name: Install Python dependencies
         run: |
@@ -53,7 +53,7 @@ jobs:
         uses: mikepenz/action-junit-report@v5
         if: always()
         with:
-          report_paths: 'tests/bash/test-results.xml'
+          report_paths: "tests/bash/test-results.xml"
           check_name: Bats Test Results
           detailed_summary: true
           include_passed: true
