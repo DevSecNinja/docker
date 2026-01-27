@@ -29,6 +29,12 @@
         "files.insertFinalNewline": true,
         "files.trimTrailingWhitespace": true,
         "terminal.integrated.defaultProfile.linux": "fish",
+        "git.postCommitCommand": "push",
+        "git.enableSmartCommit": true,
+        "git.confirmSync": false,
+        "search.exclude": {
+          "ansible/.ansible": true
+        },
         "[yaml]": {
           "editor.defaultFormatter": "redhat.vscode-yaml",
           "editor.tabSize": 2,
