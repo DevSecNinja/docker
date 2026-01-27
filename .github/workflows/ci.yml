@@ -65,13 +65,3 @@ jobs:
           name: test-results
           path: tests/bash/test-results.xml
           retention-days: 30
-
-  all-tests-passed:
-    name: All Tests Passed
-    runs-on: ubuntu-24.04
-    needs: test
-    permissions:
-      contents: read
-    steps:
-      - name: Success
-        run: echo "All Bats tests passed successfully!"
