@@ -6,21 +6,21 @@
   when: maintenance_timezone is defined
 
 - name: Ensure maintenance log directory exists
-  file:
+  ansible.builtin.file:
     path: "{{ maintenance_log_dir }}"
     state: directory
     mode: '0755'
 
 - name: Include daily maintenance setup
-  include_tasks: setup_daily_maintenance.yml
+  ansible.builtin.include_tasks: setup_daily_maintenance.yml
   when: maintenance_daily_enabled
 
 - name: Include weekly maintenance setup
-  include_tasks: setup_weekly_maintenance.yml
+  ansible.builtin.include_tasks: setup_weekly_maintenance.yml
   when: maintenance_weekly_enabled
 
 - name: Display maintenance information
-  debug:
+  ansible.builtin.debug:
     msg: |
       Maintenance automation configured:
       - Timezone: {{ maintenance_timezone | default('not set') }}

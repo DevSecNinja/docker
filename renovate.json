@@ -1,6 +1,50 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
-    "config:recommended"
+    "config:recommended",
+    ":pinVersions",
+    "helpers:pinGitHubActionDigests"
+  ],
+  "pip_requirements": {
+    "fileMatch": ["requirements\\.txt$"]
+  },
+  "ansible-galaxy": {
+    "fileMatch": ["requirements\\.ya?ml$"]
+  },
+  "customManagers": [
+    {
+      "customType": "regex",
+      "fileMatch": ["^\\.mise\\.toml$"],
+      "matchStrings": [
+        "python\\s*=\\s*\"(?<currentValue>[\\d.]+)\""
+      ],
+      "depNameTemplate": "python",
+      "datasourceTemplate": "github-releases",
+      "packageNameTemplate": "python/cpython",
+      "extractVersionTemplate": "^v(?<version>.*)$"
+    },
+    {
+      "customType": "regex",
+      "fileMatch": ["^\\.mise\\.toml$"],
+      "matchStrings": [
+        "bats\\s*=\\s*\"(?<currentValue>[\\d.]+)\""
+      ],
+      "depNameTemplate": "bats-core",
+      "datasourceTemplate": "github-releases",
+      "packageNameTemplate": "bats-core/bats-core"
+    },
+    {
+      "customType": "regex",
+      "fileMatch": [
+        "^Taskfile\\.ya?ml$",
+        "tests/bash/run-tests\\.sh$"
+      ],
+      "matchStrings": [
+        "BATS_VERSION=\"(?<currentValue>[\\d.]+)\""
+      ],
+      "depNameTemplate": "bats-core",
+      "datasourceTemplate": "github-releases",
+      "packageNameTemplate": "bats-core/bats-core"
+    }
   ]
 }

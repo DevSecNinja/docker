@@ -1,7 +1,7 @@
 ---
 # Tasks for github_ssh_keys role
 - name: Fail if GitHub username is not configured
-  fail:
+  ansible.builtin.fail:
     msg: >-
       github_ssh_keys_username is not set. You must configure a GitHub
       username in your host_vars or inventory to use this role. Set it to
@@ -12,13 +12,13 @@
   tags: github_ssh_keys
 
 - name: Ensure Target User Exists
-  user:
+  ansible.builtin.user:
     name: "{{ github_ssh_keys_target_user }}"
     state: present
   tags: github_ssh_keys
 
 - name: Fetch SSH public keys from GitHub
-  uri:
+  ansible.builtin.uri:
     url: "https://github.com/{{ github_ssh_keys_username }}.keys"
     return_content: true
     status_code: [200, 404]
@@ -27,7 +27,7 @@
   tags: github_ssh_keys
 
 - name: Fail if GitHub user not found or no keys available
-  fail:
+  ansible.builtin.fail:
     msg: >-
       GitHub user '{{ github_ssh_keys_username }}' not found or has no
       public SSH keys
@@ -37,7 +37,7 @@
   tags: github_ssh_keys
 
 - name: Add SSH public keys from GitHub to authorized_keys
-  authorized_key:
+  ansible.posix.authorized_key:
     user: "{{ github_ssh_keys_target_user }}"
     key: "{{ github_keys_response.content }}"
     exclusive: "{{ github_ssh_keys_exclusive }}"
@@ -48,7 +48,7 @@
   tags: github_ssh_keys
 
 - name: Display Success Message
-  debug:
+  ansible.builtin.debug:
     msg: >-
       Successfully installed SSH keys from GitHub user
       '{{ github_ssh_keys_username }}' for user

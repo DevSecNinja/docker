@@ -1,13 +1,13 @@
 ---
 # Tasks for Ansible Pull Setup role
 - name: Ensure ansible-pull workdir exists
-  file:
+  ansible.builtin.file:
     path: "{{ ansible_pull_workdir }}/ansible/scripts"
     state: directory
     mode: '0755'
 
 - name: Copy ansible-pull script from repository
-  copy:
+  ansible.builtin.copy:
     src: "{{ playbook_dir }}/../scripts/ansible-pull.sh"
     dest: "{{ ansible_pull_workdir }}/ansible/scripts/ansible-pull.sh"
     mode: '0755'
@@ -15,7 +15,7 @@
 - name: Set up cron-based ansible-pull
   block:
     - name: Create cron job for ansible-pull
-      cron:
+      ansible.builtin.cron:
         name: "Ansible pull - automated configuration"
         minute: "{{ ansible_pull_cron_schedule.split()[0] }}"
         hour: "{{ ansible_pull_cron_schedule.split()[1] }}"
@@ -36,21 +36,21 @@
 - name: Set up systemd-based ansible-pull
   block:
     - name: Create systemd service file
-      template:
+      ansible.builtin.template:
         src: ansible-pull.service.j2
         dest: /etc/systemd/system/ansible-pull.service
         mode: '0644'
       notify: Reload systemd
 
     - name: Create systemd timer file
-      template:
+      ansible.builtin.template:
         src: ansible-pull.timer.j2
         dest: /etc/systemd/system/ansible-pull.timer
         mode: '0644'
       notify: Reload systemd
 
     - name: Enable and start ansible-pull timer
-      systemd:
+      ansible.builtin.systemd_service:
         name: ansible-pull.timer
         enabled: true
         state: started
@@ -58,7 +58,7 @@
   when: ansible_pull_scheduler == "systemd"
 
 - name: Display setup information
-  debug:
+  ansible.builtin.debug:
     msg: >
       Ansible pull automation configured with {{ ansible_pull_scheduler }}.
       {% if ansible_pull_scheduler == 'systemd' %}
