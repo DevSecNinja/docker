@@ -45,9 +45,9 @@ setup() {
 	# Install required roles (ignore errors for external roles)
 	ansible-galaxy install -r "$ANSIBLE_DIR/requirements.yml" --ignore-errors || true
 
-	cd "$ANSIBLE_DIR"
+	cd "$REPO_ROOT"
 	# Try syntax check, but don't fail if external roles are missing
-	run ansible-playbook --syntax-check playbooks/main.yml
+	run ansible-playbook --syntax-check ansible/playbooks/main.yml
 	# Accept success or role-not-found errors (expected when external roles aren't installed)
 	[ "$status" -eq 0 ] || [[ "$output" =~ "role".*"could not be found" ]] || [[ "$output" =~ "couldn't resolve module" ]]
 }

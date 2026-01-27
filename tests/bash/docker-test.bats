@@ -78,13 +78,13 @@ all:
           compose_modules: []
 EEOF
 
-	cd "$ANSIBLE_DIR"
+	cd "$REPO_ROOT"
 	run ansible-playbook \
 		--check \
 		--inventory /tmp/test-inventory/hosts.yml \
 		--extra-vars "target_host=localhost" \
 		--skip-tags traefik \
-		playbooks/main.yml
+		ansible/playbooks/main.yml
 
 	# Accept success (0) or check-mode specific warnings
 	[ "$status" -eq 0 ] || [[ "$output" =~ "check mode is not supported" ]]
@@ -115,12 +115,12 @@ all:
           compose_modules: []
 EEOF
 
-	cd "$ANSIBLE_DIR"
+	cd "$REPO_ROOT"
 	run ansible-playbook \
 		--inventory /tmp/test-inventory/hosts.yml \
 		--extra-vars "target_host=localhost" \
 		--tags docker \
-		playbooks/main.yml
+		ansible/playbooks/main.yml
 
 	# Check if docker was installed successfully
 	[ "$status" -eq 0 ]
