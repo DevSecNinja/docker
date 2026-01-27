@@ -70,7 +70,7 @@ Pulls the latest Ansible configuration and updates Docker images:
 - Pulls and restarts Docker Compose services with updated images
 
 ### 2. Daily OS Patches (Non-disturbing)
-**Playbook**: `maintenance-daily.yml`  
+**Playbook**: `maintenance-daily.yml`
 **Schedule**: Daily at 8 PM
 
 Applies safe OS updates without disrupting services:
@@ -79,7 +79,7 @@ Applies safe OS updates without disrupting services:
 - Safe to run on production systems
 
 ### 3. Weekly Full Patches
-**Playbook**: `maintenance-weekly.yml`  
+**Playbook**: `maintenance-weekly.yml`
 **Schedule**: Saturday at 8 AM
 
 Performs comprehensive system updates:
@@ -129,7 +129,22 @@ maintenance_weekly_reboot_enabled: true
 
 ## Testing
 
-The repository includes a GitHub Actions workflow that tests the Ansible setup in a containerized environment.
+The repository uses the [Bats testing framework](https://github.com/bats-core/bats-core) for comprehensive test coverage. All tests are located in the `tests/bash/` directory.
+
+### Running Tests
+
+```bash
+# Run all tests
+./tests/bash/run-tests.sh
+
+# Run specific test
+./tests/bash/run-tests.sh --test lint-test.bats
+
+# Run in CI mode
+./tests/bash/run-tests.sh --ci
+```
+
+Tests are automatically executed via GitHub Actions CI pipeline on pushes and pull requests. See [tests/bash/README.md](../tests/bash/README.md) for detailed documentation.
 
 ## Requirements
 

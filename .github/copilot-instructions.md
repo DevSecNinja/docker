@@ -17,14 +17,14 @@ This is an Ansible-based infrastructure automation repository that manages Docke
 
 ### Testing
 ```bash
-# Lint YAML and Ansible files
-bash ansible/scripts/tests/lint-test.sh
+# Run all Bats tests
+./tests/bash/run-tests.sh
 
-# Check Ansible syntax
-bash ansible/scripts/tests/syntax-test.sh
+# Run specific test
+./tests/bash/run-tests.sh --test lint-test.bats
 
-# Test Docker provisioning
-bash ansible/scripts/tests/docker-test.sh
+# Run in CI mode (for automated pipelines)
+./tests/bash/run-tests.sh --ci
 ```
 
 ### Running Ansible
@@ -67,8 +67,16 @@ ansible/
 │   ├── traefik/            # Reverse proxy
 │   └── ufw/                # Firewall configuration
 └── scripts/
-    ├── ansible-pull.sh     # Installation wrapper
-    └── tests/              # CI/CD test scripts
+    └── ansible-pull.sh     # Installation wrapper
+
+tests/
+└── bash/                    # Bats test suite
+    ├── run-tests.sh        # Test runner
+    ├── lint-test.bats      # Linting tests
+    ├── syntax-test.bats    # Syntax tests
+    ├── docker-test.bats    # Docker provisioning tests
+    ├── ansible-pull-test.bats  # ansible-pull tests
+    └── github-ssh-keys-test.bats  # GitHub SSH keys tests
 ```
 
 ## Code Conventions
@@ -107,11 +115,14 @@ ansible/
 ## Testing Requirements
 
 ### Before Making Changes
-1. **ALWAYS run linting first**: `bash ansible/scripts/tests/lint-test.sh`
+1. **ALWAYS run tests first**: `./tests/bash/run-tests.sh`
    - This is a required step before committing any Ansible or YAML changes
-   - Fix all linting errors before proceeding
-2. Check syntax: `bash ansible/scripts/tests/syntax-test.sh`
-3. For Docker-related changes, run: `bash ansible/scripts/tests/docker-test.sh`
+   - Fix all test failures before proceeding
+2. For specific test categories:
+   - Linting: `./tests/bash/run-tests.sh --test lint-test.bats`
+   - Syntax: `./tests/bash/run-tests.sh --test syntax-test.bats`
+   - Docker: `./tests/bash/run-tests.sh --test docker-test.bats`
+   - GitHub SSH Keys: `./tests/bash/run-tests.sh --test github-ssh-keys-test.bats`
 
 ### After Making Changes
 - **All YAML files must pass yamllint** (no errors, warnings acceptable)
@@ -121,16 +132,21 @@ ansible/
 - **Run linting again before final commit** to ensure all issues are resolved
 
 ### CI/CD Pipeline
-The repository includes comprehensive GitHub Actions testing:
+The repository uses the [Bats testing framework](https://github.com/bats-core/bats-core) for comprehensive testing:
 - Lint checks (yamllint, ansible-lint)
-- Syntax validation
+- Syntax validation (Ansible playbooks and shell scripts)
 - Docker provisioning tests
 - Ansible-pull functionality tests
+- GitHub SSH keys role tests
+
+All tests are located in `tests/bash/` and use the Bats test format.
 
 Workflows trigger on:
 - Push to `main` or `copilot/**` branches
 - Pull requests
 - Manual workflow dispatch
+
+See [tests/bash/README.md](../tests/bash/README.md) for detailed testing documentation.
 
 ## Important Boundaries
 

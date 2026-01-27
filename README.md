@@ -118,6 +118,7 @@ Tests include:
 - **Syntax validation**: Ansible playbooks and shell scripts
 - **Docker provisioning**: Installation and configuration
 - **ansible-pull functionality**: Script validation and execution
+- **GitHub SSH keys**: Role testing with check mode validation
 
 See [tests/bash/README.md](tests/bash/README.md) for detailed testing documentation.
 
