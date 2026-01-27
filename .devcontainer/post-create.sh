@@ -54,7 +54,7 @@ check_docker_sock || exit 1
 # Install Python dependencies
 echo "📦 Installing Python packages..."
 pip install --no-cache-dir --upgrade pip
-pip install --no-cache-dir -r requirements-dev.txt
+pip install --no-cache-dir -r requirements.txt
 
 # Install Ansible collections and roles
 echo "📚 Installing Ansible collections and roles..."

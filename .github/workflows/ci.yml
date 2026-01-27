@@ -42,7 +42,7 @@ jobs:
 
       - name: Install Python dependencies
         run: |
-          pip install ansible ansible-lint yamllint
+          pip install -r requirements.txt
 
       - name: Run Bats tests
         run: |
