@@ -13,8 +13,7 @@
       'docker-buildx-plugin',
       'docker-compose-plugin',
       'linux-image-*',
-      'linux-headers-*'
-    ]) }}"
+      'linux-headers-*']) }}"
     exclude_pattern: >-
       ^(docker-ce|docker-ce-cli|docker-buildx-plugin|
       docker-compose-plugin|containerd\.io|linux-image-|
