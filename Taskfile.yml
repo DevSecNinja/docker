@@ -27,12 +27,31 @@ tasks:
 
   # Setup and Installation
   install:
-    desc: Install all dependencies (Python packages, Ansible collections, Task)
+    desc: Install all dependencies (mise tools, Python packages, Ansible collections)
     cmds:
+      - task: install:mise
       - task: install:python
       - task: install:ansible-collections
       - task: install:ansible-roles
       - task: install:bats
+
+  install:mise:
+    desc: Install mise and all configured tools
+    cmds:
+      - |
+        if ! command -v mise >/dev/null 2>&1; then
+          echo "Installing mise..."
+          curl https://mise.run | sh
+          echo 'eval "$(mise activate bash)"' >> ~/.bashrc
+          echo 'mise activate fish | source' >> ~/.config/fish/config.fish 2>/dev/null || true
+          export PATH="$HOME/.local/bin:$PATH"
+        else
+          echo "mise is already installed"
+        fi
+      - mise install
+    sources:
+      - .mise.toml
+      - .tool-versions
 
   install:python:
     desc: Install Python dependencies from requirements.txt
@@ -54,10 +73,13 @@ tasks:
       - ansible-galaxy role install geerlingguy.docker --force
 
   install:bats:
-    desc: Install Bats testing framework
+    desc: Install Bats testing framework (via mise if available, otherwise fallback)
     cmds:
       - |
-        if ! command -v bats >/dev/null 2>&1; then
+        if command -v mise >/dev/null 2>&1 && mise list bats >/dev/null 2>&1; then
+          echo "Bats managed by mise"
+          mise install bats
+        elif ! command -v bats >/dev/null 2>&1; then
           if command -v npm >/dev/null 2>&1; then
             echo "Installing Bats via npm..."
             npm install -g bats
@@ -337,7 +359,42 @@ tasks:
         echo "Inventory: {{.ANSIBLE_INVENTORY}}"
         echo "Playbook: {{.ANSIBLE_PLAYBOOK}}"
         echo ""
+        echo "--- Tool Version Manager ---"
+        if command -v mise >/dev/null 2>&1; then
+          echo "mise: $(mise --version)"
+          echo "Managed tools:"
+          mise list 2>/dev/null || echo "  No tools installed yet"
+        else
+          echo "mise: Not installed"
+        fi
+        echo ""
     silent: true
+
+  # mise operations
+  mise:install:
+    desc: Install mise tool version manager
+    cmds:
+      - task: install:mise
+
+  mise:doctor:
+    desc: Check mise configuration and health
+    cmds:
+      - mise doctor
+
+  mise:list:
+    desc: List all installed mise tools
+    cmds:
+      - mise list
+
+  mise:upgrade:
+    desc: Upgrade all mise-managed tools
+    cmds:
+      - mise upgrade
+
+  mise:trust:
+    desc: Trust the .mise.toml configuration file
+    cmds:
+      - mise trust
 
   help:
     desc: Show detailed help and usage examples
@@ -356,6 +413,7 @@ tasks:
         echo ""
         echo "  Setup new environment:"
         echo "    task install             Install all dependencies"
+        echo "    task mise:install        Install mise only"
         echo ""
         echo "  Development:"
         echo "    task lint                Run all linters"
@@ -367,6 +425,11 @@ tasks:
         echo "    task test:lint           Run linting tests only"
         echo "    task test:syntax         Run syntax tests only"
         echo "    task test:docker         Run Docker tests only"
+        echo ""
+        echo "  Tool Management (mise):"
+        echo "    task mise:doctor         Check mise health"
+        echo "    task mise:list           List installed tools"
+        echo "    task mise:upgrade        Upgrade all tools"
         echo ""
         echo "  Ansible operations:"
         echo "    task ansible:check       Dry-run ansible-pull"

@@ -1,0 +1,6 @@
+# Alternative format for mise (compatible with asdf)
+# This file is automatically read by mise
+# You can use either .mise.toml or .tool-versions
+
+python 3.14
+bats latest

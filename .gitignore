@@ -40,6 +40,11 @@ test-results.tap
 # Task runner
 .task/
 
+# mise / rtx
+.mise.local.toml
+.mise/
+.rtx/
+
 # Secrets (even though we don't have them yet)
 *.secret
 *.key

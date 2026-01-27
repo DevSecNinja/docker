@@ -1,0 +1,33 @@
+# mise configuration file
+# Documentation: https://mise.jdx.dev/configuration.html
+
+[tools]
+# Python version management
+python = "3.14"
+
+# Task runner (taskfile.dev)
+# Using aqua backend as recommended by Task docs for direct GitHub releases
+"aqua:go-task/task" = "latest"
+
+# Ansible and related tools
+"pipx:ansible" = "latest"
+"pipx:ansible-lint" = "latest"
+"pipx:yamllint" = "latest"
+
+# Bats testing framework
+bats = "latest"
+
+[env]
+# Set ANSIBLE_CONFIG to point to repository root
+_.file = ".env"
+
+[tasks.install]
+description = "Install all dependencies via mise"
+run = "mise install"
+
+[tasks.doctor]
+description = "Check mise installation and configuration"
+run = "mise doctor"
+
+[settings]
+experimental = true
