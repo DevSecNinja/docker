@@ -6,15 +6,21 @@
     "helpers:pinGitHubActionDigests"
   ],
   "pip_requirements": {
-    "fileMatch": ["requirements\\.txt$"]
+    "fileMatch": [
+      "requirements\\.txt$"
+    ]
   },
   "ansible-galaxy": {
-    "fileMatch": ["requirements\\.ya?ml$"]
+    "fileMatch": [
+      "requirements\\.ya?ml$"
+    ]
   },
   "customManagers": [
     {
       "customType": "regex",
-      "fileMatch": ["^\\.mise\\.toml$"],
+      "fileMatch": [
+        "^\\.mise\\.toml$"
+      ],
       "matchStrings": [
         "python\\s*=\\s*\"(?<currentValue>[\\d.]+)\""
       ],
@@ -25,7 +31,9 @@
     },
     {
       "customType": "regex",
-      "fileMatch": ["^\\.mise\\.toml$"],
+      "fileMatch": [
+        "^\\.mise\\.toml$"
+      ],
       "matchStrings": [
         "bats\\s*=\\s*\"(?<currentValue>[\\d.]+)\""
       ],

@@ -4,7 +4,7 @@
   ansible.builtin.file:
     path: "{{ compose_modules_base_dir }}/{{ module_name }}"
     state: directory
-    mode: '0755'
+    mode: "0755"
 
 - name: "Include {{ module_name }} module variables"
   ansible.builtin.include_vars:
@@ -15,7 +15,7 @@
   ansible.builtin.file:
     path: "{{ item }}"
     state: directory
-    mode: '0755'
+    mode: "0755"
   loop: >-
     {{ lookup('vars', module_name + '_config').config_dirs | default([]) }}
 
@@ -32,7 +32,7 @@
   ansible.builtin.template:
     src: "modules/{{ module_name }}/docker-compose.yml.j2"
     dest: "{{ compose_modules_base_dir }}/{{ module_name }}/docker-compose.yml"
-    mode: '0644'
+    mode: "0644"
   register: compose_file_changed
 
 - name: "Start {{ module_name }} with Docker Compose"
