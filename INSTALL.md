@@ -72,13 +72,13 @@ For SVLAZDOCK1, ensure the following:
    ```
 
 3. (Optional) Configure GitHub SSH keys installation:
-   
+
    To enable automatic SSH key installation from your GitHub profile, you need to:
    - Add `github_ssh_keys` to your `server_features` list
    - Set `github_ssh_keys_username` to your GitHub username
-   
+
    You can add both settings to the same host_vars file:
-   
+
    ```bash
    # Create or update host_vars file
    sudo mkdir -p /var/lib/ansible/local/ansible/inventory/host_vars
@@ -88,10 +88,10 @@ For SVLAZDOCK1, ensure the following:
    github_ssh_keys_username: YourGitHubUsername
    EOF
    ```
-   
+
    Then add `github_ssh_keys` to your server's `server_features` in the inventory
    file (`ansible/inventory/hosts.yml`):
-   
+
    ```yaml
    SVLAZDOCK1:
      ansible_host: svlazdock1.local
@@ -102,7 +102,7 @@ For SVLAZDOCK1, ensure the following:
        - ufw
        # ... other features
    ```
-   
+
    The role will fetch your public SSH keys from `https://github.com/YourGitHubUsername.keys`
    and add them to the `ansible` user's `authorized_keys` file.
 
@@ -139,12 +139,12 @@ For SVLAZDEV1 (Development/Management Server), the following steps are largely a
    ---
    # Chezmoi dotfiles configuration
    chezmoi_repo_url: "https://github.com/YourUsername/dotfiles.git"
-   
+
    # Users to add to docker group (managed by geerlingguy.docker role)
    docker_users:
      - ansible
      - jean-paul
-   
+
    # Any other server-specific variables
    EOF
    ```
@@ -212,10 +212,10 @@ sudo systemctl start ansible-pull.timer
 ### Check Ansible Pull Status
 
 ```bash
-# Check the last run log
-sudo tail -f /var/log/ansible-pull.log
+# View recent ansible-pull logs
+sudo journalctl -u ansible-pull.service -n 50
 
-# For systemd timer setup
+# Follow logs in real-time
 sudo journalctl -u ansible-pull.service -f
 ```
 
@@ -256,9 +256,9 @@ chezmoi status
 
 ### Ansible Pull Fails
 
-1. Check the log file:
+1. Check the service logs:
    ```bash
-   sudo tail -100 /var/log/ansible-pull.log
+   sudo journalctl -u ansible-pull.service -n 100
    ```
 
 2. Run ansible-pull manually with verbose output:

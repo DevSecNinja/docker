@@ -11,8 +11,5 @@ ansible_pull_playbook: "ansible/playbooks/main.yml"
 ansible_pull_inventory: "ansible/inventory/hosts.yml"
 ansible_pull_workdir: "/var/lib/ansible/local"
 
-# Logging
-ansible_pull_log_file: "/var/log/ansible-pull.log"
-
 # Service user (for systemd)
 ansible_pull_user: "root"

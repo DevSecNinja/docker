@@ -241,6 +241,32 @@ tasks:
     cmds:
       - sudo ansible-playbook {{.ANSIBLE_PLAYBOOK}} -i {{.ANSIBLE_INVENTORY}} --extra-vars "target_host=$(hostname)" --tags "{{.TAG}}"
 
+  ansible:logs:
+    desc: View ansible-pull logs (journalctl)
+    cmds:
+      - |
+        echo "=== Ansible Pull Service Logs ==="
+        sudo journalctl -u ansible-pull.service -n 100 --no-pager
+
+  ansible:logs:follow:
+    desc: Follow ansible-pull logs in real-time
+    cmds:
+      - |
+        echo "Following ansible-pull service logs (Ctrl+C to exit)..."
+        sudo journalctl -u ansible-pull.service -f
+
+  ansible:status:
+    desc: Check ansible-pull timer and service status
+    cmds:
+      - |
+        echo "=== Ansible Pull Timer Status ==="
+        sudo systemctl list-timers ansible-pull.timer --no-pager
+        echo ""
+        echo "=== Service Status ==="
+        sudo systemctl status ansible-pull.timer --no-pager -l || true
+        echo ""
+        sudo systemctl status ansible-pull.service --no-pager -l || true
+
   # Maintenance
   maintenance:update:
     desc: Run maintenance update playbook (update config & images)

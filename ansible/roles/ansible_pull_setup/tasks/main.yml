@@ -28,7 +28,6 @@
           ANSIBLE_PULL_PLAYBOOK={{ ansible_pull_playbook }}
           ANSIBLE_PULL_INVENTORY={{ ansible_pull_inventory }}
           ANSIBLE_PULL_WORKDIR={{ ansible_pull_workdir }}
-          ANSIBLE_PULL_LOG={{ ansible_pull_log_file }}
           {{ ansible_pull_workdir }}/ansible/scripts/ansible-pull.sh
         state: present
   when: ansible_pull_scheduler == "cron"

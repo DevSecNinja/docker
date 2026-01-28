@@ -9,15 +9,11 @@ REPO_URL="${ANSIBLE_PULL_REPO_URL:-https://github.com/DevSecNinja/docker.git}"
 PLAYBOOK_PATH="${ANSIBLE_PULL_PLAYBOOK:-ansible/playbooks/main.yml}"
 INVENTORY_PATH="${ANSIBLE_PULL_INVENTORY:-ansible/inventory/hosts.yml}"
 WORKDIR="${ANSIBLE_PULL_WORKDIR:-/var/lib/ansible/local}"
-LOG_FILE="${ANSIBLE_PULL_LOG:-/var/log/ansible-pull.log}"
 TARGET_HOST="${ANSIBLE_PULL_TARGET:-$(hostname | tr '[:upper:]' '[:lower:]')}"
 
-# Ensure log directory exists
-mkdir -p "$(dirname "$LOG_FILE")"
-
-# Function to log messages
+# Function to log messages (output goes to journalctl)
 log() {
-    echo "[$(date +'%Y-%m-%d %H:%M:%S')] $*" | tee -a "$LOG_FILE"
+    echo "[$(date +'%Y-%m-%d %H:%M:%S')] $*"
 }
 
 log "Starting ansible-pull run"
@@ -36,8 +32,8 @@ fi
 
 # Install required Ansible collections
 log "Ensuring required Ansible collections are installed..."
-ansible-galaxy collection install community.general --force 2>&1 | tee -a "$LOG_FILE"
-ansible-galaxy collection install community.docker --force 2>&1 | tee -a "$LOG_FILE"
+ansible-galaxy collection install community.general --force 2>&1
+ansible-galaxy collection install community.docker --force 2>&1
 
 # Run ansible-pull to enforce configuration state
 # Note: ansible-pull will clone the repo first if it doesn't exist
@@ -47,7 +43,7 @@ ansible-pull \
     --directory "$WORKDIR" \
     --inventory "$INVENTORY_PATH" \
     --extra-vars "target_host=$TARGET_HOST" \
-    "$PLAYBOOK_PATH" 2>&1 | tee -a "$LOG_FILE"
+    "$PLAYBOOK_PATH"
 
 PULL_EXIT_CODE=${PIPESTATUS[0]}
 
@@ -55,8 +51,8 @@ PULL_EXIT_CODE=${PIPESTATUS[0]}
 if [ -f "$WORKDIR/ansible/requirements.yml" ]; then
     log "Installing required external roles..."
     cd "$WORKDIR"
-    ansible-galaxy role install -r ansible/requirements.yml 2>&1 | tee -a "$LOG_FILE"
-    
+    ansible-galaxy role install -r ansible/requirements.yml 2>&1
+
     # Re-run ansible-pull after installing roles
     log "Re-running ansible-pull with external roles installed..."
     ansible-pull \
@@ -65,9 +61,9 @@ if [ -f "$WORKDIR/ansible/requirements.yml" ]; then
         --directory "$WORKDIR" \
         --inventory "$INVENTORY_PATH" \
         --extra-vars "target_host=$TARGET_HOST" \
-        "$PLAYBOOK_PATH" 2>&1 | tee -a "$LOG_FILE"
-    
-    PULL_EXIT_CODE=${PIPESTATUS[0]}
+        "$PLAYBOOK_PATH"
+
+    PULL_EXIT_CODE=$?
 fi
 
 PULL_EXIT_CODE=${PIPESTATUS[0]}
