@@ -3,3 +3,25 @@
 
 # GitHub username for SSH keys installation
 github_ssh_keys_username: DevSecNinja
+
+# Chezmoi dotfiles user
+chemzoi_user: jean-paul
+
+# Server features to enable
+server_features:
+  - system_setup
+  - github_ssh_keys
+  - docker
+  - ufw
+  - chezmoi
+  - ansible_pull_setup
+  - maintenance
+
+# Docker Compose modules to deploy
+compose_modules:
+  - traefik
+
+# Users to add to docker group
+docker_users:
+  - ansible
+  - jean-paul
