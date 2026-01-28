@@ -6,14 +6,10 @@ name: CI - Bats Tests
     branches:
       - main
     paths:
-      - "ansible/**"
-      - "tests/**"
-      - ".github/workflows/ci.yml"
+      - "!*.md"
   pull_request:
     paths:
-      - "ansible/**"
-      - "tests/**"
-      - ".github/workflows/ci.yml"
+      - "!*.md"
   workflow_dispatch:
 
 concurrency:
