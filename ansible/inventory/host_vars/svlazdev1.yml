@@ -1,0 +1,5 @@
+---
+# Host-specific variables for svlazdev1
+
+# GitHub username for SSH keys installation
+github_ssh_keys_username: DevSecNinja
