@@ -260,6 +260,57 @@ tasks:
     cmds:
       - sudo ansible-playbook playbooks/maintenance-weekly.yml -i {{.ANSIBLE_INVENTORY}} --extra-vars "target_host=$(hostname)"
 
+  maintenance:logs:
+    desc: View maintenance logs (usage - task maintenance:logs [-- daily|weekly|all])
+    cmds:
+      - |
+        TYPE="{{.CLI_ARGS | default "all"}}"
+        case "$TYPE" in
+          daily)
+            echo "=== Daily Maintenance Logs ==="
+            sudo journalctl -u maintenance-daily.service -n 100 --no-pager
+            ;;
+          weekly)
+            echo "=== Weekly Maintenance Logs ==="
+            sudo journalctl -u maintenance-weekly.service -n 100 --no-pager
+            ;;
+          all|*)
+            echo "=== Daily Maintenance Logs ==="
+            sudo journalctl -u maintenance-daily.service -n 50 --no-pager
+            echo ""
+            echo "=== Weekly Maintenance Logs ==="
+            sudo journalctl -u maintenance-weekly.service -n 50 --no-pager
+            ;;
+        esac
+
+  maintenance:logs:follow:
+    desc: Follow maintenance logs in real-time (usage - task maintenance:logs:follow [-- daily|weekly])
+    cmds:
+      - |
+        TYPE="{{.CLI_ARGS | default "daily"}}"
+        case "$TYPE" in
+          weekly)
+            echo "Following weekly maintenance logs..."
+            sudo journalctl -u maintenance-weekly.service -f
+            ;;
+          daily|*)
+            echo "Following daily maintenance logs..."
+            sudo journalctl -u maintenance-daily.service -f
+            ;;
+        esac
+
+  maintenance:status:
+    desc: Check maintenance timer status
+    cmds:
+      - |
+        echo "=== Maintenance Timer Status ==="
+        sudo systemctl list-timers maintenance-* --no-pager
+        echo ""
+        echo "=== Service Status ==="
+        sudo systemctl status maintenance-daily.timer --no-pager -l || true
+        echo ""
+        sudo systemctl status maintenance-weekly.timer --no-pager -l || true
+
   # Development
   dev:format:
     desc: Format code (YAML files)

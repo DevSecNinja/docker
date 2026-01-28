@@ -3,6 +3,7 @@
 # Excludes Docker engine and packages that require reboot
 - name: Daily OS maintenance - Non-disturbing patches
   hosts: "{{ target_host | default('all') }}"
+  connection: local
   become: true
 
   vars:

@@ -3,6 +3,7 @@
 # This playbook pulls the latest Ansible config and updates Docker images
 - name: Update Ansible configuration and Docker images
   hosts: "{{ target_host | default('all') }}"
+  connection: local
   become: true
 
   vars:

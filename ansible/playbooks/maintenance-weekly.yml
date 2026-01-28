@@ -3,6 +3,7 @@
 # Runs on Saturday at 8 AM
 - name: Weekly OS maintenance - Full patches with reboot
   hosts: "{{ target_host | default('all') }}"
+  connection: local
   become: true
 
   tasks:
