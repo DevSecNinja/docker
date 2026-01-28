@@ -196,18 +196,14 @@ tasks:
 
   # Ansible Operations
   ansible:pull:
-    desc: Run ansible-pull locally (requires sudo)
-    dir: "{{.ANSIBLE_DIR}}"
+    desc: Trigger ansible-pull service (requires sudo)
     cmds:
       - |
-        sudo ansible-pull \
-          --url https://github.com/DevSecNinja/docker.git \
-          --checkout main \
-          --directory /var/lib/ansible/local \
-          --inventory {{.ANSIBLE_INVENTORY}} \
-          --extra-vars "target_host=$(hostname)" \
-          --only-if-changed \
-          {{.ANSIBLE_PLAYBOOK}}
+        echo "Triggering ansible-pull service..."
+        sudo systemctl start ansible-pull.service
+        echo "Waiting for service to complete..."
+        sleep 2
+        sudo systemctl status ansible-pull.service --no-pager -l || true
 
   ansible:check:
     desc: Run ansible-pull in check mode (dry-run, no changes)
@@ -246,14 +242,14 @@ tasks:
     cmds:
       - |
         echo "=== Ansible Pull Service Logs ==="
-        sudo journalctl -u ansible-pull.service -n 100 --no-pager
+        sudo journalctl -u ansible-pull.service -n 5000 --no-pager -o short-precise
 
   ansible:logs:follow:
     desc: Follow ansible-pull logs in real-time
     cmds:
       - |
         echo "Following ansible-pull service logs (Ctrl+C to exit)..."
-        sudo journalctl -u ansible-pull.service -f
+        sudo journalctl -u ansible-pull.service -f -o short-precise
 
   ansible:status:
     desc: Check ansible-pull timer and service status

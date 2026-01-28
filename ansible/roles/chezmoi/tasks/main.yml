@@ -47,6 +47,22 @@
     - getent_passwd is succeeded
     - getent_passwd is not skipped
 
+- name: Fix Homebrew permissions for chezmoi_user
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ chezmoi_user }}"
+    group: "{{ chezmoi_user }}"
+    recurse: true
+  loop:
+    - /home/linuxbrew/.linuxbrew/Cellar
+    - /home/linuxbrew/.linuxbrew/Homebrew
+  when:
+    - chezmoi_user is defined
+    - chezmoi_init_apply
+  failed_when: false
+  changed_when: false
+
 - name: Apply Chezmoi dotfiles
   become: true
   become_user: "{{ chezmoi_user }}"
