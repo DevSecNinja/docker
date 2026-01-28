@@ -7,7 +7,7 @@ python = "3.14"
 
 # Task runner (taskfile.dev)
 # Using aqua backend as recommended by Task docs for direct GitHub releases
-"aqua:go-task/task" = "3.40"
+"aqua:go-task/task" = "3.48.0"
 
 # Ansible and related tools
 "pipx:ansible" = "10.7.0"
