@@ -35,8 +35,9 @@ ansible/
 │   └── host_vars/          # Host-specific variables
 ├── roles/
 │   ├── chezmoi/            # Chezmoi dotfiles role
+│   ├── docker_compose_modules/  # Modular Docker Compose deployment
 │   ├── maintenance/        # Maintenance automation role
-│   └── traefik/            # Traefik reverse proxy role
+│   └── github_ssh_keys/    # GitHub SSH keys management
 └── scripts/
     └── ansible-pull.sh     # Ansible-pull wrapper script
 ```

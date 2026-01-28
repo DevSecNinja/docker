@@ -106,7 +106,6 @@ ansible/
 │   ├── ansible_pull_setup/ # Ansible-pull automation
 │   ├── chezmoi/            # Dotfiles management
 │   ├── docker_compose_modules/  # Modular Docker Compose
-│   ├── traefik/            # Reverse proxy
 │   └── ufw/                # Firewall configuration
 └── scripts/
     └── ansible-pull.sh     # Installation wrapper

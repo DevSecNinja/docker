@@ -45,9 +45,9 @@ For Ansible documentation and structure, see [ansible/README.md](ansible/README.
 │   │   └── host_vars/        # Host-specific variables
 │   ├── roles/                 # Custom Ansible roles
 │   │   ├── chezmoi/          # Chezmoi dotfiles management
+│   │   ├── docker_compose_modules/  # Modular Docker Compose
 │   │   ├── github_ssh_keys/  # GitHub SSH keys management
-│   │   ├── maintenance/      # Automated maintenance
-│   │   └── traefik/          # Traefik reverse proxy
+│   │   └── maintenance/      # Automated maintenance
 │   └── scripts/               # Helper scripts
 │       ├── ansible-pull.sh   # Ansible-pull wrapper
 │       └── tests/            # Test scripts (deprecated)
