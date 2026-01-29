@@ -10,7 +10,7 @@ python = "3.14"
 "aqua:go-task/task" = "3.48.0"
 
 # Ansible and related tools
-"pipx:ansible" = "13.2.0"
+"pipx:ansible" = "13.3.0"
 "pipx:ansible-lint" = "26.1.1"
 "pipx:yamllint" = "1.38.0"
 
