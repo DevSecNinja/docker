@@ -311,15 +311,6 @@ The GitHub Actions workflow (`ansible-test.yml`) runs on every push and PR:
 - **Target OS**: Debian 13 (Trixy) or Ubuntu 24.04+
 - **Git**: For ansible-pull functionality
 
-## Roadmap
-
-- [ ] Secrets management (Ansible Vault)
-- [ ] SSL/TLS certificate automation (Let's Encrypt)
-- [ ] Traefik authentication
-- [ ] Monitoring and logging setup
-- [ ] Additional service containers
-- [ ] Backup and recovery procedures
-
 ## Contributing
 
 1. Create a feature branch
