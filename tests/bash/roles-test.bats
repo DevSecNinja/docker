@@ -191,5 +191,5 @@ setup() {
 @test "komodo role: gated by server_features in playbook" {
     run grep -A 1 "bpbradley.komodo" "${ANSIBLE_DIR}/playbooks/main.yml"
     [ "$status" -eq 0 ]
-    echo "$output" | grep -q "komodo.*server_features"
+    echo "$output" | grep -q "'komodo' in server_features"
 }
