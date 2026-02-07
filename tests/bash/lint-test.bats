@@ -39,7 +39,7 @@ setup() {
 
 	cd "$ANSIBLE_DIR"
 	# Only lint our own files, exclude external roles
-	run bash -c "find . -name '*.yml' -o -name '*.yaml' | grep -v 'roles/geerlingguy' | xargs yamllint"
+	run bash -c "find . -name '*.yml' -o -name '*.yaml' | grep -v 'roles/geerlingguy' | grep -v 'roles/bpbradley' | xargs yamllint"
 	[ "$status" -eq 0 ]
 }
 
@@ -69,7 +69,7 @@ setup() {
 				return 1
 			fi
 		fi
-	done < <(find ansible -name "*.yml" -o -name "*.yaml" 2>/dev/null)
+	done < <(find ansible -name "*.yml" -o -name "*.yaml" 2>/dev/null | grep -v 'roles/geerlingguy' | grep -v 'roles/bpbradley')
 
 	if [ "$found_yaml" = false ]; then
 		skip "No YAML files found"

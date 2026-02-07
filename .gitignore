@@ -4,6 +4,7 @@
 .ansible/
 ansible/.galaxy_cache/
 ansible/roles/geerlingguy.*
+ansible/roles/bpbradley.*
 /var/lib/ansible/
 
 # Python

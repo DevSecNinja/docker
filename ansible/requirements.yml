@@ -3,6 +3,8 @@
 roles:
   - name: geerlingguy.docker
     version: 7.4.1
+  - name: bpbradley.komodo
+    version: 1.3
 
 collections:
   - name: community.general
