@@ -42,6 +42,10 @@
       when: "compose_modules is defined and compose_modules | length > 0"
       tags: [docker_compose, services]
 
+    - role: bpbradley.komodo
+      when: "'komodo' in server_features"
+      tags: [komodo, monitoring]
+
     - role: ansible_pull_setup
       when: "'ansible_pull_setup' in server_features"
       tags: [ansible_pull, automation]

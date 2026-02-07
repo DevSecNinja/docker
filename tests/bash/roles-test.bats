@@ -173,3 +173,23 @@ setup() {
 @test "duplicate traefik role: should not exist (using docker_compose_modules instead)" {
     [ ! -d "${ANSIBLE_DIR}/roles/traefik" ]
 }
+
+# ============================================================
+# komodo role tests (external role: bpbradley.komodo)
+# ============================================================
+
+@test "komodo role: listed in requirements.yml" {
+    run grep "bpbradley.komodo" "${ANSIBLE_DIR}/requirements.yml"
+    [ "$status" -eq 0 ]
+}
+
+@test "komodo role: included in main playbook" {
+    run grep "bpbradley.komodo" "${ANSIBLE_DIR}/playbooks/main.yml"
+    [ "$status" -eq 0 ]
+}
+
+@test "komodo role: gated by server_features in playbook" {
+    run grep -A 1 "bpbradley.komodo" "${ANSIBLE_DIR}/playbooks/main.yml"
+    [ "$status" -eq 0 ]
+    echo "$output" | grep -q "komodo.*server_features"
+}
