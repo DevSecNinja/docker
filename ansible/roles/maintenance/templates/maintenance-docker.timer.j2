@@ -1,0 +1,11 @@
+[Unit]
+Description=Docker Maintenance Timer
+Requires=maintenance-docker.service
+
+[Timer]
+OnCalendar={{ maintenance_docker_schedule }}
+RandomizedDelaySec=5min
+Persistent=true
+
+[Install]
+WantedBy=timers.target

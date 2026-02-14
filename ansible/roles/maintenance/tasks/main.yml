@@ -19,6 +19,12 @@
   ansible.builtin.include_tasks: setup_weekly_maintenance.yml
   when: maintenance_weekly_enabled
 
+- name: Include Docker maintenance setup
+  ansible.builtin.include_tasks: setup_docker_maintenance.yml
+  when:
+    - maintenance_docker_enabled
+    - "'docker' in server_features"
+
 - name: Display maintenance information
   ansible.builtin.debug:
     msg: |
@@ -30,4 +36,7 @@
       - Weekly patches:
         {{ 'Enabled' if maintenance_weekly_enabled else 'Disabled' }}
         ({{ maintenance_weekly_schedule if maintenance_weekly_enabled else 'N/A' }})
+      - Docker maintenance:
+        {{ 'Enabled' if (maintenance_docker_enabled and 'docker' in server_features) else 'Disabled' }}
+        ({{ maintenance_docker_schedule if (maintenance_docker_enabled and 'docker' in server_features) else 'N/A' }})
       Check timers: systemctl list-timers maintenance-*

@@ -1,0 +1,127 @@
+---
+# Docker maintenance tasks
+# Cleans up unused Docker resources and checks container health
+
+# --- Docker System Prune ---
+- name: Run Docker system prune (remove unused images, containers, networks)
+  community.docker.docker_prune:
+    containers: true
+    images: true
+    images_filters:
+      dangling: false
+    networks: true
+    builder_cache: true
+  register: maintenance_docker_prune_result
+  when: maintenance_docker_prune_enabled | default(true)
+
+- name: Display Docker prune results
+  ansible.builtin.debug:
+    msg: |
+      Docker system prune results:
+      - Containers removed: {{ maintenance_docker_prune_result.containers | default([]) | length }}
+      - Images removed: {{ maintenance_docker_prune_result.images | default([]) | length }}
+      - Networks removed: {{ maintenance_docker_prune_result.networks | default([]) | length }}
+      - Space reclaimed (images): {{ maintenance_docker_prune_result.images_space_reclaimed | default(0) | human_readable }}
+  when:
+    - maintenance_docker_prune_enabled | default(true)
+    - maintenance_docker_prune_result is defined
+
+# --- Docker Volume Prune ---
+- name: Prune unused Docker volumes
+  community.docker.docker_prune:
+    volumes: true
+  register: maintenance_docker_volume_prune_result
+  when: maintenance_docker_volume_prune_enabled | default(false)
+
+- name: Display Docker volume prune results
+  ansible.builtin.debug:
+    msg: |
+      Docker volume prune results:
+      - Volumes removed: {{ maintenance_docker_volume_prune_result.volumes | default([]) | length }}
+      - Space reclaimed: {{ maintenance_docker_volume_prune_result.volumes_space_reclaimed | default(0) | human_readable }}
+  when:
+    - maintenance_docker_volume_prune_enabled | default(false)
+    - maintenance_docker_volume_prune_result is defined
+
+# --- Container Health Checks ---
+- name: Get list of all running containers
+  community.docker.docker_host_info:
+    containers: true
+    containers_filters:
+      status: running
+  register: maintenance_docker_containers
+
+- name: Identify unhealthy containers
+  ansible.builtin.set_fact:
+    maintenance_unhealthy_containers: >-
+      {{ maintenance_docker_containers.containers |
+         default([]) |
+         selectattr('State.Health', 'defined') |
+         selectattr('State.Health.Status', 'equalto', 'unhealthy') |
+         map(attribute='Name') |
+         list }}
+
+- name: Report unhealthy containers
+  ansible.builtin.debug:
+    msg: >-
+      WARNING: The following containers are unhealthy:
+      {{ maintenance_unhealthy_containers | join(', ') }}
+  when: maintenance_unhealthy_containers | length > 0
+
+- name: Report all containers healthy
+  ansible.builtin.debug:
+    msg: "All running containers are healthy."
+  when: maintenance_unhealthy_containers | length == 0
+
+# --- Restart unhealthy containers ---
+- name: Restart unhealthy containers
+  community.docker.docker_container:
+    name: "{{ item | regex_replace('^/', '') }}"
+    state: started
+    restart: true
+  loop: "{{ maintenance_unhealthy_containers }}"
+  when:
+    - maintenance_docker_restart_unhealthy | default(true)
+    - maintenance_unhealthy_containers | length > 0
+
+# --- Docker Log Cleanup ---
+- name: Find Docker container log files
+  ansible.builtin.find:
+    paths: /var/lib/docker/containers
+    patterns: "*-json.log"
+    recurse: true
+    size: "{{ maintenance_docker_log_max_size | default('100m') }}"
+  register: maintenance_docker_log_files
+  when: maintenance_docker_log_cleanup_enabled | default(true)
+
+- name: Truncate oversized Docker container logs
+  ansible.builtin.command:
+    cmd: "truncate -s 0 {{ item.path }}"
+  loop: "{{ maintenance_docker_log_files.files | default([]) }}"
+  loop_control:
+    label: "{{ item.path | basename }}"
+  changed_when: true
+  when:
+    - maintenance_docker_log_cleanup_enabled | default(true)
+    - maintenance_docker_log_files.files | default([]) | length > 0
+
+- name: Report log cleanup results
+  ansible.builtin.debug:
+    msg: >-
+      Docker log cleanup:
+      {{ maintenance_docker_log_files.files | default([]) | length }}
+      oversized log file(s) truncated.
+  when: maintenance_docker_log_cleanup_enabled | default(true)
+
+# --- Docker Disk Usage Report ---
+- name: Get Docker disk usage
+  ansible.builtin.command:
+    cmd: docker system df
+  register: maintenance_docker_disk_usage
+  changed_when: false
+
+- name: Display Docker disk usage
+  ansible.builtin.debug:
+    msg: |
+      Docker disk usage:
+      {{ maintenance_docker_disk_usage.stdout }}

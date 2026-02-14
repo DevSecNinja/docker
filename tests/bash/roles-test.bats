@@ -130,7 +130,7 @@ setup() {
 
 @test "maintenance role: uses FQCN for ansible.builtin modules" {
     # Check all maintenance task files
-    for file in main.yml setup_daily_maintenance.yml setup_weekly_maintenance.yml; do
+    for file in main.yml setup_daily_maintenance.yml setup_weekly_maintenance.yml setup_docker_maintenance.yml docker_maintenance.yml; do
         run grep -E "^\s+(file|template|debug|include_tasks|meta|systemd):" \
             "${ANSIBLE_DIR}/roles/maintenance/tasks/${file}"
         # Should find nothing (all should use FQCN)
@@ -143,6 +143,19 @@ setup() {
     [ -f "${ANSIBLE_DIR}/roles/maintenance/templates/maintenance-daily.timer.j2" ]
     [ -f "${ANSIBLE_DIR}/roles/maintenance/templates/maintenance-weekly.service.j2" ]
     [ -f "${ANSIBLE_DIR}/roles/maintenance/templates/maintenance-weekly.timer.j2" ]
+    [ -f "${ANSIBLE_DIR}/roles/maintenance/templates/maintenance-docker.service.j2" ]
+    [ -f "${ANSIBLE_DIR}/roles/maintenance/templates/maintenance-docker.timer.j2" ]
+}
+
+@test "maintenance role: docker maintenance tasks exist" {
+    [ -f "${ANSIBLE_DIR}/roles/maintenance/tasks/docker_maintenance.yml" ]
+    [ -f "${ANSIBLE_DIR}/roles/maintenance/tasks/setup_docker_maintenance.yml" ]
+}
+
+@test "maintenance role: docker maintenance playbook exists and has valid syntax" {
+    [ -f "${REPO_ROOT}/ansible/playbooks/maintenance-docker.yml" ]
+    run ansible-playbook "${REPO_ROOT}/ansible/playbooks/maintenance-docker.yml" --syntax-check
+    [ "$status" -eq 0 ]
 }
 
 # ============================================================

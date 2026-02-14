@@ -1,0 +1,24 @@
+---
+# Setup for Docker maintenance (prune and health checks)
+- name: Create Docker maintenance systemd service
+  ansible.builtin.template:
+    src: maintenance-docker.service.j2
+    dest: /etc/systemd/system/maintenance-docker.service
+    mode: "0644"
+  notify: Reload systemd
+
+- name: Create Docker maintenance systemd timer
+  ansible.builtin.template:
+    src: maintenance-docker.timer.j2
+    dest: /etc/systemd/system/maintenance-docker.timer
+    mode: "0644"
+  notify: Reload systemd
+
+- name: Flush handlers to reload systemd
+  ansible.builtin.meta: flush_handlers
+
+- name: Enable and start Docker maintenance timer
+  ansible.builtin.systemd_service:
+    name: maintenance-docker.timer
+    enabled: true
+    state: started

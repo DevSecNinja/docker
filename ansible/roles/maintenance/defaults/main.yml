@@ -35,3 +35,20 @@ maintenance_daily_exclude_packages:
 maintenance_weekly_enabled: true
 maintenance_weekly_schedule: "Sat *-*-* 08:00:00"  # Saturday 8 AM
 maintenance_weekly_reboot_enabled: true
+
+# Docker maintenance (prune, health checks, log cleanup)
+maintenance_docker_enabled: true
+maintenance_docker_schedule: "Sun *-*-* 04:00:00"  # Sunday 4 AM
+
+# Docker prune settings
+maintenance_docker_prune_enabled: true
+
+# Volume prune is disabled by default to prevent accidental data loss
+maintenance_docker_volume_prune_enabled: false
+
+# Restart containers that report unhealthy status
+maintenance_docker_restart_unhealthy: true
+
+# Truncate container log files exceeding this size
+maintenance_docker_log_cleanup_enabled: true
+maintenance_docker_log_max_size: "100m"

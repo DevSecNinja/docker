@@ -1,0 +1,11 @@
+---
+# Docker maintenance playbook for pruning and health checks
+# Runs weekly to clean up unused Docker resources
+- name: Docker maintenance - Prune and health checks
+  hosts: "{{ target_host | default('all') }}"
+  connection: local
+  become: true
+
+  roles:
+    - role: maintenance
+      tasks_from: docker_maintenance
