@@ -1,0 +1,19 @@
+---
+# Default variables for Package Managers role
+
+# User to install Homebrew for (runs the install script as this user)
+homebrew_user: "{{ ansible_user }}"
+
+# Homebrew install script URL
+homebrew_install_script_url: "https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh"
+
+# Homebrew installation prefix (Linux default)
+homebrew_prefix: "/home/linuxbrew/.linuxbrew"
+
+# Homebrew required system packages
+homebrew_dependencies:
+  - build-essential
+  - procps
+  - curl
+  - file
+  - git

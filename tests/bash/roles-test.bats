@@ -146,6 +146,53 @@ setup() {
 }
 
 # ============================================================
+# package_managers role tests
+# ============================================================
+
+@test "package_managers role: directory structure exists" {
+    [ -d "${ANSIBLE_DIR}/roles/package_managers/tasks" ]
+    [ -d "${ANSIBLE_DIR}/roles/package_managers/defaults" ]
+    [ -d "${ANSIBLE_DIR}/roles/package_managers/meta" ]
+}
+
+@test "package_managers role: main.yml exists and has valid syntax" {
+    [ -f "${ANSIBLE_DIR}/roles/package_managers/tasks/main.yml" ]
+    run python3 -c "import yaml; yaml.safe_load(open('${ANSIBLE_DIR}/roles/package_managers/tasks/main.yml'))"
+    [ "$status" -eq 0 ]
+}
+
+@test "package_managers role: install_homebrew.yml exists and has valid syntax" {
+    [ -f "${ANSIBLE_DIR}/roles/package_managers/tasks/install_homebrew.yml" ]
+    run python3 -c "import yaml; yaml.safe_load(open('${ANSIBLE_DIR}/roles/package_managers/tasks/install_homebrew.yml'))"
+    [ "$status" -eq 0 ]
+}
+
+@test "package_managers role: uses FQCN for ansible.builtin modules" {
+    for file in main.yml install_homebrew.yml; do
+        run grep -E "^\s+(apt|command|copy|debug|file|get_url|stat|include_tasks):" \
+            "${ANSIBLE_DIR}/roles/package_managers/tasks/${file}"
+        # Should find nothing (all should use FQCN)
+        [ "$status" -eq 1 ] || [ -z "$output" ]
+    done
+}
+
+@test "package_managers role: defaults exist" {
+    [ -f "${ANSIBLE_DIR}/roles/package_managers/defaults/main.yml" ]
+}
+
+@test "package_managers role: cleans up temporary sudo in always block" {
+    run grep -A2 "always:" "${ANSIBLE_DIR}/roles/package_managers/tasks/install_homebrew.yml"
+    [ "$status" -eq 0 ]
+    run grep "homebrew_temp_" "${ANSIBLE_DIR}/roles/package_managers/tasks/install_homebrew.yml"
+    [ "$status" -eq 0 ]
+}
+
+@test "package_managers role: is included in main playbook" {
+    run grep "role: package_managers" "${ANSIBLE_DIR}/playbooks/main.yml"
+    [ "$status" -eq 0 ]
+}
+
+# ============================================================
 # docker_compose_modules role tests
 # ============================================================
 

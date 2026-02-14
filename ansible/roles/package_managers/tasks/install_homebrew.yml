@@ -1,0 +1,80 @@
+---
+# Tasks to install Homebrew (Linuxbrew) for a specified user
+# Handles temporary passwordless sudo if needed for the install script
+
+- name: Check if Homebrew is already installed
+  ansible.builtin.stat:
+    path: "{{ homebrew_prefix }}/bin/brew"
+  register: homebrew_binary
+  tags: [package_managers, homebrew]
+
+- name: Install Homebrew
+  when: not homebrew_binary.stat.exists
+  tags: [package_managers, homebrew]
+  block:
+    - name: Install Homebrew system dependencies
+      ansible.builtin.apt:
+        name: "{{ homebrew_dependencies }}"
+        state: present
+      when: ansible_os_family == "Debian"
+
+    - name: Check if user already has passwordless sudo
+      ansible.builtin.command: >
+        sudo -n -u {{ homebrew_user }} sudo -n true
+      register: sudo_nopasswd_check
+      changed_when: false
+      failed_when: false
+
+    - name: Grant temporary passwordless sudo for Homebrew installation
+      ansible.builtin.copy:
+        content: "{{ homebrew_user }} ALL=(ALL) NOPASSWD:ALL\n"
+        dest: "/etc/sudoers.d/homebrew_temp_{{ homebrew_user }}"
+        mode: '0440'
+        validate: 'visudo -cf %s'
+      when: sudo_nopasswd_check.rc != 0
+
+    - name: Download Homebrew install script
+      ansible.builtin.get_url:
+        url: "{{ homebrew_install_script_url }}"
+        dest: "/tmp/homebrew_install.sh"
+        mode: '0755'
+
+    - name: Run Homebrew install script
+      become: true
+      become_user: "{{ homebrew_user }}"
+      ansible.builtin.command: /bin/bash /tmp/homebrew_install.sh
+      environment:
+        NONINTERACTIVE: "1"
+      register: homebrew_install_result
+      changed_when: homebrew_install_result.rc == 0
+
+  rescue:
+    - name: Display Homebrew installation error
+      ansible.builtin.debug:
+        msg: "Homebrew installation failed: {{ homebrew_install_result.stderr | default('unknown error') }}"
+
+  always:
+    - name: Remove temporary passwordless sudo
+      ansible.builtin.file:
+        path: "/etc/sudoers.d/homebrew_temp_{{ homebrew_user }}"
+        state: absent
+
+    - name: Clean up Homebrew install script
+      ansible.builtin.file:
+        path: /tmp/homebrew_install.sh
+        state: absent
+
+- name: Verify Homebrew installation
+  become: true
+  become_user: "{{ homebrew_user }}"
+  ansible.builtin.command: "{{ homebrew_prefix }}/bin/brew --version"
+  register: homebrew_version_output
+  changed_when: false
+  when: homebrew_binary.stat.exists or (homebrew_install_result is defined and homebrew_install_result.rc == 0)
+  tags: [package_managers, homebrew]
+
+- name: Display Homebrew version
+  ansible.builtin.debug:
+    msg: "Homebrew version: {{ homebrew_version_output.stdout | default('not installed') }}"
+  when: homebrew_version_output is defined and homebrew_version_output is not skipped
+  tags: [package_managers, homebrew]

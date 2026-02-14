@@ -34,6 +34,10 @@
       when: "'ufw' in server_features or 'firewall' in server_features"
       tags: [ufw, firewall]
 
+    - role: package_managers
+      when: "'package_managers' in server_features"
+      tags: [package_managers, homebrew]
+
     - role: chezmoi
       when: "'chezmoi' in server_features"
       tags: chezmoi

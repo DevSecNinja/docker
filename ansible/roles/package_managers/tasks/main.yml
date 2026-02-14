@@ -1,0 +1,5 @@
+---
+# Tasks for Package Managers role
+- name: Install Homebrew
+  ansible.builtin.include_tasks: install_homebrew.yml
+  tags: [package_managers, homebrew]

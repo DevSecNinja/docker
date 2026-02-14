@@ -13,6 +13,7 @@ server_features:
   - github_ssh_keys
   - docker
   - ufw
+  - package_managers
   - chezmoi
   - ansible_pull_setup
   - maintenance

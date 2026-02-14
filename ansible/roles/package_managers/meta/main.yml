@@ -1,0 +1,17 @@
+---
+# Package Managers role - Install package managers like Homebrew
+dependencies: []
+
+galaxy_info:
+  author: DevSecNinja
+  description: Install and configure package managers (Homebrew)
+  company: DevSecNinja
+  license: MIT
+  min_ansible_version: "2.20"
+  platforms:
+    - name: Debian
+      versions:
+        - trixie
+    - name: Ubuntu
+      versions:
+        - noble
