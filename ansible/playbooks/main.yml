@@ -30,6 +30,10 @@
       when: "'docker' in server_features"
       tags: docker
 
+    - role: bpbradley.komodo
+      when: "'komodo' in server_features"
+      tags: komodo
+
     - role: ufw
       when: "'ufw' in server_features or 'firewall' in server_features"
       tags: [ufw, firewall]

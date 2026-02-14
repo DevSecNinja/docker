@@ -17,6 +17,7 @@ server_features:
   - chezmoi
   - ansible_pull_setup
   - maintenance
+  - komodo
 
 # Docker Compose modules to deploy
 compose_modules:
@@ -26,3 +27,7 @@ compose_modules:
 docker_users:
   - ansible
   - jean-paul
+
+# Komodo configuration
+komodo_action: install
+komodo_version: latest

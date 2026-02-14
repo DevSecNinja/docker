@@ -220,3 +220,38 @@ setup() {
 @test "duplicate traefik role: should not exist (using docker_compose_modules instead)" {
     [ ! -d "${ANSIBLE_DIR}/roles/traefik" ]
 }
+
+# ============================================================
+# Komodo role tests (external role from Galaxy)
+# ============================================================
+
+@test "komodo role: is defined in requirements.yml" {
+    run grep -E "name:\s+bpbradley\.komodo" "${ANSIBLE_DIR}/requirements.yml"
+    [ "$status" -eq 0 ]
+}
+
+@test "komodo role: is included in main playbook" {
+    run grep -E "role:\s+bpbradley\.komodo" "${ANSIBLE_DIR}/playbooks/main.yml"
+    [ "$status" -eq 0 ]
+}
+
+@test "komodo role: has conditional execution based on server_features" {
+    run grep -A 2 "role: bpbradley.komodo" "${ANSIBLE_DIR}/playbooks/main.yml"
+    echo "$output" | grep -q "when:.*komodo.*server_features"
+    [ "$?" -eq 0 ]
+}
+
+@test "komodo role: is enabled in svlazdock1 host_vars" {
+    run grep "komodo" "${ANSIBLE_DIR}/inventory/host_vars/svlazdock1.yml"
+    [ "$status" -eq 0 ]
+}
+
+@test "komodo role: has komodo_action configured in svlazdock1" {
+    run grep "komodo_action:" "${ANSIBLE_DIR}/inventory/host_vars/svlazdock1.yml"
+    [ "$status" -eq 0 ]
+}
+
+@test "komodo role: has komodo_version configured in svlazdock1" {
+    run grep "komodo_version:" "${ANSIBLE_DIR}/inventory/host_vars/svlazdock1.yml"
+    [ "$status" -eq 0 ]
+}
