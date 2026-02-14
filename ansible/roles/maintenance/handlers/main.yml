@@ -1,5 +1,5 @@
 ---
 # Handlers for Maintenance role
 - name: Reload systemd
-  systemd:
+  ansible.builtin.systemd:
     daemon_reload: true

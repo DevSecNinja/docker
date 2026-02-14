@@ -50,7 +50,7 @@ setup() {
 	fi
 
 	cd "$ANSIBLE_DIR"
-	run ansible-lint roles/
+	run ansible-lint -c .ansible-lint roles/
 	[ "$status" -eq 0 ]
 }
 

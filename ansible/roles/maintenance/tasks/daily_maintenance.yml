@@ -1,0 +1,63 @@
+---
+# Daily maintenance tasks for non-disturbing OS patches
+# Excludes Docker engine and packages that require reboot
+- name: Set exclude packages list
+  ansible.builtin.set_fact:
+    maintenance_exclude_pkgs: >-
+      {{ maintenance_daily_exclude_packages | default([
+        'docker-ce',
+        'docker-ce-cli',
+        'containerd.io',
+        'docker-buildx-plugin',
+        'docker-compose-plugin',
+        'linux-image-*',
+        'linux-headers-*']) }}
+    maintenance_exclude_pattern: >-
+      ^(docker-ce|docker-ce-cli|docker-buildx-plugin|
+      docker-compose-plugin|containerd\.io|linux-image-|
+      linux-headers-).*
+
+- name: Update apt cache
+  ansible.builtin.apt:
+    update_cache: true
+    cache_valid_time: 3600
+  when: ansible_os_family == "Debian"
+
+- name: Get list of upgradable packages
+  ansible.builtin.shell:
+    cmd: |
+      set -o pipefail
+      apt list --upgradable 2>/dev/null | \
+      grep -v '^Listing' | cut -d'/' -f1
+    executable: /bin/bash
+  register: maintenance_upgradable_packages
+  changed_when: false
+  failed_when: false
+  when: ansible_os_family == "Debian"
+
+- name: Filter out excluded packages
+  ansible.builtin.set_fact:
+    maintenance_safe_packages: >-
+      {{ maintenance_upgradable_packages.stdout_lines |
+         reject('match', maintenance_exclude_pattern) |
+         list }}
+  when:
+    - ansible_os_family == "Debian"
+    - maintenance_upgradable_packages.stdout_lines | length > 0
+
+- name: Install safe updates (non-disturbing)
+  ansible.builtin.apt:
+    name: "{{ maintenance_safe_packages }}"
+    state: latest
+    only_upgrade: true
+  when:
+    - ansible_os_family == "Debian"
+    - maintenance_safe_packages is defined
+    - maintenance_safe_packages | length > 0
+  register: maintenance_apt_upgrade_result
+
+- name: Run autoremove and autoclean
+  ansible.builtin.apt:
+    autoremove: true
+    autoclean: true
+  when: ansible_os_family == "Debian"

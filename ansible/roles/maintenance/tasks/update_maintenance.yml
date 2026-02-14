@@ -1,0 +1,92 @@
+---
+# Update maintenance tasks for Ansible configuration and Docker images
+- name: Set maintenance variables
+  ansible.builtin.set_fact:
+    maintenance_repo_url: >-
+      {{
+        maintenance_ansible_pull_repo_url |
+        default(ansible_pull_repo_url) |
+        default('https://github.com/DevSecNinja/docker.git')
+      }}
+    maintenance_chezmoi_binary: >-
+      {{ maintenance_chezmoi_binary | default('/usr/local/bin/chezmoi') }}
+    maintenance_workdir: >-
+      {{
+        maintenance_workdir |
+        default(ansible_pull_workdir) |
+        default('/var/lib/ansible/local')
+      }}
+    maintenance_compose_base: >-
+      {{ maintenance_compose_dirs | default(['/opt/docker-compose']) }}
+
+- name: Check for local changes in repository
+  ansible.builtin.command:
+    cmd: git -C {{ maintenance_workdir }} status --porcelain
+  register: maintenance_git_status
+  changed_when: false
+  failed_when: false
+  tags:
+    - skip_ansible_lint
+
+- name: Fail if local changes exist
+  ansible.builtin.fail:
+    msg: >-
+      Local changes detected in {{ maintenance_workdir }}.
+      Commit or stash changes before running maintenance.
+  when: maintenance_git_status.stdout | length > 0
+
+- name: Pull latest Ansible configuration
+  ansible.builtin.git:
+    repo: "{{ maintenance_repo_url }}"
+    dest: "{{ maintenance_workdir }}"
+    version: main
+    force: true
+  register: maintenance_git_pull_result
+
+- name: Display git pull result
+  ansible.builtin.debug:
+    msg: >-
+      Ansible configuration updated:
+      {{ 'Yes' if maintenance_git_pull_result.changed else 'No changes' }}
+
+- name: Check if chezmoi is installed
+  ansible.builtin.stat:
+    path: "{{ maintenance_chezmoi_binary }}"
+  register: maintenance_chezmoi_exists
+
+- name: Update chezmoi dotfiles
+  become: true
+  become_user: "{{ ansible_user }}"
+  ansible.builtin.command: "{{ maintenance_chezmoi_binary }} update"
+  register: maintenance_chezmoi_update
+  changed_when: maintenance_chezmoi_update.stdout | length > 0
+  failed_when: false
+  when:
+    - ansible_user is defined
+    - maintenance_chezmoi_exists.stat.exists
+
+- name: Find all docker-compose.yml files
+  ansible.builtin.find:
+    paths: "{{ maintenance_compose_base }}"
+    patterns: "docker-compose.yml"
+    recurse: true
+  register: maintenance_compose_files
+
+- name: Pull latest Docker images for all compose projects
+  community.docker.docker_compose_v2_pull:
+    project_src: "{{ item.path | dirname }}"
+  loop: "{{ maintenance_compose_files.files }}"
+  register: maintenance_docker_pull_result
+  when: maintenance_compose_files.files | length > 0
+
+- name: Restart Docker compose services if images were updated
+  community.docker.docker_compose_v2:
+    project_src: "{{ item.item.path | dirname }}"
+    state: present
+  loop: "{{ maintenance_docker_pull_result.results | default([]) }}"
+  loop_control:
+    label: "{{ item.item.path }}"
+  when:
+    - maintenance_compose_files.files | length > 0
+    - maintenance_docker_pull_result is defined
+    - item.changed
