@@ -1,6 +1,6 @@
 {
   "name": "Docker Infrastructure (Ansible)",
-  "image": "mcr.microsoft.com/devcontainers/base:debian-12",
+  "image": "ghcr.io/devsecninja/dotfiles-devcontainer:latest",
   "features": {
     "ghcr.io/devcontainers/features/git:1": {},
     "ghcr.io/devcontainers/features/git-lfs:1": {},
