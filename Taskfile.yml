@@ -401,6 +401,41 @@ tasks:
       - echo "✅ Quick checks passed!"
 
   # Information
+  services:
+    desc: Show status of all Ansible-managed systemd services and timers
+    cmds:
+      - |
+        echo "═══════════════════════════════════════"
+        echo "  Ansible-Managed Services & Timers"
+        echo "═══════════════════════════════════════"
+        echo ""
+        echo "--- Timers ---"
+        sudo systemctl list-timers ansible-pull.timer maintenance-daily.timer maintenance-weekly.timer --no-pager --all 2>/dev/null || true
+        echo ""
+        echo "--- Service Status ---"
+        for svc in ansible-pull maintenance-daily maintenance-weekly; do
+          echo "────────────────────────────────────"
+          echo "  ${svc}"
+          echo "────────────────────────────────────"
+          if sudo systemctl is-enabled "${svc}.timer" >/dev/null 2>&1; then
+            TIMER_STATE="enabled"
+          else
+            TIMER_STATE="disabled/not found"
+          fi
+          if sudo systemctl is-active "${svc}.timer" >/dev/null 2>&1; then
+            TIMER_ACTIVE="active"
+          else
+            TIMER_ACTIVE="inactive"
+          fi
+          SVC_RESULT=$(sudo systemctl show "${svc}.service" --property=Result --value 2>/dev/null || echo "unknown")
+          SVC_LAST=$(sudo systemctl show "${svc}.service" --property=ExecMainStartTimestamp --value 2>/dev/null || echo "n/a")
+          echo "  Timer:       ${TIMER_ACTIVE} (${TIMER_STATE})"
+          echo "  Last result: ${SVC_RESULT}"
+          echo "  Last run:    ${SVC_LAST}"
+          echo ""
+        done
+    silent: true
+
   info:
     desc: Display environment and tool information
     cmds:
