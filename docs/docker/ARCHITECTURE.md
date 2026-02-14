@@ -28,12 +28,21 @@
 - [16. Validation & Post-Deployment Checks](#16-validation--post-deployment-checks)
 - [17. Dry-Run Support](#17-dry-run-support)
 - [18. Testing Strategy](#18-testing-strategy)
-- [19. Backup Strategy (Roadmap)](#19-backup-strategy-roadmap)
-- [20. Auto-Generated Service Inventory (Roadmap)](#20-auto-generated-service-inventory-roadmap)
-- [21. Auto-Merge & Update Strategy (Roadmap)](#21-auto-merge--update-strategy-roadmap)
-- [22. AI Authoring & Module Templates](#22-ai-authoring--module-templates)
-- [23. Implementation Order](#23-implementation-order)
-- [24. Open Questions](#24-open-questions)
+- [19. Concurrency & Locking](#19-concurrency--locking)
+- [20. Rollback Strategy](#20-rollback-strategy)
+- [21. Traefik Middleware Chains](#21-traefik-middleware-chains)
+- [22. Container Logging](#22-container-logging)
+- [23. Docker Network Address Pools](#23-docker-network-address-pools)
+- [24. Disk Space Management](#24-disk-space-management)
+- [25. TLS Certificate Strategy](#25-tls-certificate-strategy)
+- [26. Backup Strategy (Roadmap)](#26-backup-strategy-roadmap)
+- [27. Auto-Generated Service Inventory (Roadmap)](#27-auto-generated-service-inventory-roadmap)
+- [28. Auto-Merge & Update Strategy (Roadmap)](#28-auto-merge--update-strategy-roadmap)
+- [29. AI Authoring & Module Templates](#29-ai-authoring--module-templates)
+- [30. Implementation Order](#30-implementation-order)
+- [31. Resolved Decisions](#31-resolved-decisions)
+- [32. Open Questions](#32-open-questions)
+- [33. Roadmap Items](#33-roadmap-items)
 
 ---
 
@@ -50,20 +59,26 @@ config, and secret references.
 ### High-Level Flow
 
 ```
-Git push → ansible-pull detects change → plays main.yml
+Git push → ansible-pull detects change (with flock — single instance only)
+  → plays main.yml
   → server_features gates which roles run
-  → compose_modules list selects which modules deploy
+  → pre-load ALL module vars into scope
+  → resolve effective module list (with targeting filter)
+  → sort modules by deploy_priority (infra first, apps last)
   → validate secrets (pre-flight — abort if missing)
   → validate Compose files (lint + best-practice checks)
-  → each module:
+  → each module (in priority order):
       1. create networks
       2. decrypt secrets (SOPS)
       3. deploy generic + host-specific configs
-      4. render & validate docker-compose.yml
-      5. docker compose up
-      6. generate Gatus healthcheck
-      7. generate DNS records for Unbound
-      8. run post-deploy validation
+      4. back up existing docker-compose.yml → .bak
+      5. render & validate new docker-compose.yml
+      6. docker compose up
+      7. run post-deploy validation
+         → on critical failure: rollback to .bak
+      8. clean up .bak on success
+      9. generate Gatus healthcheck
+      10. generate DNS records for Unbound
   → orphan cleanup removes modules no longer listed
   → validation report written
 ```
@@ -152,6 +167,19 @@ Git push → ansible-pull detects change → plays main.yml
 | DD-29 | Compose validation timing | Shift-left: CI (Bats + `docker compose config` with mock vars) **and** deploy-time (defense in depth) | Catch errors before merge; deploy-time catches real-variable issues; see §13 |
 | DD-30 | DNS record generation | Static from inventory + module vars (not cross-host facts) | ansible-pull has no cross-host fact gathering; static approach is deterministic; see §14 |
 | DD-31 | Multi-host module DNS | Single-host: `app.example.com`; multi-host: `app-hostname.example.com` | Avoid ambiguous DNS; host-qualified names only when module runs on multiple hosts; see §14 |
+| DD-32 | Deploy ordering | Explicit `deploy_priority` integer per module; sorted ascending before deploy loop | Ensures Traefik + forward_auth deploy before apps; deterministic on dev (glob order is random); see §5 |
+| DD-33 | Module vars pre-loading | All `vars/modules/*.yml` loaded into scope **before** any module deploys | Traefik Compose rendering requires knowledge of all modules' network/Traefik config; see §5 |
+| DD-34 | Module targeting precedence | `target_server_types`/`target_hosts` filter applied after module discovery; mismatch with `compose_modules` list is a fatal error | Prevents silent deployment to wrong server; explicit over implicit; see §5 |
+| DD-35 | Concurrency locking | `flock --nonblock` on ansible-pull systemd unit | Prevents overlapping runs causing race conditions; non-blocking so stale locks are never an issue; see §19 |
+| DD-36 | Rollback on failure | Back up `docker-compose.yml` → `.bak` before deploy; restore on critical validation failure; `.bak` cleaned up after success | Prevents broken state persisting; no automatic data restore; see §20 |
+| DD-37 | Server type source | `server_type` derived from group membership (`group_names`), **not** from host_vars | Single source of truth; prevents group/host_vars divergence; see §4 |
+| DD-38 | Docker network address pools | `geerlingguy.docker` configured with custom `default-address-pools` using /20 subnets | Supports 30+ bridge networks per host without address exhaustion; see §23 |
+| DD-39 | Middleware chains | Traefik file-based middleware definitions (rate-limit, secure-headers, IP allowlists); modules reference chains, not individual middlewares | Composable; health bypass uses rate-limit + IP-restrict; see §21 |
+| DD-40 | Container logging | `json-file` log driver with `max-size` and `max-file` enforced in Compose template | Prevents disk exhaustion from unrotated container logs; see §22 |
+| DD-41 | Gatus reload | Gatus watches config directory via built-in file watcher — no container restart needed | Zero-downtime config updates; avoids monitoring gaps during reload; see §10 |
+| DD-42 | `.env` naming | Secrets uppercased in `.env` (`secret_name` → `SECRET_NAME`); Compose uses `${SECRET_NAME}` syntax | Documented convention; CI test validates Compose `${VAR}` refs match module secrets; see §7 |
+| DD-43 | Secret scope | Group-specific + host-specific secrets only; no `group_vars/all/secrets.sops.yml` | Avoids N-key encryption problem when adding groups; secrets belong to their scope; see §7 |
+| DD-44 | TLS certificates | Let's Encrypt with DNS-01 challenge via Cloudflare API | Supports wildcard certs; no inbound port 80 dependency for validation; see §25 |
 
 ---
 
@@ -165,33 +193,39 @@ Git push → ansible-pull detects change → plays main.yml
 all:
   children:
     # ── Role-based groups (servers can appear in multiple) ──
+    # server_type is derived from group membership via group_names (DD-37).
+    # Do NOT set server_type in host_vars — it is implicit from the group.
     infrastructure_servers:
       hosts:
         svlazinfra1:
-      vars:
-        server_type: infrastructure
+          ansible_host: 10.0.1.10     # mandatory — used for DNS, IP allowlists
 
     application_servers:
       hosts:
         svlazdock1:
-      vars:
-        server_type: application
+          ansible_host: 10.0.1.20     # mandatory
 
     development_servers:
       hosts:
         svlazdev1:
-      vars:
-        server_type: development
+          ansible_host: 10.0.1.30     # mandatory
 
     dmz_servers:
-      vars:
-        server_type: dmz
+      # Reserved for future use — hosts added here when DMZ segment is created
+      hosts: {}
+```
+
+> **`ansible_host` is mandatory** for every host in the inventory. It is used by:
+> - Traefik dynamic config to resolve backend IPs
+> - UFW firewall rules
+> - Middleware IP allowlists (`whitelist-infra` in §21)
+> - DNS record generation (Phase 3b)
 ```
 
 ### Environment Behaviour
 
 All servers track the `main` branch. The dev server simply deploys every available module.
-An auto-merge / update strategy for Renovate PRs is on the roadmap (see §21).
+An auto-merge / update strategy for Renovate PRs is on the roadmap (see §28).
 
 | Environment | Branch | Module selection | Secrets |
 |-------------|--------|------------------|---------|
@@ -203,7 +237,8 @@ An auto-merge / update strategy for Renovate PRs is on the roadmap (see §21).
 ```yaml
 # ansible/inventory/host_vars/svlazdock1.yml
 ---
-server_type: application
+# server_type is NOT set here — derived from group membership (DD-37).
+# svlazdock1 is in the application_servers group.
 environment: production
 
 compose_modules:
@@ -217,11 +252,38 @@ compose_modules:
 ```yaml
 # ansible/inventory/host_vars/svlazdev1.yml
 ---
-server_type: development
+# server_type is NOT set here — derived from group membership (DD-37).
+# svlazdev1 is in the development_servers group.
 environment: development
 deploy_all_modules: true       # deploys every module found in vars/modules/
 
 compose_modules: []            # ignored when deploy_all_modules is true
+```
+
+### Server Type Resolution
+
+Instead of explicit `server_type` variables, use Ansible's `group_names` fact:
+
+```yaml
+# Example: check server type in a task
+- name: "Check if this is an infrastructure server"
+  ansible.builtin.debug:
+    msg: "This is an infrastructure server"
+  when: "'infrastructure_servers' in group_names"
+```
+
+For module targeting, the resolve logic maps group names to server types:
+
+```yaml
+# In resolve_modules.yml — derive server_type from group membership
+- name: Determine server type from group membership
+  ansible.builtin.set_fact:
+    _server_type: >-
+      {{ 'infrastructure' if 'infrastructure_servers' in group_names
+         else 'application' if 'application_servers' in group_names
+         else 'development' if 'development_servers' in group_names
+         else 'dmz' if 'dmz_servers' in group_names
+         else 'unknown' }}
 ```
 
 ---
@@ -280,6 +342,11 @@ Every module has a variables file in `vars/modules/<name>.yml`:
 ```yaml
 # vars/modules/adguard.yml
 ---
+# ── Deploy priority (DD-32) ──
+# Lower numbers deploy first. Infrastructure modules (traefik, forward_auth,
+# gatus, adguard, unbound) use 10-30. Application modules default to 100.
+deploy_priority: 20                 # deploy early — infrastructure service
+
 # ── Targeting ──
 target_server_types:                # deploy only on these server types
   - infrastructure
@@ -382,11 +449,57 @@ validation:
   critical: true
 ```
 
+### Deploy Priority Convention
+
+| Priority | Category | Examples |
+|----------|----------|----------|
+| 10 | Core infrastructure | `traefik` |
+| 15 | Auth infrastructure | `forward_auth` |
+| 20 | Infrastructure services | `adguard`, `unbound` |
+| 30 | Monitoring | `gatus`, `prometheus`, `grafana` |
+| 100 | Applications (default) | `vaultwarden`, `portainer`, `homepage` |
+
+Modules that omit `deploy_priority` default to **100**. The deploy loop iterates in
+ascending priority order, ensuring infrastructure is always ready before applications
+that depend on it.
+
+### Module Variable Pre-Loading (DD-33)
+
+**All module variable files are loaded into scope before any module deploys.** This is
+a hard prerequisite — Traefik's Compose template (and other cross-module references)
+requires knowledge of all modules' network and Traefik configuration at render time.
+
+```yaml
+# tasks/main.yml (pre-load step — runs before the deploy loop)
+---
+- name: Pre-load all module variable files
+  ansible.builtin.include_vars:
+    file: "{{ item }}"
+    name: "{{ item | basename | regex_replace('\\.yml$', '') }}_config"
+  loop: "{{ lookup('fileglob', role_path + '/vars/modules/*.yml', wantlist=True) }}"
+
+# Variable naming convention: <module_name>_config
+# e.g., vars/modules/traefik.yml → traefik_config
+# e.g., vars/modules/adguard.yml → adguard_config
+# Access via: lookup('vars', module_name + '_config')
+```
+
 ### Module Resolution Logic
 
 ```yaml
 # tasks/resolve_modules.yml
 ---
+# ── Step 1: Determine server type from group membership (DD-37) ──
+- name: Determine server type from group membership
+  ansible.builtin.set_fact:
+    _server_type: >-
+      {{ 'infrastructure' if 'infrastructure_servers' in group_names
+         else 'application' if 'application_servers' in group_names
+         else 'development' if 'development_servers' in group_names
+         else 'dmz' if 'dmz_servers' in group_names
+         else 'unknown' }}
+
+# ── Step 2: Build candidate module list ──
 # If deploy_all_modules is true (dev server), discover every module definition
 - name: Discover all available modules
   ansible.builtin.find:
@@ -397,18 +510,83 @@ validation:
   delegate_to: localhost
   when: deploy_all_modules | default(false)
 
-- name: Build effective module list (dev — all modules)
+- name: Build candidate module list (dev — all modules)
   ansible.builtin.set_fact:
-    effective_modules: >-
+    _candidate_modules: >-
       {{ all_module_files.files | map(attribute='path') | map('basename') |
          map('regex_replace', '\.yml$', '') | list }}
   when: deploy_all_modules | default(false)
 
-- name: Build effective module list (normal — from compose_modules)
+- name: Build candidate module list (normal — from compose_modules)
   ansible.builtin.set_fact:
-    effective_modules: "{{ compose_modules | default([]) }}"
+    _candidate_modules: "{{ compose_modules | default([]) }}"
   when: not (deploy_all_modules | default(false))
+
+# ── Step 3: Apply targeting filter (DD-34) ──
+# Filter out modules whose target_server_types / target_hosts exclude this host.
+- name: Filter modules by targeting rules
+  ansible.builtin.set_fact:
+    _filtered_modules: >-
+      {{ _candidate_modules | select('in',
+           _candidate_modules | map('regex_replace', '^(.*)$', '\\1_config')
+           | map('extract', vars)
+           | zip(_candidate_modules)
+           | selectattr('0.target_server_types', 'defined')
+           | selectattr('0.target_server_types', 'contains', _server_type)
+           | map(attribute='1')
+           | list
+         ) | list }}
+
+# For modules from compose_modules that fail targeting, fail loudly:
+- name: Validate compose_modules entries match targeting
+  ansible.builtin.assert:
+    that:
+      - >-
+        (lookup('vars', item + '_config').target_server_types is not defined)
+        or (_server_type in lookup('vars', item + '_config').target_server_types)
+      - >-
+        (lookup('vars', item + '_config').target_hosts is not defined)
+        or (inventory_hostname in lookup('vars', item + '_config').target_hosts)
+    fail_msg: >-
+      Module '{{ item }}' is in compose_modules but this host
+      ({{ inventory_hostname }}, type={{ _server_type }}) does not match
+      the module's targeting rules. Remove it from compose_modules or
+      update the module's target_server_types / target_hosts.
+  loop: "{{ compose_modules | default([]) }}"
+  when: not (deploy_all_modules | default(false))
+
+# ── Step 4: Sort by deploy_priority (DD-32) ──
+- name: Sort effective modules by deploy_priority
+  ansible.builtin.set_fact:
+    effective_modules: >-
+      {{ _filtered_modules
+         | sort(attribute='none',
+                key=lookup('vars', item + '_config', default={}).deploy_priority | default(100))
+         | list }}
+  # Note: actual Jinja2 sort uses a custom approach since Ansible's sort
+  # doesn't support key= directly. Implementation will use a registered
+  # variable with a Python-style sorted() via a small filter plugin or
+  # a set_fact loop that builds a priority-keyed list.
 ```
+
+> **Implementation note**: Ansible's Jinja2 `sort` filter does not natively support
+> `key=` for dict lookups. The actual implementation should build a list of
+> `[priority, module_name]` tuples, sort that list, and extract the module names.
+> Example approach:
+>
+> ```yaml
+> - name: Build priority list
+>   ansible.builtin.set_fact:
+>     _priority_list: >-
+>       {{ _filtered_modules | map('regex_replace', '^(.*)$',
+>            '{"name": "\\1", "priority": ' +
+>            (lookup('vars', '\\1_config', default={}).deploy_priority | default(100) | string) +
+>            '}') | map('from_json') | sort(attribute='priority') | list }}
+>
+> - name: Set effective modules (sorted)
+>   ansible.builtin.set_fact:
+>     effective_modules: "{{ _priority_list | map(attribute='name') | list }}"
+> ```
 
 ---
 
@@ -466,12 +644,10 @@ SOPS + Age
 ├── Age key pair per server group (shared among group members)
 ├── Admin key (used by AI agents and administrators for encryption)
 │
-├── Encrypted files live in Git:
+├── Encrypted files live in Git (DD-43 — no group_vars/all secrets):
 │   ansible/
 │   ├── inventory/
 │   │   ├── group_vars/
-│   │   │   ├── all/
-│   │   │   │   └── secrets.sops.yml          # Generic secrets (all servers)
 │   │   │   ├── infrastructure_servers/
 │   │   │   │   └── secrets.sops.yml          # Infra group secrets
 │   │   │   ├── application_servers/
@@ -487,6 +663,12 @@ SOPS + Age
 │   │           └── secrets.sops.yml          # Host-specific secrets
 │   └── .sops.yaml                            # SOPS config — maps paths → Age keys
 ```
+
+> **Design decision (DD-43)**: There is no `group_vars/all/secrets.sops.yml`. Secrets
+> belong to their group or host scope. A "shared across all servers" secret file would
+> require encryption to **all** group keys, creating an N-key maintenance burden when
+> adding new groups. If a secret is truly needed everywhere, place it in each group's
+> `secrets.sops.yml` — the duplication is minimal and the encryption scope stays clean.
 
 ### Shared Group Keys — How It Works
 
@@ -545,14 +727,6 @@ creation_rules:
       age1dev...,
       age1admin...
 
-  # Generic secrets (all servers) — encrypted to ALL group keys + admin key
-  - path_regex: group_vars/all/secrets\.sops\.yml$
-    age: >-
-      age1infra...,
-      age1app...,
-      age1dev...,
-      age1admin...
-
   # Fallback
   - age: age1admin...
 ```
@@ -601,17 +775,13 @@ chown root:root /root/.config/sops/age/keys.txt
   Encrypted to the group's public key → all group members already have the group private
   key → **yes, automatic**.
 
-- **Generic secret** (`group_vars/all/secrets.sops.yml`):
-  Encrypted to all group public keys → all servers have their group key →
-  **yes, automatic**.
-
 - **Adding a NEW server to an existing group**:
   The new server receives the group private key at onboarding → it can immediately
   decrypt all existing group secrets → **no re-encryption needed**.
 
 - **Adding a NEW group**:
-  Generate a new group key pair → add the public key to `.sops.yaml` → re-encrypt
-  `group_vars/all/secrets.sops.yml` to include the new group key.
+  Generate a new group key pair → add the public key to `.sops.yaml` →
+  create the group's `secrets.sops.yml`. No re-encryption of other files needed (DD-43).
 
 > **Key insight**: Because group secrets are encrypted to the **group key** (not individual
 > server keys), adding a new server to a group requires no re-encryption. The new server
@@ -628,9 +798,9 @@ present and non-empty:
 - name: "Validate secrets for {{ module_name }}"
   ansible.builtin.assert:
     that:
-      - "{{ item }} is defined"
-      - "{{ item }} | length > 0"
-      - "{{ item }} is not match('ENC\\[AES256_GCM')"
+      - "lookup('vars', item) is defined"
+      - "lookup('vars', item) | string | length > 0"
+      - "lookup('vars', item) | string is not search('ENC\\[AES256_GCM')"
     fail_msg: >-
       Secret '{{ item }}' for module '{{ module_name }}' is missing, empty,
       or still encrypted. Ensure SOPS decryption is working and the secret
@@ -738,6 +908,14 @@ The shared `.env` template iterates over the module's `required_secrets`:
 {{ extra.name }}={{ extra.value }}
 {% endfor %}
 ```
+
+> **Naming convention (DD-42)**: Secret variable names are **uppercased** in the `.env` file.
+> A secret named `adguard_admin_password` in Ansible becomes `ADGUARD_ADMIN_PASSWORD` in
+> the `.env` file. Compose templates must use `${ADGUARD_ADMIN_PASSWORD}` (uppercase) to
+> reference it. A CI test validates that all `${VAR}` references in Compose templates
+> have a matching entry in the module's `required_secrets` or `env_extra` (uppercased).
+> Non-secret env vars from `env_extra` are written as-is (the `name` field controls the
+> exact casing).
 
 **Step 3 — Compose references `.env`**: The module's `docker-compose.yml.j2` uses
 variable substitution (not Jinja — Docker Compose's own `${VAR}` syntax):
@@ -905,7 +1083,10 @@ Other modules reference it by adding `forward-auth` to their `traefik.middleware
 ### Deployment Order
 
 Forward auth is deployed alongside Traefik, before any application module.
-The `compose_modules` list ordering ensures Traefik → forward_auth → applications.
+The `deploy_priority` field (DD-32) ensures this ordering is deterministic:
+Traefik has priority **10**, forward_auth has priority **15**, and application
+modules default to **100**. This applies both to explicit `compose_modules`
+lists and to `deploy_all_modules: true` discovery.
 
 ---
 
@@ -951,7 +1132,9 @@ healthcheck:
     - "[STATUS] == 200"
 ```
 
-The Compose template generates an additional Traefik router that skips auth:
+The Compose template generates an additional Traefik router that uses the
+`health-bypass` middleware chain (rate-limit + local-network IP allowlist) instead
+of forward-auth (see §21 for full middleware chain definitions):
 
 ```yaml
 # Standard Traefik labels (generated per module) — health bypass
@@ -961,12 +1144,15 @@ The Compose template generates an additional Traefik router that skips auth:
   - "traefik.http.routers.{{ module_name }}-health.tls=true"
   - "traefik.http.routers.{{ module_name }}-health.tls.certresolver=letsencrypt"
   - "traefik.http.routers.{{ module_name }}-health.service={{ module_name }}"
-  # No middlewares — intentionally unauthenticated for Gatus
+  - "traefik.http.routers.{{ module_name }}-health.middlewares=health-bypass@file"
 {% endif %}
 ```
 
-The health endpoint should return minimal information (e.g., `200 OK`) to avoid
-leaking data.
+The `health-bypass` middleware chain (defined in Traefik's file provider) applies:
+1. **Rate limiting** (10 req/min) to prevent abuse.
+2. **IP allowlist** restricting access to internal networks only.
+
+See §21 (Traefik Middleware Chains) for the full chain definition.
 
 **When `healthcheck.path` is NOT defined** — no bypass route is created:
 
@@ -1005,11 +1191,16 @@ endpoints:
 
 ### Lifecycle
 
+Gatus is configured with `GATUS_CONFIG_PATH=/config` which includes the
+`endpoints.d/` directory (DD-41). Gatus has a built-in file watcher that
+automatically reloads configuration when files in its config directory change.
+No container restart is needed.
+
 | Event | Gatus action |
 |-------|-------------|
-| Module deployed | Endpoint YAML written → Gatus reloaded |
-| Module removed (cleanup) | Endpoint YAML deleted → Gatus reloaded |
-| Module healthcheck disabled | Endpoint YAML deleted → Gatus reloaded |
+| Module deployed | Endpoint YAML written → Gatus auto-reloads (file watcher) |
+| Module removed (cleanup) | Endpoint YAML deleted → Gatus auto-reloads (file watcher) |
+| Module healthcheck disabled | Endpoint YAML deleted → Gatus auto-reloads (file watcher) |
 
 ---
 
@@ -1081,12 +1272,11 @@ Ensure `renovate.json` includes the custom manager for YAML variable files:
 3. Host config       templates/modules/<app>/config/specific/<hostname>-*  → per host
 ```
 
-### Secret Layering (same hierarchy)
+### Secret Layering (DD-43)
 
 ```
-1. group_vars/all/secrets.sops.yml                   → shared across all servers
-2. group_vars/<server_type>/secrets.sops.yml          → per server group (D/T/A/P/DMZ)
-3. host_vars/<hostname>/secrets.sops.yml              → per host
+1. group_vars/<server_type>/secrets.sops.yml          → per server group
+2. host_vars/<hostname>/secrets.sops.yml              → per host (overrides group)
 ```
 
 Ansible's native variable precedence ensures host-specific values override group values
@@ -1212,6 +1402,13 @@ env = Environment(loader=FileSystemLoader("."))
 template = env.get_template(template_path)
 print(template.render(**mock_vars))
 ```
+
+> **Jinja2 filter limitation**: `render_template.py` uses plain Jinja2, not Ansible's
+> extended filter set. Ansible-specific filters (e.g., `ipaddr`, `regex_search`,
+> `to_nice_yaml`) are **not available** in CI renders. If a Compose template uses
+> Ansible-only filters, either:
+> (a) add a shim filter in the Python helper, or
+> (b) guard the filter with a mock fallback in the template.
 
 Mock variables fixture:
 
@@ -1525,6 +1722,10 @@ After all modules are deployed, a cleanup pass detects directories under
          | reject('equalto', '_shared')
          | list }}
 
+# Note: The `_shared` directory is reserved for files shared across multiple
+# modules (e.g., common scripts, shared TLS certificates). It is excluded
+# from orphan detection because it is not a module directory.
+
 - name: Remove orphaned modules
   ansible.builtin.include_tasks: remove_module.yml
   loop: "{{ orphaned_modules }}"
@@ -1725,6 +1926,9 @@ tests/
 
 ```bash
 # tests/bash/module-schema-test.bats
+# Note: These tests use grep for simplicity. For more robust YAML parsing,
+# consider using yq (https://github.com/mikefarah/yq) which handles
+# multi-line values, comments, and nested keys correctly.
 
 @test "all modules have required fields" {
   for module_file in ansible/roles/docker_compose_modules/vars/modules/*.yml; do
@@ -1797,11 +2001,607 @@ tests/
     fi
   done
 }
+
+@test "compose env var references match module secrets and env_extra (DD-42)" {
+  # Validates that every ${VAR} reference in a compose template has a corresponding
+  # entry in required_secrets (uppercased) or env_extra (exact name match).
+  for compose_file in ansible/roles/docker_compose_modules/templates/modules/*/docker-compose.yml.j2; do
+    module_name=$(basename "$(dirname "$compose_file")")
+    [ "$module_name" = "_template" ] && continue
+
+    module_vars="ansible/roles/docker_compose_modules/vars/modules/${module_name}.yml"
+    [ -f "$module_vars" ] || continue
+
+    # Extract ${VAR} references from compose template (skip Jinja2 {{ }} refs)
+    env_refs=$(grep -oP '\$\{([A-Z_][A-Z0-9_]*)\}' "$compose_file" | sort -u || true)
+    [ -z "$env_refs" ] && continue
+
+    for ref in $env_refs; do
+      var_name=$(echo "$ref" | sed 's/\${\(.*\)}/\1/')
+
+      # Check if it matches an uppercased required_secret
+      secret_lower=$(echo "$var_name" | tr '[:upper:]' '[:lower:]')
+      if grep -q "- ${secret_lower}$" "$module_vars" 2>/dev/null; then
+        continue
+      fi
+
+      # Check if it matches an env_extra name (exact case)
+      if grep -q "name: ${var_name}$" "$module_vars" 2>/dev/null; then
+        continue
+      fi
+
+      fail "Module $module_name: compose references \${$var_name} but no matching required_secret or env_extra found"
+    done
+  done
+}
 ```
 
 ---
 
-## 19. Backup Strategy (Roadmap)
+## 19. Concurrency & Locking (DD-35)
+
+### Problem
+
+ansible-pull runs on a systemd timer. If a deployment takes longer than the timer
+interval, or multiple commits happen in quick succession, a second ansible-pull instance
+can start while the first is still running. This causes race conditions: two instances
+running `docker compose up` simultaneously, conflicting file writes, partial network
+creation.
+
+### Solution: `flock --nonblock`
+
+The ansible-pull systemd service unit uses `flock` with `--nonblock` to acquire an
+exclusive lock. If another instance is already running, the new invocation exits
+immediately (exit code 1) without blocking.
+
+```ini
+# ansible-pull.service (excerpt)
+[Service]
+ExecStart=/usr/bin/flock --nonblock /var/lock/ansible-pull.lock \
+  /usr/bin/ansible-pull \
+    --url https://github.com/DevSecNinja/docker.git \
+    --checkout main \
+    --directory /var/lib/ansible/local \
+    --inventory ansible/inventory/hosts.yml \
+    --extra-vars "target_host=%H" \
+    --only-if-changed \
+    ansible/playbooks/main.yml
+```
+
+### Why `--nonblock` (Not `--wait`)
+
+| Mode | Behaviour | Risk |
+|------|-----------|------|
+| `--wait` (blocking) | Second instance waits for the first to finish, then runs | Queue builds up; deployments stack; potential for very long runs |
+| `--nonblock` (chosen) | Second instance exits immediately if lock held | Clean skip; next timer cycle will pick up changes |
+
+### Lock File Lifecycle
+
+- **Created**: Automatically by `flock` on first invocation.
+- **Held**: While ansible-pull is running (kernel-level file lock).
+- **Released**: Automatically when the ansible-pull process exits — **even if it crashes,
+  is killed, or the system reboots**. `flock` uses POSIX advisory locks which are tied
+  to the process, not the file. There is **no risk of a stale lock** requiring manual
+  cleanup.
+- **File on disk**: `/var/lock/ansible-pull.lock` persists as an empty file. This is
+  harmless — `flock` only cares about the kernel lock state, not the file's contents.
+
+> **Key point**: Unlike PID-file based locking, `flock` locks are automatically released
+> on process exit. You will **never** need to manually delete the lock file.
+
+### Timer Configuration
+
+The systemd timer interval should be longer than the maximum expected deployment time:
+
+```ini
+# ansible-pull.timer (excerpt)
+[Timer]
+OnCalendar=*:0/15        # every 15 minutes
+Persistent=false          # don't catch up on missed runs
+```
+
+- `NFR-1` targets < 2 minutes for a full sync, so a 15-minute timer provides ample margin.
+- `Persistent=false` prevents a burst of catchup runs after a reboot.
+
+---
+
+## 20. Rollback Strategy (DD-36)
+
+### Problem
+
+When a `docker compose up` or post-deployment validation fails, the system is left in
+a broken state: the new Compose file is on disk, containers may be partially started or
+in a crash loop, and the previous working state is lost.
+
+### Solution: `.bak` Backup with Conditional Restore
+
+Before rendering a new Compose file, the existing one is backed up. On critical
+validation failure, the backup is restored. On success, the backup is cleaned up.
+
+### Deployment Flow (Per Module)
+
+```
+1. If docker-compose.yml exists AND docker-compose.yml.bak does NOT exist:
+     → copy docker-compose.yml → docker-compose.yml.bak
+   (If .bak already exists, skip — a previous run may have failed and we
+    don't want to overwrite the last-known-good backup)
+2. Render new docker-compose.yml from template
+3. Validate new Compose file (docker compose config)
+4. docker compose up -d
+5. Run post-deployment validation
+6. If validation passes:
+     → delete docker-compose.yml.bak (cleanup)
+7. If validation fails AND validation.critical is true:
+     → docker compose down
+     → restore docker-compose.yml.bak → docker-compose.yml
+     → docker compose up -d (restore previous state)
+     → fail the playbook run
+8. If validation fails AND validation.critical is false:
+     → log warning
+     → delete docker-compose.yml.bak (don't block next run)
+     → continue with remaining modules
+```
+
+### Implementation
+
+```yaml
+# tasks/deploy_module.yml (rollback section)
+---
+# Step 1: Back up existing Compose file (only if .bak doesn't already exist)
+- name: "Back up {{ module_name }} compose file"
+  ansible.builtin.copy:
+    src: "{{ compose_modules_base_dir }}/{{ module_name }}/docker-compose.yml"
+    dest: "{{ compose_modules_base_dir }}/{{ module_name }}/docker-compose.yml.bak"
+    remote_src: true
+    force: false                  # do NOT overwrite existing .bak
+    mode: "0644"
+  when:
+    - _compose_file.stat.exists | default(false)
+
+# ... (render new compose file, docker compose up, validation) ...
+
+# Step 6: Clean up .bak on success
+- name: "Clean up {{ module_name }} compose backup"
+  ansible.builtin.file:
+    path: "{{ compose_modules_base_dir }}/{{ module_name }}/docker-compose.yml.bak"
+    state: absent
+  when: _validation_passed
+
+# Step 7: Rollback on critical failure
+- name: "Rollback {{ module_name }} to previous compose file"
+  when:
+    - not _validation_passed
+    - module_config.validation.critical | default(false)
+  block:
+    - name: "Stop failed {{ module_name }} containers"
+      community.docker.docker_compose_v2:
+        project_src: "{{ compose_modules_base_dir }}/{{ module_name }}"
+        state: absent
+      ignore_errors: true
+
+    - name: "Restore {{ module_name }} compose backup"
+      ansible.builtin.copy:
+        src: "{{ compose_modules_base_dir }}/{{ module_name }}/docker-compose.yml.bak"
+        dest: "{{ compose_modules_base_dir }}/{{ module_name }}/docker-compose.yml"
+        remote_src: true
+        mode: "0644"
+
+    - name: "Restart {{ module_name }} with previous compose file"
+      community.docker.docker_compose_v2:
+        project_src: "{{ compose_modules_base_dir }}/{{ module_name }}"
+        state: present
+
+    - name: "Clean up {{ module_name }} compose backup after rollback"
+      ansible.builtin.file:
+        path: "{{ compose_modules_base_dir }}/{{ module_name }}/docker-compose.yml.bak"
+        state: absent
+
+    - name: "Fail playbook — {{ module_name }} critical validation failed"
+      ansible.builtin.fail:
+        msg: >-
+          Module '{{ module_name }}' failed post-deployment validation and has been
+          rolled back to the previous compose file. Investigate and fix before retrying.
+```
+
+### Important Constraints
+
+- **No automatic data restore**: The rollback only restores the Compose file and
+  restarts the previous containers. Database migrations, volume data changes, or
+  destructive operations are **not** reversed. This is a Compose-level rollback, not
+  a full disaster recovery.
+- **`.bak` protection**: The `force: false` on the backup step ensures that if a
+  previous run failed (leaving a `.bak` in place), the next run does NOT overwrite it.
+  This preserves the last-known-good configuration.
+- **`.bak` cleanup**: On success, the `.bak` is deleted so the next run can create a
+  fresh backup. On rollback, the `.bak` is also deleted after restoration to prevent
+  stale backups.
+- **First deployment**: If no `docker-compose.yml` exists yet (first deploy), there is
+  nothing to back up. A failed first deployment leaves the broken file in place for
+  debugging — manual intervention is required.
+
+---
+
+## 21. Traefik Middleware Chains (DD-39)
+
+### Overview
+
+Traefik middlewares are defined as **file-based middleware definitions** in Traefik's
+dynamic configuration directory. Modules reference middleware **chains** (not individual
+middlewares) in their `traefik.middlewares` list. This approach is composable, reusable,
+and avoids duplicating middleware labels across every module.
+
+### Middleware Definitions
+
+```yaml
+# templates/modules/traefik/config/generic/middlewares.yml.j2
+# Auto-generated by Ansible — do not edit manually
+http:
+  middlewares:
+    # ── Redirect HTTP → HTTPS ──
+    redirect-to-https:
+      redirectScheme:
+        scheme: "https"
+        permanent: true
+
+    # ── Rate limiting ──
+    rate-limit:
+      rateLimit:
+        average: 200
+        burst: 100
+
+    # ── Secure headers ──
+    secure-headers:
+      headers:
+        accessControlAllowMethods:
+          - "GET"
+          - "OPTIONS"
+          - "PUT"
+        accessControlMaxAge: 100
+        hostsProxyHeaders:
+          - "X-Forwarded-Host"
+        stsSeconds: 63072000
+        stsIncludeSubdomains: true
+        stsPreload: true
+        forceSTSHeader: true
+        customFrameOptionsValue: "DENY"
+        contentTypeNosniff: true
+        browserXssFilter: true
+        referrerPolicy: "same-origin"
+        permissionsPolicy: >-
+          camera 'none'; geolocation 'none'; microphone 'none';
+          payment 'none'; usb 'none'; vr 'none';
+        customRequestHeaders:
+          X-Forwarded-Proto: https
+        customResponseHeaders:
+          X-Robots-Tag: "none,noarchive,nosnippet,notranslate,noimageindex,"
+          server: ""
+
+    # ── Forward auth (registered via Docker labels by forward_auth module) ──
+    # forward-auth is registered as a Docker provider middleware.
+    # Referenced as: forward-auth@docker
+
+    # ── Health bypass chain (for Gatus monitoring) ──
+    health-bypass:
+      chain:
+        middlewares:
+          - rate-limit-health
+          - whitelist-localnetwork
+
+    # ── Rate limit for health endpoints (strict) ──
+    rate-limit-health:
+      rateLimit:
+        average: 10
+        burst: 5
+        period: "1m"
+
+    # ── IP allowlists ──
+    whitelist-localnetwork:
+      ipAllowList:
+        sourceRange:
+          - "192.168.0.0/16"
+          - "10.0.0.0/8"
+          - "172.16.0.0/12"
+
+    whitelist-infra:
+      ipAllowList:
+        sourceRange:
+          - "127.0.0.1/32"
+{%- for host in groups['infrastructure_servers'] | default([]) %}
+          - "{{ hostvars[host].ansible_host }}"
+{%- endfor %}
+
+    # ── Big file upload (disable buffering limits) ──
+    big-file-upload:
+      buffering:
+        maxRequestBodyBytes: 0
+        maxResponseBodyBytes: 0
+        memRequestBodyBytes: 20971520
+        memResponseBodyBytes: 20971520
+        retryExpression: "IsNetworkError() && Attempts() < 2"
+```
+
+### Module Usage
+
+Modules reference middleware names in their `traefik.middlewares` list. The deploy
+template translates these into Traefik router labels:
+
+```yaml
+# In a module's vars/modules/<name>.yml
+traefik:
+  enabled: true
+  host: "app.{{ domain }}"
+  port: 8080
+  middlewares:
+    - secure-headers                # file provider middleware
+    - forward-auth                  # Docker provider middleware (@docker suffix added)
+```
+
+Generated labels:
+
+```yaml
+# Multiple middlewares are comma-separated in the router label
+- "traefik.http.routers.{{ module_name }}.middlewares=secure-headers@file,forward-auth@docker"
+```
+
+### Provider Suffixes
+
+Traefik middlewares require a `@<provider>` suffix to avoid ambiguity:
+
+| Source | Suffix | Example |
+|--------|--------|---------|
+| File provider (dynamic config) | `@file` | `secure-headers@file` |
+| Docker provider (container labels) | `@docker` | `forward-auth@docker` |
+
+The Compose template automatically appends `@file` for file-based middlewares and
+`@docker` for `forward-auth` (which is registered via Docker labels by the
+`forward_auth` module).
+
+---
+
+## 22. Container Logging (DD-40)
+
+### Problem
+
+Docker's default `json-file` log driver with no rotation limits will eventually fill
+the host's disk. Every container's stdout/stderr is written to
+`/var/lib/docker/containers/<id>/<id>-json.log` with no size cap.
+
+### Solution: Enforce Log Rotation in Compose Templates
+
+The module template (`_template/docker-compose.yml.j2`) includes logging configuration
+by default. All modules must set `logging` on every service.
+
+```yaml
+# In every service definition in docker-compose.yml.j2
+services:
+  {{ module_name }}:
+    image: "{{ '{{' }} {{ module_name }}_image {{ '}}' }}"
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    # ... rest of service definition
+```
+
+### Enforced Rules
+
+| Setting | Value | Rationale |
+|---------|-------|-----------|
+| `driver` | `json-file` | Compatible with `docker logs`; no external dependency |
+| `max-size` | `10m` | 10 MB per log file — sufficient for most apps |
+| `max-file` | `3` | 3 rotated files — max 30 MB per container |
+
+### CI Validation
+
+The compose-validation-test checks that all services define `logging`:
+
+```bash
+@test "compose templates enforce logging configuration" {
+  for compose_file in ansible/roles/docker_compose_modules/templates/modules/*/docker-compose.yml.j2; do
+    module_name=$(basename "$(dirname "$compose_file")")
+    [ "$module_name" = "_template" ] && continue
+
+    grep -q "max-size" "$compose_file" || \
+      fail "Module $module_name compose missing logging max-size configuration"
+  done
+}
+```
+
+### Docker Daemon Default (Belt and Suspenders)
+
+As a fallback, the Docker daemon is also configured with default log options via the
+`geerlingguy.docker` role. This catches any containers started outside of the module
+system:
+
+```yaml
+# In the playbook or host_vars — passed to geerlingguy.docker
+docker_daemon_options:
+  log-driver: "json-file"
+  log-opts:
+    max-size: "10m"
+    max-file: "3"
+```
+
+---
+
+## 23. Docker Network Address Pools (DD-38)
+
+### Problem
+
+Docker's default bridge driver allocates /16 subnets from the `172.17.0.0/12` range.
+With per-module frontend + optional backend networks, a server with 20+ modules can
+create 30-40 bridge networks, exhausting the address space.
+
+### Solution: Custom Address Pools via `geerlingguy.docker`
+
+Configure Docker's `daemon.json` with smaller subnet allocations via the
+`geerlingguy.docker` role:
+
+```yaml
+# ansible/playbooks/main.yml or host_vars — passed to geerlingguy.docker
+roles:
+  - role: geerlingguy.docker
+    docker_daemon_options:
+      default-address-pools:
+        - base: "172.17.0.0/12"
+          size: 20
+        - base: "192.168.0.0/16"
+          size: 24
+```
+
+### Capacity Calculation
+
+| Pool | Base range | Subnet size | Available subnets |
+|------|-----------|-------------|-------------------|
+| Primary | `172.17.0.0/12` | /20 (4094 hosts) | ~256 networks |
+| Secondary | `192.168.0.0/16` | /24 (254 hosts) | ~256 networks |
+
+A /20 subnet provides 4094 usable host addresses per network — more than sufficient for
+any Docker Compose stack. With ~256 available /20 subnets from the 172.x pool alone,
+this supports well over 100 modules per host.
+
+### Considerations
+
+- **192.168.x.x conflict**: If your LAN uses `192.168.0.0/16`, the secondary pool may
+  conflict. Adjust the `base` to an unused range (e.g., `10.128.0.0/10` with size 24).
+- **Existing networks**: Changing address pools does not affect existing Docker networks.
+  New networks will use the new pool; existing ones retain their addresses until
+  recreated.
+- **This change is applied once** via the `geerlingguy.docker` role and persists in
+  `/etc/docker/daemon.json`.
+
+---
+
+## 24. Disk Space Management
+
+### Docker Image Garbage Collection
+
+Over time, unused Docker images accumulate on the host as modules are updated via
+Renovate (new image digests). The maintenance role handles periodic cleanup.
+
+```yaml
+# In the maintenance role — docker maintenance tasks
+- name: Remove unused Docker images
+  ansible.builtin.command:
+    cmd: docker image prune --all --force --filter "until=168h"
+  changed_when: false
+  # Removes images not used by any container and older than 7 days.
+  # The --all flag includes dangling AND unreferenced images.
+  # The 7-day filter protects recently-pulled images during rollbacks.
+```
+
+### Build Cache Cleanup
+
+If Docker BuildKit is used (not typical for this repo since we pull pre-built images),
+the build cache can also grow:
+
+```yaml
+- name: Remove Docker build cache
+  ansible.builtin.command:
+    cmd: docker builder prune --all --force --filter "until=168h"
+  changed_when: false
+```
+
+### Volume Cleanup
+
+Orphaned volumes (from removed modules) are handled by the cleanup tasks (§15).
+The `cleanup_remove_volumes` flag controls whether volumes are deleted on module
+removal:
+
+- **Dev servers**: `cleanup_remove_volumes: true` — aggressive cleanup.
+- **Production servers**: `cleanup_remove_volumes: false` — volumes preserved.
+
+### Disk Space Monitoring
+
+A Gatus endpoint can monitor disk usage on each host by checking a simple script
+endpoint or using node-exporter metrics (when the monitoring stack is deployed in
+Phase 6).
+
+### Systemd Timer
+
+Docker maintenance (image prune, build cache cleanup) runs on a weekly systemd timer
+managed by the `maintenance` role. See the existing `maintenance-docker.timer`.
+
+---
+
+## 25. TLS Certificate Strategy (DD-44)
+
+### Certificate Authority
+
+All TLS certificates are issued by **Let's Encrypt** via Traefik's built-in ACME client.
+
+### Challenge Type: DNS-01 via Cloudflare
+
+DNS-01 challenges are used instead of HTTP-01 because:
+
+1. **No inbound port 80 required**: HTTP-01 requires Let's Encrypt to reach port 80 on
+   the server, which may be blocked by firewalls or NAT.
+2. **Wildcard certificates**: DNS-01 supports `*.example.com` wildcards, reducing the
+   number of certificates and certificate requests.
+3. **Internal services**: Services not reachable from the internet can still get valid
+   certificates via DNS validation.
+
+### Traefik Configuration
+
+```yaml
+# templates/modules/traefik/config/generic/traefik.yml.j2 (excerpt)
+certificatesResolvers:
+  letsencrypt:
+    acme:
+      email: "{{ acme_email }}"
+      storage: "/letsencrypt/acme.json"
+      dnsChallenge:
+        provider: cloudflare
+        resolvers:
+          - "1.1.1.1:53"
+          - "1.0.0.1:53"
+```
+
+### Required Secrets
+
+The Cloudflare API token is stored in SOPS and delivered to the Traefik container
+via the `.env` file:
+
+```yaml
+# In the traefik module's required_secrets
+required_secrets:
+  - traefik_cf_api_token
+
+# .env renders:
+# TRAEFIK_CF_API_TOKEN=<decrypted value>
+```
+
+The Traefik Compose template passes the token as an environment variable:
+
+```yaml
+# templates/modules/traefik/docker-compose.yml.j2 (excerpt)
+services:
+  traefik:
+    environment:
+      - CF_API_EMAIL={{ acme_email }}
+      - CF_DNS_API_TOKEN=${TRAEFIK_CF_API_TOKEN}
+```
+
+### Certificate Storage
+
+Certificates are stored in a named Docker volume (`traefik_certs`) mounted at
+`/letsencrypt`. This persists certificates across container restarts and avoids
+hitting Let's Encrypt rate limits by re-requesting certificates on every restart.
+
+### Rate Limits
+
+Let's Encrypt enforces rate limits (50 certificates per registered domain per week).
+With DNS-01 and wildcard certificates, this is unlikely to be an issue. The staging
+environment (`acme.caServer: https://acme-staging-v02.api.letsencrypt.org/directory`)
+should be used during development and testing.
+
+---
+
+## 26. Backup Strategy (Roadmap)
 
 > **Status**: Roadmap — not yet implemented.
 
@@ -1836,7 +2636,7 @@ backup:
 
 ---
 
-## 20. Auto-Generated Service Inventory (Roadmap)
+## 27. Auto-Generated Service Inventory (Roadmap)
 
 > **Status**: Roadmap — not yet implemented.
 
@@ -1852,7 +2652,7 @@ backup:
 
 ---
 
-## 21. Auto-Merge & Update Strategy (Roadmap)
+## 28. Auto-Merge & Update Strategy (Roadmap)
 
 > **Status**: Roadmap — not yet implemented.
 
@@ -1868,7 +2668,7 @@ backup:
 
 ---
 
-## 22. AI Authoring & Module Templates
+## 29. AI Authoring & Module Templates
 
 ### Module Template
 
@@ -1941,7 +2741,7 @@ complete modules without human intervention.
 
 ---
 
-## 23. Implementation Order
+## 30. Implementation Order
 
 ### Phase 1 — Foundation
 
@@ -1949,17 +2749,20 @@ complete modules without human intervention.
 |------|-------------|
 | 1.1 | Restructure inventory with server groups and environments |
 | 1.2 | Implement SOPS + Age integration (ansible.cfg, requirements, .sops.yaml) |
-| 1.3 | Implement shared group keys for SOPS |
-| 1.4 | Update `ansible-pull.sh` for Age key injection (host key + group key) |
-| 1.5 | Create module template scaffold (`_template/`) with all best practices |
-| 1.6 | Implement module resolution logic (`resolve_modules.yml`) |
-| 1.7 | Update `deploy_module.yml` with targeting + config layering |
-| 1.8 | Implement `.env` file templating for secrets → containers |
-| 1.9 | Add image pinning convention + Renovate custom manager with critical DB labels |
-| 1.10 | Implement secret validation pre-flight (`validate_secrets.yml`) |
-| 1.11 | Implement Docker Compose validation task (`validate_compose.yml`) |
-| 1.12 | Create CI compose validation tooling (mock vars, render helper, Bats test) |
-| 1.13 | Write Bats tests: module-schema-test, compose-validation-test, secret-structure-test |
+| 1.3 | Create initial secret files (group + host SOPS files with placeholder keys) |
+| 1.4 | Implement shared group keys for SOPS |
+| 1.5 | Update `ansible-pull.sh` for Age key injection (host key + group key) |
+| 1.6 | Configure Docker address pools via `geerlingguy.docker` (§23) |
+| 1.7 | Implement concurrency locking in ansible-pull.service (flock §19) |
+| 1.8 | Create module template scaffold (`_template/`) with logging defaults (§22) |
+| 1.9 | Implement module resolution logic with pre-loading + priority sort (§5) |
+| 1.10 | Update `deploy_module.yml` with targeting + config layering |
+| 1.11 | Implement `.env` file templating for secrets → containers |
+| 1.12 | Add image pinning convention + Renovate custom manager with critical DB labels |
+| 1.13 | Implement secret validation pre-flight (`validate_secrets.yml`) |
+| 1.14 | Implement Docker Compose validation task (`validate_compose.yml`) |
+| 1.15 | Create CI compose validation tooling (mock vars, render helper, Bats test) |
+| 1.16 | Write Bats tests: module-schema-test, compose-validation-test, secret-structure-test, .env-naming-test |
 
 ### Phase 2 — Network, Traefik & First Module
 
@@ -1967,13 +2770,16 @@ complete modules without human intervention.
 |------|-------------|
 | 2.1 | Implement per-module network creation tasks (frontend + backend isolation) |
 | 2.2 | Render Traefik Compose dynamically to join all frontend networks |
-| 2.3 | Add Traefik enforcement assertion for `service_type: web` |
-| 2.4 | Migrate existing Traefik module to new structure |
-| 2.5 | Deploy `traefik-forward-auth` module |
-| 2.6 | Deploy `mendhak/http-https-echo` as validation/test module behind Traefik |
-| 2.7 | Verify end-to-end: Traefik → forward-auth → echo container |
-| 2.8 | Implement dry-run support (`--check --diff` compatibility on all tasks) |
-| 2.9 | Write Bats tests: network-test, dry-run-test |
+| 2.3 | Create Traefik middleware chain file (§21) |
+| 2.4 | Add Traefik enforcement assertion for `service_type: web` |
+| 2.5 | Implement TLS certificate strategy (Let's Encrypt DNS-01 via Cloudflare §25) |
+| 2.6 | Migrate existing Traefik module to new structure |
+| 2.7 | Deploy `traefik-forward-auth` module |
+| 2.8 | Deploy `mendhak/http-https-echo` as validation/test module behind Traefik |
+| 2.9 | Verify end-to-end: Traefik → forward-auth → echo container |
+| 2.10 | Implement rollback strategy with `.bak` backup/restore (§20) |
+| 2.11 | Implement dry-run support (`--check --diff` compatibility on all tasks) |
+| 2.12 | Write Bats tests: network-test, dry-run-test, .env-naming-validation-test |
 
 ### Phase 3 — Gatus & Lifecycle
 
@@ -2030,7 +2836,7 @@ complete modules without human intervention.
 
 ---
 
-## 24. Resolved Decisions
+## 31. Resolved Decisions
 
 Decisions made during the design phase that are no longer open:
 
@@ -2039,7 +2845,6 @@ Decisions made during the design phase that are no longer open:
 | 1 | Separate DNS zone for dev? | **Yes** — dev server uses `*.dev.example.com` |
 | 2 | Database migration handling? | **Roadmap** — label major/minor DB packages as critical in Renovate; manual review for now |
 | 3 | Enforce resource limits? | **Optional** — recommended but not mandatory per module |
-| 4 | Alerting channels for Gatus? | **Open** — to be decided per environment |
 | 5 | `cleanup_remove_volumes` defaults? | **Yes** — `true` on dev, `false` on prod |
 | 6 | Multi-server services? | **Out of scope** |
 | 7 | Separate develop branch? | **No** — single `main` branch; auto-merge strategy on roadmap |
@@ -2050,7 +2855,7 @@ Decisions made during the design phase that are no longer open:
 
 ---
 
-## 25. Open Questions
+## 32. Open Questions
 
 | # | Question | Context |
 |---|----------|---------|
@@ -2059,3 +2864,19 @@ Decisions made during the design phase that are no longer open:
 | 3 | Should the echo test container remain deployed in production? | Useful for debugging vs. minimal surface |
 | 4 | What Azure Blob retention policy for backups? | Cost vs. recovery window trade-off |
 | 5 | Should ansible-pull timer frequency differ between dev and prod? | More frequent on dev for faster iteration |
+| 6 | What alerting channels for Gatus? Discord, email, PagerDuty? | Moved from Resolved Decisions — needs to be decided per environment |
+
+---
+
+## 33. Roadmap Items
+
+Items acknowledged as valuable but explicitly deferred beyond Phase 6:
+
+| # | Item | Notes |
+|---|------|-------|
+| 1 | **Failure notifications** | Ansible-pull failures are currently silent. Options: systemd `OnFailure=` handler posting to Discord/Slack webhook, email via `msmtp`, or a dedicated Ansible callback plugin. |
+| 2 | **Schema evolution / migration strategy** | As the module schema evolves (new required fields, renamed keys), existing module definitions may break. Options: version field in module vars, migration script that transforms old → new, or strict backward compatibility with deprecation warnings. |
+| 3 | **External monitoring** | Gatus monitors from inside the Docker host. An external monitor (e.g., Uptime Kuma on a separate server, or a SaaS like Uptime Robot) provides independent verification that the host itself is reachable and healthy. |
+| 4 | **Centralized logging** | Replace per-host `json-file` log retention with a Loki + Promtail stack that aggregates logs across all hosts (Phase 6.5). |
+| 5 | **Configuration drift detection** | Periodic comparison of running containers vs. declared module state. Detect manual `docker run` commands or `docker compose up` outside of ansible-pull. |
+| 6 | **Secret rotation** | Automated secret rotation with zero-downtime container restarts. Requires SOPS re-encryption + Compose recreate in a single atomic operation. |
