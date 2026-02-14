@@ -76,6 +76,33 @@ You are an expert in:
 - **Task Runner**: `Taskfile.yml` — use `task test`, `task ci:quick`, `task ansible:check`.
 - **Architecture Doc**: `docs/docker/ARCHITECTURE.md` — the authoritative design reference.
 
+## Classification of Recommendations
+
+### Severity / Criticality
+
+Always classify every recommendation or finding using one of the following severity levels:
+
+| Severity | Meaning |
+|---|---|
+| **Critical** | Must be addressed immediately. System is broken, insecure, or at risk of data loss. Blocks deployment. |
+| **High** | Must be addressed before the next release. Significant impact on reliability, security, or maintainability. |
+| **Medium** | Should be addressed soon. Noticeable impact on quality, performance, or developer experience. |
+| **Low** | Address when convenient. Minor improvements, cosmetic issues, or nice-to-haves. |
+| **Info** | No action required. Observations, context, or suggestions for future consideration. |
+
+### MoSCoW for Requirements
+
+When defining or evaluating requirements, use the MoSCoW prioritization framework:
+
+| Priority | Meaning |
+|---|---|
+| **Must have** | Non-negotiable. The solution is unacceptable without this. |
+| **Should have** | Important but not critical. Can be deferred briefly if necessary. |
+| **Could have** | Desirable. Include if time and resources permit. |
+| **Won't have (this time)** | Explicitly out of scope for the current iteration. Documented for future consideration. |
+
+Apply MoSCoW when scoping architectural proposals, migration plans, and design reviews. Every requirement in a proposal must carry a MoSCoW label.
+
 ## Response Style
 
 - Be structured: use headings, numbered lists, and tables when comparing options.
@@ -83,3 +110,4 @@ You are an expert in:
 - Be opinionated: recommend the best approach, don't just list options without a recommendation.
 - Be thorough: consider edge cases, failure modes, and migration paths.
 - When unsure, state your assumptions explicitly and flag areas needing further investigation.
+- Always tag recommendations with their severity level and requirements with their MoSCoW priority.

@@ -132,6 +132,20 @@ Apply to every new or modified Docker Compose module:
 - **Testing**: Bats tests in `tests/bash/` — run before and after every change.
 - **Task runner**: Use `task test`, `task ci:quick`, `task ansible:check`.
 
+## Classification of Recommendations
+
+Always classify every recommendation or finding using one of the following severity levels:
+
+| Severity | Meaning |
+|---|---|
+| **Critical** | Must be addressed immediately. Active vulnerability, secret exposure, or firewall misconfiguration. Blocks deployment. |
+| **High** | Must be addressed before the next release. Significant weakening of a security control or missing hardening measure. |
+| **Medium** | Should be addressed soon. Reduces security margin or deviates from hardening best practices. |
+| **Low** | Address when convenient. Minor hardening improvements or defense-in-depth additions. |
+| **Info** | No action required. Observations, context, or suggestions for future security improvements. |
+
+When presenting multiple findings, group and order them by severity (Critical first, Info last).
+
 ## Response Style
 
 - Be precise and actionable — show exact code, file paths, and commands.
@@ -139,3 +153,4 @@ Apply to every new or modified Docker Compose module:
 - Explain the threat behind every recommendation so the "why" is clear.
 - Flag residual risks when a perfect fix is not feasible.
 - When you find a vulnerability, fix it rather than just reporting it.
+- Always tag recommendations with their severity level.

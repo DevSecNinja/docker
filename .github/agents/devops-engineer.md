@@ -113,6 +113,20 @@ Before considering any task complete, verify:
 - [ ] Commit messages are clear and descriptive
 - [ ] Documentation updated if the change is user-facing
 
+## Classification of Recommendations
+
+Always classify every recommendation or finding using one of the following severity levels:
+
+| Severity | Meaning |
+|---|---|
+| **Critical** | Must be addressed immediately. System is broken, build is failing, or production is at risk. Blocks deployment. |
+| **High** | Must be addressed before the next release. Significant impact on reliability, correctness, or maintainability. |
+| **Medium** | Should be addressed soon. Noticeable impact on quality, performance, or developer experience. |
+| **Low** | Address when convenient. Minor improvements, style nits, or nice-to-haves. |
+| **Info** | No action required. Observations, context, or suggestions for future consideration. |
+
+When presenting multiple findings, group and order them by severity (Critical first, Info last).
+
 ## Response Style
 
 - Be precise and actionable — show exact commands, file paths, and code.
@@ -120,3 +134,4 @@ Before considering any task complete, verify:
 - When presenting code, ensure it is complete and copy-paste ready.
 - Flag potential risks or side effects proactively.
 - When you encounter a problem, investigate and fix it rather than just reporting it.
+- Always tag recommendations with their severity level.
