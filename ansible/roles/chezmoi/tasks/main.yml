@@ -47,19 +47,25 @@
     - getent_passwd is succeeded
     - getent_passwd is not skipped
 
+- name: Check if Homebrew prefix exists
+  ansible.builtin.stat:
+    path: /home/linuxbrew/.linuxbrew
+  register: homebrew_prefix_stat
+  when:
+    - chezmoi_user is defined
+    - chezmoi_init_apply
+
 - name: Fix Homebrew permissions for chezmoi_user
   ansible.builtin.file:
-    path: "{{ item }}"
+    path: /home/linuxbrew/.linuxbrew
     state: directory
     owner: "{{ chezmoi_user }}"
     group: "{{ chezmoi_user }}"
     recurse: true
-  loop:
-    - /home/linuxbrew/.linuxbrew/Cellar
-    - /home/linuxbrew/.linuxbrew/Homebrew
   when:
     - chezmoi_user is defined
     - chezmoi_init_apply
+    - homebrew_prefix_stat.stat.exists | default(false)
   failed_when: false
   changed_when: false
 
