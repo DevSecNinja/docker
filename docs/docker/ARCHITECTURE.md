@@ -173,7 +173,7 @@ Git push → ansible-pull detects change (with flock — single instance only)
 | DD-35 | Concurrency locking | `flock --nonblock` on ansible-pull systemd unit | Prevents overlapping runs causing race conditions; non-blocking so stale locks are never an issue; see §19 |
 | DD-36 | Rollback on failure | Back up `docker-compose.yml` → `.bak` before deploy; restore on critical validation failure; `.bak` cleaned up after success | Prevents broken state persisting; no automatic data restore; see §20 |
 | DD-37 | Server type source | `server_type` derived from group membership (`group_names`), **not** from host_vars | Single source of truth; prevents group/host_vars divergence; see §4 |
-| DD-38 | Docker network address pools | `geerlingguy.docker` configured with custom `default-address-pools` using /20 subnets | Supports 30+ bridge networks per host without address exhaustion; see §23 |
+| DD-38 | Docker network address pools | `geerlingguy.docker` configured with single `172.17.0.0/12` pool using /20 subnets | Avoids 192.168.x.x LAN conflict; ~256 networks per host; see §23 |
 | DD-39 | Middleware chains | Traefik file-based middleware definitions (rate-limit, secure-headers, IP allowlists); modules reference chains, not individual middlewares | Composable; health bypass uses rate-limit + IP-restrict; see §21 |
 | DD-40 | Container logging | `json-file` log driver with `max-size` and `max-file` enforced in Compose template | Prevents disk exhaustion from unrotated container logs; see §22 |
 | DD-41 | Gatus reload | Gatus watches config directory via built-in file watcher — no container restart needed | Zero-downtime config updates; avoids monitoring gaps during reload; see §10 |
@@ -2436,10 +2436,11 @@ Docker's default bridge driver allocates /16 subnets from the `172.17.0.0/12` ra
 With per-module frontend + optional backend networks, a server with 20+ modules can
 create 30-40 bridge networks, exhausting the address space.
 
-### Solution: Custom Address Pools via `geerlingguy.docker`
+### Solution: Custom Address Pool via `geerlingguy.docker`
 
-Configure Docker's `daemon.json` with smaller subnet allocations via the
-`geerlingguy.docker` role:
+Configure Docker's `daemon.json` with a single pool using smaller subnet allocations
+via the `geerlingguy.docker` role. Only the `172.17.0.0/12` range is used — the
+`192.168.0.0/16` range is deliberately excluded because the home LAN uses it.
 
 ```yaml
 # ansible/playbooks/main.yml or host_vars — passed to geerlingguy.docker
@@ -2449,25 +2450,23 @@ roles:
       default-address-pools:
         - base: "172.17.0.0/12"
           size: 20
-        - base: "192.168.0.0/16"
-          size: 24
 ```
 
 ### Capacity Calculation
 
-| Pool | Base range | Subnet size | Available subnets |
-|------|-----------|-------------|-------------------|
-| Primary | `172.17.0.0/12` | /20 (4094 hosts) | ~256 networks |
-| Secondary | `192.168.0.0/16` | /24 (254 hosts) | ~256 networks |
+| Pool | Base range | Subnet size | Hosts per subnet | Available subnets |
+|------|-----------|-------------|------------------|-------------------|
+| Single | `172.17.0.0/12` | /20 | 4094 | ~256 |
 
 A /20 subnet provides 4094 usable host addresses per network — more than sufficient for
-any Docker Compose stack. With ~256 available /20 subnets from the 172.x pool alone,
-this supports well over 100 modules per host.
+any Docker Compose stack. With ~256 available /20 subnets, this supports well over 100
+modules per host without ever touching the `192.168.x.x` or `10.x.x.x` ranges.
 
 ### Considerations
 
-- **192.168.x.x conflict**: If your LAN uses `192.168.0.0/16`, the secondary pool may
-  conflict. Adjust the `base` to an unused range (e.g., `10.128.0.0/10` with size 24).
+- **Why no secondary pool**: The home LAN uses `192.168.0.0/16`, so including it as a
+  Docker pool would cause routing conflicts. A single `172.17.0.0/12` pool with /20
+  subnets provides more than enough capacity.
 - **Existing networks**: Changing address pools does not affect existing Docker networks.
   New networks will use the new pool; existing ones retain their addresses until
   recreated.
