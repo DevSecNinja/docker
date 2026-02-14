@@ -2,6 +2,8 @@
 Description=Weekly Maintenance - Full OS Updates with Reboot
 After=network-online.target
 Wants=network-online.target
+After=maintenance-daily.service
+Conflicts=maintenance-daily.service
 
 [Service]
 Type=oneshot

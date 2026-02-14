@@ -4,6 +4,7 @@ Requires=maintenance-weekly.service
 
 [Timer]
 OnCalendar={{ maintenance_weekly_schedule }}
+RandomizedDelaySec=5min
 Persistent=true
 
 [Install]

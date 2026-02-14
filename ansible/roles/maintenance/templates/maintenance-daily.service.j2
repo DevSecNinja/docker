@@ -2,6 +2,7 @@
 Description=Daily Maintenance - Non-disturbing OS Updates
 After=network-online.target
 Wants=network-online.target
+Conflicts=maintenance-weekly.service
 
 [Service]
 Type=oneshot
