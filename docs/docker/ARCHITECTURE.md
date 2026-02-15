@@ -3114,98 +3114,143 @@ complete modules without human intervention.
 
 ## 30. Implementation Order
 
-### Phase 1 — Foundation
+### Phase 1 — Inventory & Secret Management
 
-| Task | Description |
-|------|-------------|
-| 1.1 | Restructure inventory with server groups and environments |
-| 1.2 | Implement SOPS + Age integration (ansible.cfg, requirements, .sops.yaml) |
-| 1.3 | Create initial secret files (group + host SOPS files with placeholder keys) |
-| 1.4 | Implement shared group keys for SOPS |
-| 1.5 | Update `ansible-pull.sh` for Age key injection (host key + group key) |
-| 1.6 | Configure Docker address pools via `geerlingguy.docker` (§23) |
-| 1.7 | Implement concurrency locking in ansible-pull.service (flock §19) |
-| 1.8 | Create module template scaffold (`_template/`) with security defaults (§13, §22: cap_drop, read_only, logging) |
-| 1.9 | Implement module resolution logic with pre-loading + priority sort + multi-group assertion (§4, §5) |
-| 1.10 | Update `deploy_module.yml` with targeting + config layering |
-| 1.11 | Implement `.env` file templating for secrets → containers |
-| 1.12 | Add image pinning convention + Renovate custom manager with critical DB labels |
-| 1.13 | Implement SOPS environment pre-flight check (DD-50: key file validation + canary secret) |
-| 1.14 | Implement secret validation pre-flight (`validate_secrets.yml`) |
-| 1.15 | Implement Docker Compose validation task (`validate_compose.yml`) with security rules (DD-47, DD-48, DD-49) |
-| 1.16 | Create CI compose validation tooling (mock vars, render helper, Bats test) |
-| 1.17 | Write Bats tests: module-schema-test, compose-validation-test, secret-structure-test, .env-naming-test |
-| 1.18 | Configure branch protection on `main` + CODEOWNERS file (DD-45) |
+> **Focus**: Establish the inventory structure, SOPS/Age secret management pipeline, and
+> repository security baseline. Everything in this phase is a prerequisite for module
+> deployment — no modules can be deployed until secrets are functional.
 
-### Phase 2 — Network, Traefik & First Module
+| Task | Description | Depends on |
+|------|-------------|------------|
+| 1.1 | Restructure inventory with server groups and environments | — |
+| 1.2 | Implement SOPS + Age integration (ansible.cfg, requirements, .sops.yaml) | 1.1 |
+| 1.3 | Create initial secret files (group + host SOPS files with placeholder keys) | 1.2 |
+| 1.4 | Implement shared group keys for SOPS | 1.2, 1.3 |
+| 1.5 | Update `ansible-pull.sh` for Age key injection (host key + group key) | 1.4 |
+| 1.6 | Implement SOPS environment pre-flight check (DD-50: key file validation + canary secret) | 1.4 |
+| 1.7 | Configure branch protection on `main` + CODEOWNERS file (DD-45) | — |
 
-| Task | Description |
-|------|-------------|
-| 2.1 | Implement per-module network creation tasks (frontend + backend isolation) |
-| 2.2 | Render Traefik Compose dynamically with socket proxy (DD-46) and all frontend networks |
-| 2.3 | Create Traefik middleware chain file (§21) |
-| 2.4 | Add Traefik enforcement assertion for `service_type: web` |
-| 2.5 | Implement TLS certificate strategy (Let's Encrypt DNS-01 via Cloudflare §25) |
-| 2.6 | Migrate existing Traefik module to new structure |
-| 2.7 | Deploy `traefik-forward-auth` module with default-on policy (DD-49) |
-| 2.8 | Deploy `mendhak/http-https-echo` as validation/test module behind Traefik |
-| 2.9 | Verify end-to-end: Traefik → socket-proxy → forward-auth → echo container |
-| 2.10 | Implement rollback strategy with `.bak` backup/restore for both compose + .env (DD-52, §20) |
-| 2.11 | Implement dry-run support (`--check --diff` compatibility on all tasks) |
-| 2.12 | Write Bats tests: network-test, dry-run-test, .env-naming-validation-test, forward-auth-default-test |
+### Phase 2 — Module Framework
 
-### Phase 3 — Gatus & Lifecycle
+> **Focus**: Build the core module system — template scaffold, resolution logic, deployment
+> pipeline, and secret delivery to containers. After this phase, the framework is ready
+> to deploy modules (though no real modules exist yet).
 
-| Task | Description |
-|------|-------------|
-| 3.1 | Implement orphan detection and cleanup (`cleanup_orphans.yml`) |
-| 3.2 | Implement module removal with network/volume cleanup |
-| 3.3 | Deploy Gatus module |
-| 3.4 | Implement Gatus healthcheck generation + cleanup |
-| 3.5 | Implement Gatus health bypass routes for modules with `healthcheck.path` |
-| 3.6 | Add post-deployment validation tasks (container health, Traefik routing) |
-| 3.7 | Write additional Bats tests for Gatus and cleanup |
+| Task | Description | Depends on |
+|------|-------------|------------|
+| 2.1 | Configure Docker address pools via `geerlingguy.docker` (§23) | — |
+| 2.2 | Implement concurrency locking in ansible-pull.service (flock §19) | — |
+| 2.3 | Create module template scaffold (`_template/`) with security defaults (§13, §22: cap_drop, read_only, logging) | — |
+| 2.4 | Implement module resolution logic with pre-loading + priority sort + multi-group assertion (§4, §5) | Phase 1 |
+| 2.5 | Update `deploy_module.yml` with targeting + config layering | 2.4 |
+| 2.6 | Implement `.env` file templating for secrets → containers | Phase 1 |
+| 2.7 | Implement secret validation pre-flight (`validate_secrets.yml`) | 2.6 |
 
-### Phase 3b — DNS
+### Phase 3 — Validation & CI
 
-| Task | Description |
-|------|-------------|
-| 3b.1 | Deploy AdGuard + Unbound module on infrastructure server(s) |
-| 3b.2 | Configure infra server DNS to use external upstream (loop prevention) |
-| 3b.3 | Verify DHCP hands out infra server IP as DNS resolver to clients |
-| 3b.4 | Implement static DNS record generation from inventory + module vars |
-| 3b.5 | Handle multi-host module DNS naming (`<app>-<hostname>` when needed) |
-| 3b.6 | Add DNS cleanup to module removal tasks |
-| 3b.7 | Write Bats tests for DNS record generation |
+> **Focus**: Establish all quality gates — Compose validation, image pinning, Bats tests,
+> rollback safety, and dry-run support. After this phase, every subsequent change goes
+> through automated validation before reaching a server.
 
-### Phase 4 — Dev Server & Full Lifecycle
+| Task | Description | Depends on |
+|------|-------------|------------|
+| 3.1 | Add image pinning convention + Renovate custom manager with critical DB labels | — |
+| 3.2 | Implement Docker Compose validation task (`validate_compose.yml`) with security rules (DD-47, DD-48, DD-49) | Phase 2 |
+| 3.3 | Create CI compose validation tooling (mock vars, render helper, Bats test) | 3.2 |
+| 3.4 | Write Bats tests: module-schema-test, compose-validation-test, secret-structure-test, .env-naming-test | 3.2, 3.3 |
+| 3.5 | Implement rollback strategy with `.bak` backup/restore for both compose + .env (DD-52, §20) | Phase 2 |
+| 3.6 | Implement dry-run support (`--check --diff` compatibility on all tasks) | Phase 2 |
 
-| Task | Description |
-|------|-------------|
-| 4.1 | Configure dev server with `deploy_all_modules: true` |
-| 4.2 | Set up group-level and host-level SOPS secret files |
-| 4.3 | Test full lifecycle: deploy, update, remove, dry-run on dev server |
-| 4.4 | Validate cleanup removes everything (volumes on dev) |
-| 4.5 | Run full Bats test suite, fix any issues |
+### Phase 4 — Network & Traefik
 
-### Phase 5 — Migration & Modules
+> **Focus**: Stand up the networking layer and Traefik reverse proxy — the backbone that
+> all web-facing modules depend on. No application modules should be deployed until
+> Traefik is functional with TLS, middleware chains, and the socket proxy.
 
-| Task | Description |
-|------|-------------|
-| 5.1 | Migrate existing Compose stacks from old repo into module format |
-| 5.2 | Create modules one by one, validating each (secrets, Compose, healthcheck, DNS) |
-| 5.3 | Cut over production servers |
+| Task | Description | Depends on |
+|------|-------------|------------|
+| 4.1 | Implement per-module network creation tasks (frontend + backend isolation) | Phase 2 |
+| 4.2 | Render Traefik Compose dynamically with socket proxy (DD-46) and all frontend networks | 4.1 |
+| 4.3 | Create Traefik middleware chain file (§21) | 4.2 |
+| 4.4 | Implement TLS certificate strategy (Let's Encrypt DNS-01 via Cloudflare §25) | 4.2 |
+| 4.5 | Add Traefik enforcement assertion for `service_type: web` | 4.2 |
+| 4.6 | Migrate existing Traefik module to new structure | 4.2–4.5 |
 
-### Phase 6 — Observability & Robustness (Roadmap)
+### Phase 5 — Forward Auth & End-to-End Validation
 
-| Task | Description |
-|------|-------------|
-| 6.1 | Implement backup module (`offen/docker-volume-backup` + `tiredofit/docker-db-backup`) |
-| 6.2 | Implement auto-generated service inventory |
-| 6.3 | Implement auto-merge / update strategy for Renovate |
-| 6.4 | Add monitoring stack module (Prometheus/Grafana) |
-| 6.5 | Add centralized logging module (Loki) |
-| 6.6 | Configuration drift detection |
+> **Focus**: Deploy forward auth and a test module to prove the full routing chain works
+> end-to-end. This is the first time real traffic flows through the system. All Bats tests
+> for networking, auth, and dry-run are written here.
+
+| Task | Description | Depends on |
+|------|-------------|------------|
+| 5.1 | Deploy `traefik-forward-auth` module with default-on policy (DD-49) | Phase 4 |
+| 5.2 | Deploy `mendhak/http-https-echo` as validation/test module behind Traefik | Phase 4 |
+| 5.3 | Verify end-to-end: Traefik → socket-proxy → forward-auth → echo container | 5.1, 5.2 |
+| 5.4 | Write Bats tests: network-test, dry-run-test, .env-naming-validation-test, forward-auth-default-test | 5.3 |
+
+### Phase 6 — Gatus & Lifecycle
+
+> **Focus**: Add monitoring (Gatus), orphan cleanup, and post-deployment validation.
+> After this phase, every deployed module is automatically healthchecked, and removed
+> modules are cleaned up deterministically.
+
+| Task | Description | Depends on |
+|------|-------------|------------|
+| 6.1 | Implement orphan detection and cleanup (`cleanup_orphans.yml`) | Phase 2 |
+| 6.2 | Implement module removal with network/volume cleanup | 6.1 |
+| 6.3 | Deploy Gatus module | Phase 4 |
+| 6.4 | Implement Gatus healthcheck generation + cleanup | 6.3 |
+| 6.5 | Implement Gatus health bypass routes for modules with `healthcheck.path` | 6.3, Phase 4 |
+| 6.6 | Add post-deployment validation tasks (container health, Traefik routing) | Phase 5 |
+| 6.7 | Write Bats tests for Gatus and cleanup | 6.4, 6.5 |
+
+### Phase 7 — DNS
+
+> **Focus**: Deploy the DNS stack (AdGuard + Unbound) and auto-generate DNS records from
+> module definitions. This phase is independent of Gatus but requires the module framework
+> and Traefik to be in place.
+
+| Task | Description | Depends on |
+|------|-------------|------------|
+| 7.1 | Deploy AdGuard + Unbound module on infrastructure server(s) | Phase 4 |
+| 7.2 | Configure infra server DNS to use external upstream (loop prevention) | 7.1 |
+| 7.3 | Verify DHCP hands out infra server IP as DNS resolver to clients | 7.2 |
+| 7.4 | Implement static DNS record generation from inventory + module vars | 7.1 |
+| 7.5 | Handle multi-host module DNS naming (`<app>-<hostname>` when needed) | 7.4 |
+| 7.6 | Add DNS cleanup to module removal tasks | 7.4, Phase 6 |
+| 7.7 | Write Bats tests for DNS record generation | 7.4 |
+
+### Phase 8 — Dev Server, Migration & Rollout
+
+> **Focus**: Bring up the dev server with all modules, validate the full lifecycle
+> (deploy → update → remove → dry-run), then migrate production stacks one by one
+> and cut over. This is the final phase before the system is fully operational.
+
+| Task | Description | Depends on |
+|------|-------------|------------|
+| 8.1 | Configure dev server with `deploy_all_modules: true` | Phase 2 |
+| 8.2 | Set up group-level and host-level SOPS secret files | Phase 1 |
+| 8.3 | Test full lifecycle: deploy, update, remove, dry-run on dev server | 8.1, 8.2 |
+| 8.4 | Validate cleanup removes everything (volumes on dev) | 8.3 |
+| 8.5 | Migrate existing Compose stacks from old repo into module format | Phases 1–7 |
+| 8.6 | Create modules one by one, validating each (secrets, Compose, healthcheck, DNS) | 8.5 |
+| 8.7 | Cut over production servers | 8.6 |
+| 8.8 | Run full Bats test suite, fix any issues | 8.7 |
+
+### Phase 9 — Observability & Robustness (Roadmap)
+
+> **Focus**: Post-launch hardening and operational maturity. These items are valuable but
+> not required for initial go-live. Implement as time and need permit.
+
+| Task | Description | Depends on |
+|------|-------------|------------|
+| 9.1 | Implement backup module (`offen/docker-volume-backup` + `tiredofit/docker-db-backup`) | Phase 8 |
+| 9.2 | Implement auto-generated service inventory | Phase 8 |
+| 9.3 | Implement auto-merge / update strategy for Renovate | Phase 3 |
+| 9.4 | Add monitoring stack module (Prometheus/Grafana) | Phase 8 |
+| 9.5 | Add centralized logging module (Loki) | Phase 8 |
+| 9.6 | Configuration drift detection | Phase 8 |
 
 ---
 
