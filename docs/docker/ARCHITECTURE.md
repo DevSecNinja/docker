@@ -12,6 +12,7 @@
 
 - [1. Overview](#1-overview)
 - [2. Goals & Requirements](#2-goals--requirements)
+  - [Security Trust Model & Threat Landscape](#security-trust-model--threat-landscape)
 - [3. Design Decisions](#3-design-decisions)
 - [4. Server Classification & Environments](#4-server-classification--environments)
 - [5. Module System](#5-module-system)
@@ -130,6 +131,86 @@ Git push → ansible-pull detects change (with flock — single instance only)
 | NFR-4 | Offline-capable deployment (no cloud dependency at runtime) | Always |
 | NFR-5 | Testable in CI (GitHub Actions) | Always |
 
+### Security Trust Model & Threat Landscape
+
+This repository is **public**. Every committed byte is visible to adversaries. The
+security architecture must assume an attacker has full read access to all non-encrypted
+content, including playbooks, templates, Compose files, and role logic.
+
+#### Trust Chain
+
+```
+Git push to main → ansible-pull on each server (as root via become)
+  → executes all playbooks/roles from main
+  → deploys containers, writes configs, manages secrets
+```
+
+**Pushing code to `main` is equivalent to having root access on every server.** This is
+the foundational trust relationship of ansible-pull. All contributor vetting, branch
+protection, and CI checks exist to protect this boundary.
+
+#### Assets Under Protection
+
+| Asset | Location | Protection |
+|-------|----------|------------|
+| Server root access | All hosts | Branch protection on `main`; CODEOWNERS |
+| Secrets (API keys, passwords) | SOPS-encrypted in Git | Age encryption; key distribution; `.env` mode `0600` |
+| Container workloads | Docker on each host | Image pinning; network isolation; `no-new-privileges` |
+| DNS resolution | Infrastructure server(s) | AdGuard + Unbound; Traefik routing |
+| TLS certificates | Traefik cert volume | Let's Encrypt; Cloudflare API token in SOPS |
+| Application data | Docker volumes | Backup strategy (roadmap); volume cleanup policy |
+
+#### Adversary Model
+
+| Adversary | Capability | Primary Defense |
+|-----------|------------|------------------|
+| External attacker (internet) | Port scanning, exploit public services | UFW deny-by-default; Traefik as single ingress; forward auth |
+| Compromised LAN device | Access internal network; probe services | Per-app network isolation; IP-restricted health bypass; forward auth |
+| Compromised dependency (supply chain) | Malicious image tag/digest | SHA digest pinning; Renovate PRs validated by CI; dev-first staging |
+| Compromised contributor | Push malicious code to `main` | Branch protection; required reviews; CODEOWNERS; signed commits (DD-45) |
+| Compromised server | Access local keys, Docker socket, network | Group key blast radius containment; per-host key scoping; socket proxy (DD-46) |
+
+#### Trust Boundaries
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│ TRUST BOUNDARY 1: Git repository (main branch)                 │
+│   Who/what crosses it: contributors, CI, Renovate              │
+│   Controls: branch protection, required reviews, CODEOWNERS,   │
+│             CI checks, signed commits                          │
+└───────────────────────────┬─────────────────────────────────────┘
+                            │ ansible-pull (as root)
+┌───────────────────────────▼─────────────────────────────────────┐
+│ TRUST BOUNDARY 2: Server OS (Ansible execution)                │
+│   Who/what crosses it: Ansible tasks, SOPS decryption          │
+│   Controls: flock concurrency, secret validation, Age keys     │
+└───────────────────────────┬─────────────────────────────────────┘
+                            │ docker compose up
+┌───────────────────────────▼─────────────────────────────────────┐
+│ TRUST BOUNDARY 3: Container runtime                            │
+│   Who/what crosses it: container images, .env files, volumes   │
+│   Controls: no-new-privileges, cap_drop ALL, read-only rootfs, │
+│             network isolation, socket proxy, image pinning      │
+└───────────────────────────┬─────────────────────────────────────┘
+                            │ Traefik reverse proxy
+┌───────────────────────────▼─────────────────────────────────────┐
+│ TRUST BOUNDARY 4: Network ingress                              │
+│   Who/what crosses it: HTTP/HTTPS clients                      │
+│   Controls: TLS termination, forward auth, rate limiting,      │
+│             secure headers, IP allowlists                       │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+#### Accepted Risks
+
+| Risk | Severity | Rationale |
+|------|----------|------------|
+| Group key compromise exposes all group secrets | Medium | Trade-off for operational simplicity; mitigated by minimizing group-level secrets and preferring host-level secrets |
+| Admin Age key can decrypt all SOPS files | Medium | Required for AI agent encryption workflow; private key held offline by repository owner only |
+| Docker socket access by Traefik (via proxy) | Low | Mitigated by socket proxy (DD-46) restricting API surface to read-only container/network endpoints |
+| Frontend networks allow outbound internet | Low | Required for containers making external API calls; backend networks are `internal: true` for databases |
+| First deployment has no rollback target | Low | Inherent limitation; manual intervention required; subsequent deploys have `.bak` protection |
+
 ---
 
 ## 3. Design Decisions
@@ -180,6 +261,14 @@ Git push → ansible-pull detects change (with flock — single instance only)
 | DD-42 | `.env` naming | Secrets uppercased in `.env` (`secret_name` → `SECRET_NAME`); Compose uses `${SECRET_NAME}` syntax | Documented convention; CI test validates Compose `${VAR}` refs match module secrets; see §7 |
 | DD-43 | Secret scope | Group-specific + host-specific secrets only; no `group_vars/all/secrets.sops.yml` | Avoids N-key encryption problem when adding groups; secrets belong to their scope; see §7 |
 | DD-44 | TLS certificates | Let's Encrypt with DNS-01 challenge via Cloudflare API | Supports wildcard certs; no inbound port 80 dependency for validation; see §25 |
+| DD-45 | Branch protection & supply chain | `main` branch requires: ≥1 review, passing CI, no force-push, no deletion; `CODEOWNERS` for `ansible/` and `.github/` | Push to `main` = root on all servers; this is the single most critical security control; see §2 Trust Model |
+| DD-46 | Docker socket proxy | Traefik accesses Docker API via `tecnativa/docker-socket-proxy` — not the raw socket | Limits Traefik's Docker API access to read-only container/network endpoints; blocks exec, create, and other dangerous operations; see §8 |
+| DD-47 | Container capabilities | `cap_drop: [ALL]` enforced on every service; `cap_add` for specific capabilities with justification | Least privilege; default Linux capabilities are excessive for most containers; see §13 |
+| DD-48 | Read-only rootfs | `read_only: true` is the default; modules opt out with `allow_writable_rootfs: true` and a documented reason | Reduces attack surface; prevents in-container persistence; see §13 |
+| DD-49 | Forward auth default | Forward auth (`forward-auth` middleware) is applied to **all** `service_type: web` modules by default; modules opt out with `forward_auth: false` and justification | Default-deny authentication; public services are the exception, not the rule; see §9 |
+| DD-50 | SOPS environment pre-flight | Early playbook task validates Age key file exists, is `mode 0600`, and a canary secret decrypts successfully — before any module processing | Fail-fast on broken SOPS setup; prevents cascading failures across all modules; see §7 |
+| DD-51 | Ansible collection pinning | External Ansible collections pinned to exact versions in `requirements.yml` | Same supply-chain rigor as Docker images; prevents silent breaking changes or compromised collection versions |
+| DD-52 | Rollback includes secrets | `.env` files are backed up alongside `docker-compose.yml` during rollback; restored atomically | Prevents Compose/secret version mismatch after rollback; see §20 |
 
 ---
 
@@ -286,6 +375,32 @@ For module targeting, the resolve logic maps group names to server types:
          else 'unknown' }}
 ```
 
+### Multi-Group Membership Validation
+
+A host must belong to **exactly one** server type group. The `if/elif` chain above
+silently resolves ambiguity by taking the first match, which can lead to wrong modules
+deployed on a server with security implications. An assertion task prevents this:
+
+```yaml
+# In resolve_modules.yml — validate single group membership
+- name: Assert host belongs to exactly one server type group
+  ansible.builtin.assert:
+    that:
+      - >-
+        (['infrastructure_servers', 'application_servers',
+          'development_servers', 'dmz_servers']
+         | select('in', group_names) | list | length) == 1
+    fail_msg: >-
+      Host {{ inventory_hostname }} belongs to multiple (or zero) server type
+      groups: {{ ['infrastructure_servers', 'application_servers',
+      'development_servers', 'dmz_servers']
+      | select('in', group_names) | list }}.
+      Each host must belong to exactly one server type group.
+```
+
+This assertion runs **before** module resolution and fails the playbook immediately
+if the inventory is misconfigured.
+
 ---
 
 ## 5. Module System
@@ -356,6 +471,16 @@ target_server_types:                # deploy only on these server types
 # ── Service type (enforces Traefik policy) ──
 service_type: web                   # web | internal | backend
 
+# ── Forward auth (DD-49 — default-on for web services) ──
+# Omit or set to true for default behaviour. Set to false + provide reason to opt out.
+# forward_auth: false
+# forward_auth_exempt_reason: "Public API; app handles its own authentication"
+
+# ── Rootfs writability (DD-48 — read-only by default) ──
+# Omit for default read-only rootfs. Set to true + provide reason to opt out.
+# allow_writable_rootfs: true
+# writable_rootfs_reason: "Application writes to /app/data at runtime"
+
 # ── Image (pinned for Renovate — MUST include registry + SHA) ──
 adguard_image: docker.io/adguard/adguardhome:v0.107.52@sha256:abc123...
 
@@ -413,7 +538,7 @@ traefik:
   port: 3000
   middlewares:
     - secure-headers
-    - forward-auth                  # require auth (omit for public-facing services)
+    - forward-auth                  # require auth (applied by default for web services; see DD-49)
   network: "adguard-frontend"
 
 # ── Gatus healthcheck ──
@@ -626,6 +751,21 @@ backend network get `<module>-backend` with `internal: true` (no internet access
    labels so Traefik knows which network to route through.
 5. Database / cache / worker containers connect **only** to the backend network.
 
+### Egress Policy
+
+Frontend networks are **not** `internal: true` — containers on them can make outbound
+internet connections. This is intentional: some web services need to call external APIs,
+fetch updates, or validate licenses.
+
+Backend networks (`internal: true`) provide the critical isolation for databases, caches,
+and workers that have no legitimate need for internet access.
+
+> **Accepted risk**: A compromised container on a frontend network can exfiltrate data
+> outbound. The defense-in-depth layers (image pinning, `no-new-privileges`, `cap_drop`,
+> read-only rootfs, network segmentation from other apps) limit the attacker's capability
+> even if egress is available. Outbound filtering via a forward proxy is deferred as a
+> future hardening consideration.
+
 ### Network Pre-Creation
 
 Networks are created before any Compose stack starts, so they exist as `external: true`
@@ -816,6 +956,50 @@ present and non-empty:
 This runs **before** any containers are started. If a secret is missing or still shows as
 SOPS ciphertext (decryption failed), the entire module deployment is aborted.
 
+### SOPS Environment Pre-Flight Check (DD-50)
+
+Before the module deploy loop begins, an early pre-flight task validates that the
+SOPS/Age decryption environment is functional. This catches systemic issues (missing
+key file, wrong permissions, corrupted keys) before they cascade across every module's
+secret validation.
+
+```yaml
+# tasks/main.yml (runs before module resolution)
+---
+- name: Verify Age key file exists and has correct permissions
+  ansible.builtin.stat:
+    path: /root/.config/sops/age/keys.txt
+  register: _age_keyfile
+
+- name: Assert Age key file is present and secure
+  ansible.builtin.assert:
+    that:
+      - _age_keyfile.stat.exists
+      - _age_keyfile.stat.mode == '0600'
+      - _age_keyfile.stat.pw_name == 'root'
+      - _age_keyfile.stat.size > 0
+    fail_msg: >-
+      SOPS Age key file is missing, has wrong permissions, or is empty.
+      Expected: /root/.config/sops/age/keys.txt, mode 0600, owned by root.
+      Run the onboarding script (ansible-pull.sh) to inject keys.
+
+- name: Validate SOPS decryption with canary secret
+  ansible.builtin.assert:
+    that:
+      - sops_canary is defined
+      - sops_canary | string | length > 0
+      - sops_canary | string is not search('ENC\\[AES256_GCM')
+    fail_msg: >-
+      SOPS canary secret failed to decrypt. The Age key file may contain
+      the wrong keys or the community.sops.sops_vars plugin is not working.
+      Verify the key file at /root/.config/sops/age/keys.txt contains
+      both the host key and the group key.
+```
+
+Each group's `secrets.sops.yml` must include a `sops_canary` variable — a non-sensitive
+test value (e.g., `sops_canary: "decryption-ok"`) that proves the decryption pipeline
+works. The canary is checked before any module processing begins.
+
 ### AI Agent Compatibility
 
 SOPS files are standard YAML with encrypted values. AI agents can:
@@ -851,8 +1035,12 @@ sops:
 # ansible/requirements.yml  (addition)
 collections:
   - name: community.sops
-    version: ">=1.9.0"
+    version: "1.9.1"              # pinned — same supply-chain rigor as Docker images (DD-51)
 ```
+
+> **Version pinning (DD-51)**: External Ansible collections are pinned to exact versions,
+> not ranges like `>=1.9.0`. A compromised or breaking collection update could affect
+> every server on the next ansible-pull run. Update deliberately via PR with CI validation.
 
 The `community.sops.sops_vars` plugin auto-decrypts `*.sops.yml` files when loading
 variables. Add to `ansible.cfg`:
@@ -961,7 +1149,37 @@ env_extra:
 - Services of type `internal` or `backend` are exempt.
 - **No host ports are exposed** for web services. All HTTP/HTTPS traffic flows through
   Traefik on ports 80/443.
+- **Port 80** is exposed alongside port 443 solely for the HTTP→HTTPS redirect
+  middleware (`redirect-to-https`). No plaintext HTTP traffic reaches application
+  containers — all requests are redirected to HTTPS before routing.
 - Exceptions (e.g., DNS port 53) must be explicitly justified in `exposed_ports`.
+
+### Docker Socket Proxy (DD-46)
+
+Traefik requires access to the Docker API for service autodiscovery. Instead of
+mounting the raw Docker socket (`/var/run/docker.sock`), which grants root-equivalent
+access to the host, Traefik connects through a **Docker socket proxy**
+(`tecnativa/docker-socket-proxy`).
+
+The socket proxy exposes a restricted, read-only subset of the Docker API:
+
+| Endpoint | Allowed | Rationale |
+|----------|---------|------------|
+| `GET /containers` | Yes | Traefik needs to discover running services |
+| `GET /networks` | Yes | Traefik needs to know which networks to join |
+| `GET /services` | Yes | Required for Docker Swarm mode (future-proof) |
+| `POST /containers/*/exec` | **No** | Blocks arbitrary command execution in containers |
+| `POST /containers/create` | **No** | Blocks creating new containers |
+| `DELETE /containers/*` | **No** | Blocks removing containers |
+| `POST /volumes` | **No** | Blocks volume manipulation |
+| All other write operations | **No** | Default deny |
+
+> **Threat mitigated**: A vulnerability in Traefik (or its image) that attempts to
+> use the Docker API for privilege escalation is blocked by the proxy. The attacker
+> can enumerate containers and networks (read-only) but cannot create, modify, or
+> exec into containers.
+
+The socket proxy runs as a dedicated service in the Traefik module's Compose file:
 
 ### Traefik Compose Rendering
 
@@ -969,20 +1187,51 @@ env_extra:
 # templates/modules/traefik/docker-compose.yml.j2
 ---
 services:
+  # ── Docker Socket Proxy (DD-46) ──
+  socket-proxy:
+    image: {{ socket_proxy_image }}
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    read_only: true
+    environment:
+      - CONTAINERS=1              # allow read-only container listing
+      - NETWORKS=1                # allow read-only network listing
+      - SERVICES=1                # allow read-only service listing
+      - POST=0                    # block all POST requests
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - traefik-socket
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
   traefik:
     image: {{ traefik_image }}
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
+    cap_drop:
+      - ALL
+    read_only: true
+    depends_on:
+      - socket-proxy
     ports:
-      - "80:80"
+      - "80:80"                   # HTTP→HTTPS redirect only (redirect-to-https middleware)
       - "443:443"
+    environment:
+      - DOCKER_HOST=tcp://socket-proxy:2375
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
       - {{ compose_modules_base_dir }}/traefik/config/traefik.yml:/traefik.yml:ro
       - {{ compose_modules_base_dir }}/traefik/config/dynamic:/etc/traefik/dynamic:ro
       - traefik_certs:/letsencrypt
     networks:
+      - traefik-socket
 {% for mod in effective_modules %}
 {%   set mod_config = lookup('vars', mod + '_config', default={}) %}
 {%   if mod_config.traefik.enabled | default(false) and mod != 'traefik' %}
@@ -993,6 +1242,8 @@ services:
       - "traefik.enable=true"
 
 networks:
+  traefik-socket:
+    internal: true                # socket proxy is never internet-accessible
 {% for mod in effective_modules %}
 {%   set mod_config = lookup('vars', mod + '_config', default={}) %}
 {%   if mod_config.traefik.enabled | default(false) and mod != 'traefik' %}
@@ -1004,6 +1255,12 @@ networks:
 volumes:
   traefik_certs:
 ```
+
+> **Key changes from raw socket mount**: Traefik no longer mounts
+> `/var/run/docker.sock` directly. Instead, it connects to the socket proxy via
+> `DOCKER_HOST=tcp://socket-proxy:2375` over the internal `traefik-socket` network.
+> The socket proxy is the only container with socket access, and it blocks all write
+> operations.
 
 ### Standard Traefik Labels (generated per module)
 
@@ -1031,7 +1288,60 @@ Before deploying any application modules in production, **Traefik forward auth**
 in place using `ghcr.io/italypaleale/traefik-forward-auth`.
 
 Forward auth is deployed as its own module (`forward_auth`) and provides a middleware
-that other modules reference in their `traefik.middlewares` list.
+that is **applied to all `service_type: web` modules by default** (DD-49). Modules must
+explicitly opt out by setting `forward_auth: false` with a documented justification.
+
+### Default-On Policy (DD-49)
+
+The `forward-auth` middleware is automatically added to every `service_type: web` module
+unless the module explicitly opts out:
+
+```yaml
+# Default behaviour — forward auth is applied automatically:
+traefik:
+  enabled: true
+  host: "app.{{ domain }}"
+  port: 8080
+  middlewares:
+    - secure-headers
+  # forward-auth is added automatically by the deploy template
+  # unless forward_auth: false is set
+
+# Opting OUT of forward auth (explicit, with justification):
+forward_auth: false
+forward_auth_exempt_reason: "Public-facing API; authentication handled by the application"
+```
+
+The deploy template includes forward auth in the middleware chain unless opted out:
+
+```yaml
+# Standard Traefik labels (generated per module)
+{% set module_middlewares = traefik.middlewares | default([]) %}
+{% set needs_forward_auth = (service_type == 'web') and (forward_auth | default(true)) %}
+{% if needs_forward_auth %}
+{%   set module_middlewares = module_middlewares + ['forward-auth'] %}
+{% endif %}
+  - "traefik.http.routers.{{ module_name }}.middlewares={{ module_middlewares | map('regex_replace', '^forward-auth$', 'forward-auth@docker') | map('regex_replace', '^(?!.*@)', '\\0@file') | join(',') }}"
+```
+
+**CI validation** enforces that:
+- Every `service_type: web` module either has forward auth (default) or explicitly sets
+  `forward_auth: false` with a non-empty `forward_auth_exempt_reason`.
+- The exempt reason is visible in the module vars for security review.
+
+```bash
+# tests/bash/module-schema-test.bats
+@test "web modules without forward auth must document exemption reason" {
+  for module_file in ansible/roles/docker_compose_modules/vars/modules/*.yml; do
+    module_name=$(basename "$module_file" .yml)
+    if grep -q "service_type: web" "$module_file" && \
+       grep -q "forward_auth: false" "$module_file"; then
+      grep -q "forward_auth_exempt_reason:" "$module_file" || \
+        fail "Module $module_name opts out of forward auth without forward_auth_exempt_reason"
+    fi
+  done
+}
+```
 
 ### Module Structure
 
@@ -1499,7 +1809,19 @@ services:
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
-    # read_only: true               # Enable if application supports it
+    cap_drop:                       # DD-47 — drop all capabilities by default
+      - ALL
+    # cap_add:                      # Add back specific capabilities if needed
+    #   - NET_BIND_SERVICE          # e.g., for binding to ports < 1024
+    read_only: true                 # DD-48 — read-only rootfs by default
+    # tmpfs:                        # Use tmpfs for writable directories if needed
+    #   - /tmp
+    #   - /run
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
     networks:
 {% if networks.frontend | default(false) %}
       - {{ module_name }}-frontend
@@ -1511,7 +1833,7 @@ services:
 {% if traefik.enabled | default(false) %}
       - "traefik.enable=true"
       - "traefik.docker.network={{ module_name }}-frontend"
-      # ... standard Traefik labels
+      # ... standard Traefik labels (including forward-auth by default — DD-49)
 {% endif %}
 
 networks:
@@ -1815,6 +2137,13 @@ A summary JSON file is written to `/var/log/ansible/` with:
 - List of deployed modules and their validation status
 - List of removed modules
 - Any warnings or errors
+- **Audit trail** (security-relevant events):
+  - Which modules had secrets deployed (secret names only — never values)
+  - Which `.env` files were written or updated
+  - Rollback events (module name, reason, outcome)
+  - Orphan modules removed during cleanup
+  - Modules that skipped validation or had non-critical failures
+  - SOPS pre-flight check result
 
 ---
 
@@ -2115,30 +2444,35 @@ in a crash loop, and the previous working state is lost.
 
 ### Solution: `.bak` Backup with Conditional Restore
 
-Before rendering a new Compose file, the existing one is backed up. On critical
-validation failure, the backup is restored. On success, the backup is cleaned up.
+Before rendering a new Compose file, the existing one is backed up. The `.env` file
+is also backed up alongside the Compose file (DD-52) to prevent version mismatch
+between secrets and Compose configuration after a rollback. On critical validation
+failure, both backups are restored. On success, both backups are cleaned up.
 
 ### Deployment Flow (Per Module)
 
 ```
 1. If docker-compose.yml exists AND docker-compose.yml.bak does NOT exist:
      → copy docker-compose.yml → docker-compose.yml.bak
+     → copy .env → .env.bak (mode 0600, if .env exists)
    (If .bak already exists, skip — a previous run may have failed and we
     don't want to overwrite the last-known-good backup)
 2. Render new docker-compose.yml from template
-3. Validate new Compose file (docker compose config)
-4. docker compose up -d
-5. Run post-deployment validation
-6. If validation passes:
-     → delete docker-compose.yml.bak (cleanup)
-7. If validation fails AND validation.critical is true:
+3. Render new .env from secrets
+4. Validate new Compose file (docker compose config)
+5. docker compose up -d
+6. Run post-deployment validation
+7. If validation passes:
+     → delete docker-compose.yml.bak and .env.bak (cleanup)
+8. If validation fails AND validation.critical is true:
      → docker compose down
      → restore docker-compose.yml.bak → docker-compose.yml
+     → restore .env.bak → .env (mode 0600)
      → docker compose up -d (restore previous state)
      → fail the playbook run
-8. If validation fails AND validation.critical is false:
+9. If validation fails AND validation.critical is false:
      → log warning
-     → delete docker-compose.yml.bak (don't block next run)
+     → delete docker-compose.yml.bak and .env.bak (don't block next run)
      → continue with remaining modules
 ```
 
@@ -2147,7 +2481,7 @@ validation failure, the backup is restored. On success, the backup is cleaned up
 ```yaml
 # tasks/deploy_module.yml (rollback section)
 ---
-# Step 1: Back up existing Compose file (only if .bak doesn't already exist)
+# Step 1: Back up existing Compose file and .env (only if .bak doesn't already exist)
 - name: "Back up {{ module_name }} compose file"
   ansible.builtin.copy:
     src: "{{ compose_modules_base_dir }}/{{ module_name }}/docker-compose.yml"
@@ -2158,17 +2492,31 @@ validation failure, the backup is restored. On success, the backup is cleaned up
   when:
     - _compose_file.stat.exists | default(false)
 
-# ... (render new compose file, docker compose up, validation) ...
+- name: "Back up {{ module_name }} .env file (DD-52)"
+  ansible.builtin.copy:
+    src: "{{ compose_modules_base_dir }}/{{ module_name }}/.env"
+    dest: "{{ compose_modules_base_dir }}/{{ module_name }}/.env.bak"
+    remote_src: true
+    force: false                  # do NOT overwrite existing .bak
+    mode: "0600"                  # secrets — root-only
+  when:
+    - _env_file.stat.exists | default(false)
+  no_log: true
 
-# Step 6: Clean up .bak on success
+# ... (render new compose file + .env, docker compose up, validation) ...
+
+# Step 7: Clean up .bak files on success
 - name: "Clean up {{ module_name }} compose backup"
   ansible.builtin.file:
-    path: "{{ compose_modules_base_dir }}/{{ module_name }}/docker-compose.yml.bak"
+    path: "{{ compose_modules_base_dir }}/{{ module_name }}/{{ item }}"
     state: absent
+  loop:
+    - docker-compose.yml.bak
+    - .env.bak
   when: _validation_passed
 
-# Step 7: Rollback on critical failure
-- name: "Rollback {{ module_name }} to previous compose file"
+# Step 8: Rollback on critical failure
+- name: "Rollback {{ module_name }} to previous state"
   when:
     - not _validation_passed
     - module_config.validation.critical | default(false)
@@ -2186,32 +2534,49 @@ validation failure, the backup is restored. On success, the backup is cleaned up
         remote_src: true
         mode: "0644"
 
+    - name: "Restore {{ module_name }} .env backup (DD-52)"
+      ansible.builtin.copy:
+        src: "{{ compose_modules_base_dir }}/{{ module_name }}/.env.bak"
+        dest: "{{ compose_modules_base_dir }}/{{ module_name }}/.env"
+        remote_src: true
+        mode: "0600"
+      when: _env_bak_file.stat.exists | default(false)
+      no_log: true
+
     - name: "Restart {{ module_name }} with previous compose file"
       community.docker.docker_compose_v2:
         project_src: "{{ compose_modules_base_dir }}/{{ module_name }}"
         state: present
 
-    - name: "Clean up {{ module_name }} compose backup after rollback"
+    - name: "Clean up {{ module_name }} backups after rollback"
       ansible.builtin.file:
-        path: "{{ compose_modules_base_dir }}/{{ module_name }}/docker-compose.yml.bak"
+        path: "{{ compose_modules_base_dir }}/{{ module_name }}/{{ item }}"
         state: absent
+      loop:
+        - docker-compose.yml.bak
+        - .env.bak
 
     - name: "Fail playbook — {{ module_name }} critical validation failed"
       ansible.builtin.fail:
         msg: >-
           Module '{{ module_name }}' failed post-deployment validation and has been
-          rolled back to the previous compose file. Investigate and fix before retrying.
+          rolled back to the previous compose and .env files. Investigate and fix
+          before retrying.
 ```
 
 ### Important Constraints
 
-- **No automatic data restore**: The rollback only restores the Compose file and
-  restarts the previous containers. Database migrations, volume data changes, or
-  destructive operations are **not** reversed. This is a Compose-level rollback, not
+- **No automatic data restore**: The rollback only restores the Compose file, `.env`
+  file, and restarts the previous containers. Database migrations, volume data changes,
+  or destructive operations are **not** reversed. This is a Compose-level rollback, not
   a full disaster recovery.
+- **Atomic rollback (DD-52)**: Both `docker-compose.yml` and `.env` are restored
+  together to prevent version mismatch between secrets and Compose configuration.
 - **`.bak` protection**: The `force: false` on the backup step ensures that if a
   previous run failed (leaving a `.bak` in place), the next run does NOT overwrite it.
   This preserves the last-known-good configuration.
+- **`.env.bak` security**: The `.env.bak` file is created with `mode: 0600` and uses
+  `no_log: true` to prevent secret values from appearing in Ansible output.
 - **`.bak` cleanup**: On success, the `.bak` is deleted so the next run can create a
   fresh backup. On rollback, the `.bak` is also deleted after restoration to prevent
   stale backups.
@@ -2379,6 +2744,9 @@ services:
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
+    cap_drop:                       # DD-47
+      - ALL
+    read_only: true                 # DD-48
     logging:
       driver: json-file
       options:
@@ -2718,9 +3086,13 @@ app_image: "docker.io/library/nginx:1.27.0@sha256:digest"
 ## Compose File Requirements
 
 - `security_opt: [no-new-privileges:true]` on every service
+- `cap_drop: [ALL]` on every service (add back specific caps with `cap_add` if needed) (DD-47)
+- `read_only: true` on every service (use `tmpfs` for writable dirs; opt out with `allow_writable_rootfs`) (DD-48)
 - `restart: unless-stopped`
+- `logging` with `max-size` and `max-file` on every service (DD-40)
 - No `ports:` unless `exposed_ports` is defined in module vars
 - No `privileged: true` unless `allow_privileged: true` in module vars
+- Forward auth is applied automatically for `service_type: web` (DD-49); opt out with `forward_auth: false` + `forward_auth_exempt_reason`
 ```
 
 ### AI Agent Workflow
@@ -2753,32 +3125,34 @@ complete modules without human intervention.
 | 1.5 | Update `ansible-pull.sh` for Age key injection (host key + group key) |
 | 1.6 | Configure Docker address pools via `geerlingguy.docker` (§23) |
 | 1.7 | Implement concurrency locking in ansible-pull.service (flock §19) |
-| 1.8 | Create module template scaffold (`_template/`) with logging defaults (§22) |
-| 1.9 | Implement module resolution logic with pre-loading + priority sort (§5) |
+| 1.8 | Create module template scaffold (`_template/`) with security defaults (§13, §22: cap_drop, read_only, logging) |
+| 1.9 | Implement module resolution logic with pre-loading + priority sort + multi-group assertion (§4, §5) |
 | 1.10 | Update `deploy_module.yml` with targeting + config layering |
 | 1.11 | Implement `.env` file templating for secrets → containers |
 | 1.12 | Add image pinning convention + Renovate custom manager with critical DB labels |
-| 1.13 | Implement secret validation pre-flight (`validate_secrets.yml`) |
-| 1.14 | Implement Docker Compose validation task (`validate_compose.yml`) |
-| 1.15 | Create CI compose validation tooling (mock vars, render helper, Bats test) |
-| 1.16 | Write Bats tests: module-schema-test, compose-validation-test, secret-structure-test, .env-naming-test |
+| 1.13 | Implement SOPS environment pre-flight check (DD-50: key file validation + canary secret) |
+| 1.14 | Implement secret validation pre-flight (`validate_secrets.yml`) |
+| 1.15 | Implement Docker Compose validation task (`validate_compose.yml`) with security rules (DD-47, DD-48, DD-49) |
+| 1.16 | Create CI compose validation tooling (mock vars, render helper, Bats test) |
+| 1.17 | Write Bats tests: module-schema-test, compose-validation-test, secret-structure-test, .env-naming-test |
+| 1.18 | Configure branch protection on `main` + CODEOWNERS file (DD-45) |
 
 ### Phase 2 — Network, Traefik & First Module
 
 | Task | Description |
 |------|-------------|
 | 2.1 | Implement per-module network creation tasks (frontend + backend isolation) |
-| 2.2 | Render Traefik Compose dynamically to join all frontend networks |
+| 2.2 | Render Traefik Compose dynamically with socket proxy (DD-46) and all frontend networks |
 | 2.3 | Create Traefik middleware chain file (§21) |
 | 2.4 | Add Traefik enforcement assertion for `service_type: web` |
 | 2.5 | Implement TLS certificate strategy (Let's Encrypt DNS-01 via Cloudflare §25) |
 | 2.6 | Migrate existing Traefik module to new structure |
-| 2.7 | Deploy `traefik-forward-auth` module |
+| 2.7 | Deploy `traefik-forward-auth` module with default-on policy (DD-49) |
 | 2.8 | Deploy `mendhak/http-https-echo` as validation/test module behind Traefik |
-| 2.9 | Verify end-to-end: Traefik → forward-auth → echo container |
-| 2.10 | Implement rollback strategy with `.bak` backup/restore (§20) |
+| 2.9 | Verify end-to-end: Traefik → socket-proxy → forward-auth → echo container |
+| 2.10 | Implement rollback strategy with `.bak` backup/restore for both compose + .env (DD-52, §20) |
 | 2.11 | Implement dry-run support (`--check --diff` compatibility on all tasks) |
-| 2.12 | Write Bats tests: network-test, dry-run-test, .env-naming-validation-test |
+| 2.12 | Write Bats tests: network-test, dry-run-test, .env-naming-validation-test, forward-auth-default-test |
 
 ### Phase 3 — Gatus & Lifecycle
 
@@ -2851,6 +3225,7 @@ Decisions made during the design phase that are no longer open:
 | 9 | DNS record generation approach? | **Option B (static)** — ansible-pull has no cross-host facts; static from inventory + module vars |
 | 10 | Standardise health endpoint paths? | **No** — `healthcheck.path` is optional per module; not every image has a health endpoint |
 | 11 | DNS resolver config on Docker hosts? | **Via DHCP** — not managed by Ansible; infra servers get Quad9 upstream via Ansible task (loop prevention) |
+| 12 | Which services should be exempt from forward auth? | **Resolved by DD-49** — forward auth is default-on for all `service_type: web` modules; opt out with `forward_auth: false` + `forward_auth_exempt_reason` in module vars |
 
 ---
 
@@ -2859,11 +3234,9 @@ Decisions made during the design phase that are no longer open:
 | # | Question | Context |
 |---|----------|---------|
 | 1 | What alerting channels for Gatus? Discord, email, PagerDuty? | Needs to be decided per environment |
-| 2 | Which services should be exempt from forward auth? | Public-facing services (e.g., Gatus dashboard?) |
-| 3 | Should the echo test container remain deployed in production? | Useful for debugging vs. minimal surface |
-| 4 | What Azure Blob retention policy for backups? | Cost vs. recovery window trade-off |
-| 5 | Should ansible-pull timer frequency differ between dev and prod? | More frequent on dev for faster iteration |
-| 6 | What alerting channels for Gatus? Discord, email, PagerDuty? | Moved from Resolved Decisions — needs to be decided per environment |
+| 2 | Should the echo test container remain deployed in production? | Useful for debugging vs. minimal surface |
+| 3 | What Azure Blob retention policy for backups? | Cost vs. recovery window trade-off |
+| 4 | Should ansible-pull timer frequency differ between dev and prod? | More frequent on dev for faster iteration |
 
 ---
 
