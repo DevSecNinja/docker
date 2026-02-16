@@ -32,7 +32,7 @@ docker_group_gid: 998
 Or globally in group_vars:
 
 ```yaml
-# In ansible/inventory/group_vars/docker_servers.yml
+# In ansible/inventory/group_vars/application_servers.yml
 docker_group_gid: 780
 ```
 

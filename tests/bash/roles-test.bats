@@ -233,3 +233,108 @@ setup() {
 @test "duplicate traefik role: should not exist (using docker_compose_modules instead)" {
     [ ! -d "${ANSIBLE_DIR}/roles/traefik" ]
 }
+
+# ============================================================
+# Inventory structure tests
+# ============================================================
+
+@test "inventory: hosts.yml uses server type groups instead of docker_servers" {
+    # The old docker_servers group must not exist
+    run grep "docker_servers" "${ANSIBLE_DIR}/inventory/hosts.yml"
+    [ "$status" -eq 1 ]
+
+    # Server type groups must exist
+    run grep "application_servers" "${ANSIBLE_DIR}/inventory/hosts.yml"
+    [ "$status" -eq 0 ]
+    run grep "development_servers" "${ANSIBLE_DIR}/inventory/hosts.yml"
+    [ "$status" -eq 0 ]
+    run grep "dmz_servers" "${ANSIBLE_DIR}/inventory/hosts.yml"
+    [ "$status" -eq 0 ]
+}
+
+@test "inventory: each host belongs to exactly one server type group" {
+    # Ensure ansible is installed
+    if ! command -v ansible-inventory >/dev/null 2>&1; then
+        pip install ansible >/dev/null 2>&1
+    fi
+
+    # Define server type groups
+    local server_type_groups="application_servers development_servers dmz_servers infrastructure_servers"
+
+    # Get all hosts from the inventory
+    cd "$REPO_ROOT"
+    local hosts
+    hosts=$(ansible-inventory -i "${ANSIBLE_DIR}/inventory/hosts.yml" --list 2>/dev/null \
+        | python3 -c "import sys,json; d=json.load(sys.stdin); meta=d.get('_meta',{}).get('hostvars',{}); print(' '.join(meta.keys()))")
+
+    for host in $hosts; do
+        local count=0
+        for group in $server_type_groups; do
+            # Check if this host is in this group
+            local in_group
+            in_group=$(ansible-inventory -i "${ANSIBLE_DIR}/inventory/hosts.yml" --list 2>/dev/null \
+                | python3 -c "import sys,json; d=json.load(sys.stdin); g=d.get('${group}',{}).get('hosts',[]); print('yes' if '${host}' in g else 'no')")
+            if [ "$in_group" = "yes" ]; then
+                count=$((count + 1))
+            fi
+        done
+        # Each host must be in exactly one server type group
+        [ "$count" -eq 1 ] || {
+            echo "Host '${host}' is in ${count} server type groups (expected exactly 1)" >&2
+            false
+        }
+    done
+}
+
+@test "inventory: ansible_host is defined for every host" {
+    # Ensure ansible is installed
+    if ! command -v ansible-inventory >/dev/null 2>&1; then
+        pip install ansible >/dev/null 2>&1
+    fi
+
+    cd "$REPO_ROOT"
+    # Get hostvars and check ansible_host for each
+    local result
+    result=$(ansible-inventory -i "${ANSIBLE_DIR}/inventory/hosts.yml" --list 2>/dev/null \
+        | python3 -c "
+import sys, json
+d = json.load(sys.stdin)
+hostvars = d.get('_meta', {}).get('hostvars', {})
+missing = [h for h, v in hostvars.items() if 'ansible_host' not in v]
+if missing:
+    print('MISSING: ' + ', '.join(missing))
+    sys.exit(1)
+else:
+    print('OK')
+")
+    [ "$result" = "OK" ] || {
+        echo "Hosts missing ansible_host: ${result}" >&2
+        false
+    }
+}
+
+@test "inventory: no server_type variable in host_vars (DD-37)" {
+    # server_type must be derived from group membership, not set explicitly
+    for host_var_file in "${ANSIBLE_DIR}"/inventory/host_vars/*.yml; do
+        run grep -E "^server_type:" "$host_var_file"
+        [ "$status" -eq 1 ] || {
+            echo "Found explicit server_type in $(basename "$host_var_file") — must be derived from group_names (DD-37)" >&2
+            false
+        }
+    done
+}
+
+@test "inventory: svlazdock1 has server_environment set to production" {
+    run grep "server_environment: production" "${ANSIBLE_DIR}/inventory/host_vars/svlazdock1.yml"
+    [ "$status" -eq 0 ]
+}
+
+@test "inventory: svlazdev1 has server_environment set to development" {
+    run grep "server_environment: development" "${ANSIBLE_DIR}/inventory/host_vars/svlazdev1.yml"
+    [ "$status" -eq 0 ]
+}
+
+@test "inventory: svlazdev1 has deploy_all_modules enabled" {
+    run grep "deploy_all_modules: true" "${ANSIBLE_DIR}/inventory/host_vars/svlazdev1.yml"
+    [ "$status" -eq 0 ]
+}

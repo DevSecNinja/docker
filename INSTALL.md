@@ -318,7 +318,7 @@ To add a new server to the infrastructure:
    ```yaml
    all:
      children:
-       docker_servers:
+       application_servers:
          hosts:
            SVLAZDOCK1:
              ansible_host: svlazdock1.local

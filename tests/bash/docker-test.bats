@@ -38,7 +38,7 @@ setup() {
 ---
 all:
   children:
-    docker_servers:
+    application_servers:
       hosts:
         localhost:
           ansible_connection: local
@@ -71,7 +71,7 @@ EEOF
 ---
 all:
   children:
-    docker_servers:
+    application_servers:
       hosts:
         localhost:
           ansible_connection: local
@@ -113,7 +113,7 @@ EEOF
 ---
 all:
   children:
-    docker_servers:
+    application_servers:
       hosts:
         localhost:
           ansible_connection: local
