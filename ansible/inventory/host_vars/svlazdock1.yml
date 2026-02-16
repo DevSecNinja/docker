@@ -1,6 +1,9 @@
 ---
 # Host-specific variables for svlazdock1
 
+# Environment classification
+server_environment: production
+
 # GitHub username for SSH keys installation
 github_ssh_keys_username: DevSecNinja
 

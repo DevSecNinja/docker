@@ -1,6 +1,12 @@
 ---
 # Host-specific variables for svlazdev1
 
+# Environment classification
+server_environment: development
+
+# Deploy all available modules on development servers
+deploy_all_modules: true
+
 # GitHub username for SSH keys installation
 github_ssh_keys_username: DevSecNinja
 
