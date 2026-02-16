@@ -328,7 +328,7 @@ An auto-merge / update strategy for Renovate PRs is on the roadmap (see §28).
 ---
 # server_type is NOT set here — derived from group membership (DD-37).
 # svlazdock1 is in the application_servers group.
-environment: production
+server_environment: production
 
 compose_modules:
   - traefik
@@ -343,7 +343,7 @@ compose_modules:
 ---
 # server_type is NOT set here — derived from group membership (DD-37).
 # svlazdev1 is in the development_servers group.
-environment: development
+server_environment: development
 deploy_all_modules: true       # deploys every module found in vars/modules/
 
 compose_modules: []            # ignored when deploy_all_modules is true
