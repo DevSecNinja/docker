@@ -11,7 +11,7 @@ python = "3.14"
 
 # Ansible and related tools
 "pipx:ansible" = "13.3.0"
-"pipx:ansible-lint" = "26.1.1"
+"pipx:ansible-lint" = "26.2.0"
 "pipx:yamllint" = "1.38.0"
 
 # Bats testing framework
