@@ -53,3 +53,15 @@
     - role: maintenance
       when: "'maintenance' in server_features"
       tags: [maintenance, automation]
+
+    - role: packages
+      when: "'packages' in server_features"
+      tags: [packages]
+
+    - role: git_repos
+      when: "'git_repos' in server_features and git_repos | default([]) | length > 0"
+      tags: [git_repos]
+
+    - role: cron_jobs
+      when: "'cron_jobs' in server_features and cron_jobs | default([]) | length > 0"
+      tags: [cron_jobs]

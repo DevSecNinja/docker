@@ -1,0 +1,19 @@
+---
+# Tasks for Packages role
+
+- name: Install apt packages
+  ansible.builtin.apt:
+    name: "{{ packages_apt }}"
+    state: present
+  when: packages_apt | length > 0
+  tags: [packages]
+
+- name: Install Homebrew packages
+  community.general.homebrew:
+    name: "{{ packages_brew }}"
+    state: present
+    path: "{{ packages_brew_binary | dirname }}"
+  become: true
+  become_user: "{{ packages_brew_user }}"
+  when: packages_brew | length > 0
+  tags: [packages]

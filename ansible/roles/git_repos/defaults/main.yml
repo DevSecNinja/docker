@@ -1,0 +1,9 @@
+---
+# Default variables for Git Repos role
+
+# List of repositories to clone. Example:
+# git_repos:
+#   - repo: "https://github.com/example/repo"
+#     dest: "/opt/repo"
+#     version: main
+git_repos: []

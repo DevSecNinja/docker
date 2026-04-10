@@ -1,0 +1,10 @@
+---
+# Default variables for Cron Jobs role
+
+# List of cron jobs to configure. Example:
+# cron_jobs:
+#   - name: "My job"
+#     minute: "0"
+#     hour: "0"
+#     job: "bash /opt/script.sh 2>&1 | logger -t myjob"
+cron_jobs: []

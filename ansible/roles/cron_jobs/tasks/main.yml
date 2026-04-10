@@ -1,0 +1,16 @@
+---
+# Tasks for Cron Jobs role
+
+- name: Configure cron jobs
+  ansible.builtin.cron:
+    name: "{{ item.name }}"
+    minute: "{{ item.minute | default('0') }}"
+    hour: "{{ item.hour | default('0') }}"
+    day: "{{ item.day | default('*') }}"
+    month: "{{ item.month | default('*') }}"
+    weekday: "{{ item.weekday | default('*') }}"
+    job: "{{ item.job }}"
+    user: "{{ item.user | default('root') }}"
+    state: "{{ item.state | default('present') }}"
+  loop: "{{ cron_jobs }}"
+  tags: [cron_jobs]

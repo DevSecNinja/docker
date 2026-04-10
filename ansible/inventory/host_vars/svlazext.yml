@@ -20,6 +20,28 @@ server_features:
   - chezmoi
   - ansible_pull_setup
   - maintenance
+  - packages
+  - git_repos
+  - cron_jobs
+
+# Packages to install
+packages_apt:
+  - jq
+
+# Git repositories to clone and keep up to date
+git_repos:
+  - repo: "https://github.com/DevSecNinja/truenas-apps"
+    dest: "/opt/apps"
+    version: main
+
+# Cron jobs to configure
+cron_jobs:
+  - name: "Run dccd for truenas-apps"
+    minute: "0"
+    hour: "0"
+    job: >-
+      bash /opt/apps/scripts/dccd.sh -d /opt/apps -S $(hostname -s)
+      -k /opt/apps/age.key -x shared 2>&1 | logger -t dccd
 
 # Docker Compose modules to deploy
 compose_modules: []

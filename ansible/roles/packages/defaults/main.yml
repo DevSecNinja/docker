@@ -1,0 +1,14 @@
+---
+# Default variables for Packages role
+
+# Apt packages to install
+packages_apt: []
+
+# Homebrew packages to install
+packages_brew: []
+
+# User to run brew as (should match homebrew_user from package_managers role)
+packages_brew_user: "{{ homebrew_user | default(ansible_user) }}"
+
+# Homebrew binary path (Linux default)
+packages_brew_binary: "/home/linuxbrew/.linuxbrew/bin/brew"

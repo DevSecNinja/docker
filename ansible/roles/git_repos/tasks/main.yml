@@ -1,0 +1,17 @@
+---
+# Tasks for Git Repos role
+
+- name: Install git
+  ansible.builtin.apt:
+    name: git
+    state: present
+  tags: [git_repos]
+
+- name: Clone or update git repositories
+  ansible.builtin.git:
+    repo: "{{ item.repo }}"
+    dest: "{{ item.dest }}"
+    version: "{{ item.version | default('main') }}"
+    update: true
+  loop: "{{ git_repos }}"
+  tags: [git_repos]
