@@ -78,8 +78,6 @@ Primary Docker host configured with:
 - ✅ Automated ansible-pull updates
 - ✅ Automated maintenance (daily and weekly patches)
 
-**Compose Modules**: `traefik`
-
 ### SVLAZDEV1 (Debian)
 
 Development/management server configured with:
