@@ -16,7 +16,7 @@
     month: "{{ item.month | default('*') }}"
     weekday: "{{ item.weekday | default('*') }}"
     job: "{{ item.job }}"
-    user: "{{ item.user | default('root') }}"
+    user: "{{ item.user | default(ansible_user) }}"
     state: "{{ item.state | default('present') }}"
   loop: "{{ cron_jobs }}"
   tags: [cron_jobs]

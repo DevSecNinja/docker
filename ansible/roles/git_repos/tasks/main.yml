@@ -15,3 +15,12 @@
     update: true
   loop: "{{ git_repos }}"
   tags: [git_repos]
+
+- name: Set ownership of git repositories to ansible user
+  ansible.builtin.file:
+    path: "{{ item.dest }}"
+    owner: "{{ item.user | default(ansible_user) }}"
+    group: "{{ item.group | default(ansible_user) }}"
+    recurse: true
+  loop: "{{ git_repos }}"
+  tags: [git_repos]

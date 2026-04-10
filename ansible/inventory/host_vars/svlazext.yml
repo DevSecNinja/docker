@@ -33,12 +33,15 @@ git_repos:
   - repo: "https://github.com/DevSecNinja/truenas-apps"
     dest: "/opt/apps"
     version: main
+    user: jean-paul
+    group: jean-paul
 
 # Cron jobs to configure
 cron_jobs:
   - name: "Run dccd for truenas-apps"
     minute: "0"
     hour: "0"
+    user: jean-paul
     job: >-
       bash /opt/apps/scripts/dccd.sh -d /opt/apps -S $(hostname -s)
       -k /opt/apps/age.key -x shared 2>&1 | logger -t dccd
