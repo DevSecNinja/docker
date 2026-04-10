@@ -24,7 +24,7 @@
   ansible.builtin.get_url:
     url: "{{ chezmoi_binary_url }}"
     dest: "{{ chezmoi_install_path }}"
-    mode: '0755'
+    mode: "0755"
   when: not chezmoi_binary.stat.exists or (chezmoi_existing_check.rc is defined and chezmoi_existing_check.rc != 0)
 
 - name: Verify Chezmoi installation
