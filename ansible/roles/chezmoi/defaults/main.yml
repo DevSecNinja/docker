@@ -1,9 +1,11 @@
 ---
 # Default variables for Chezmoi role
 chezmoi_version: "latest"
+# Architecture mapping for Chezmoi binary download
+chezmoi_arch: "{{ 'arm64' if ansible_architecture == 'aarch64' else 'amd64' }}"
 # URL for downloading Chezmoi binary
 chezmoi_binary_url: >-
-  https://github.com/twpayne/chezmoi/releases/latest/download/chezmoi-linux-amd64
+  https://github.com/twpayne/chezmoi/releases/latest/download/chezmoi-linux-{{ chezmoi_arch }}
 chezmoi_install_path: "/usr/local/bin/chezmoi"
 chezmoi_repo_url: "https://github.com/DevSecNinja/dotfiles.git"
 chezmoi_user: "{{ ansible_user }}"
