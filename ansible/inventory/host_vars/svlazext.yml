@@ -24,6 +24,9 @@ server_features:
   - git_repos
   - cron_jobs
 
+# Disable systemd-resolved stub listener so Adguard can bind port 53
+disable_systemd_resolved_stub: true
+
 # Packages to install
 packages_apt:
   - jq

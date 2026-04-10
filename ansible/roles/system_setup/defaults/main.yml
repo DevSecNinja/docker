@@ -10,4 +10,8 @@ ansible_user_passwordless_sudo: true
 
 # SSH service configuration
 ensure_ssh_service: true
-ssh_service_name: "ssh"  # Use "sshd" for RedHat-based systems
+ssh_service_name: "ssh" # Use "sshd" for RedHat-based systems
+
+# DNS / systemd-resolved configuration
+# Set to true on hosts where another process (e.g. Adguard) needs port 53
+disable_systemd_resolved_stub: false

@@ -14,8 +14,8 @@
   ansible.builtin.template:
     src: sudoers.j2
     dest: "/etc/sudoers.d/{{ ansible_user_name }}"
-    mode: '0440'
-    validate: 'visudo -cf %s'
+    mode: "0440"
+    validate: "visudo -cf %s"
   when: ansible_user_passwordless_sudo
   tags: [system_setup, ansible_user, sudo]
 
@@ -26,6 +26,25 @@
     state: started
   when: ensure_ssh_service
   tags: [system_setup, ssh]
+
+- name: Point /etc/resolv.conf to upstream resolver (non-stub)
+  ansible.builtin.file:
+    src: /run/systemd/resolve/resolv.conf
+    dest: /etc/resolv.conf
+    state: link
+    force: true
+  when: disable_systemd_resolved_stub
+  tags: [system_setup, dns, systemd_resolved]
+
+- name: Disable systemd-resolved DNS stub listener
+  ansible.builtin.lineinfile:
+    path: /etc/systemd/resolved.conf
+    regexp: "^#?DNSStubListener="
+    line: "DNSStubListener=no"
+    create: false
+  when: disable_systemd_resolved_stub
+  notify: Restart systemd-resolved
+  tags: [system_setup, dns, systemd_resolved]
 
 - name: Display system setup information
   ansible.builtin.debug:
