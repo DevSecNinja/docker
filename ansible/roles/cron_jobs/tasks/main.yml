@@ -1,6 +1,12 @@
 ---
 # Tasks for Cron Jobs role
 
+- name: Ensure cron is installed
+  ansible.builtin.apt:
+    name: cron
+    state: present
+  tags: [cron_jobs]
+
 - name: Configure cron jobs
   ansible.builtin.cron:
     name: "{{ item.name }}"
