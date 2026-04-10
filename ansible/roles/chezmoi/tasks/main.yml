@@ -40,7 +40,7 @@
   ansible.builtin.getent:
     database: passwd
     key: "{{ chezmoi_user }}"
-  register: getent_passwd
+  register: chezmoi_getent_passwd
   when:
     - chezmoi_user is defined
     - chezmoi_repo_url | length > 0
@@ -52,20 +52,20 @@
   ansible.builtin.command: "{{ chezmoi_install_path }} init {{ chezmoi_repo_url }}"
   args:
     creates: >-
-      {{ getent_passwd.ansible_facts.getent_passwd[chezmoi_user][4] }}/
+      {{ chezmoi_getent_passwd.ansible_facts.getent_passwd[chezmoi_user][4] }}/
       .local/share/chezmoi/.git
   when:
     - chezmoi_user is defined
     - chezmoi_repo_url | length > 0
     - chezmoi_init_apply
-    - getent_passwd is defined
-    - getent_passwd is succeeded
-    - getent_passwd is not skipped
+    - chezmoi_getent_passwd is defined
+    - chezmoi_getent_passwd is succeeded
+    - chezmoi_getent_passwd is not skipped
 
 - name: Check if Homebrew prefix exists
   ansible.builtin.stat:
     path: /home/linuxbrew/.linuxbrew
-  register: homebrew_prefix_stat
+  register: chezmoi_homebrew_prefix_stat
   when:
     - chezmoi_user is defined
     - chezmoi_init_apply
@@ -80,7 +80,7 @@
   when:
     - chezmoi_user is defined
     - chezmoi_init_apply
-    - homebrew_prefix_stat.stat.exists | default(false)
+    - chezmoi_homebrew_prefix_stat.stat.exists | default(false)
   failed_when: false
   changed_when: false
 
