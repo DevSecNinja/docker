@@ -143,7 +143,7 @@ tests/
 ### Naming Conventions
 - Roles: lowercase with underscores (e.g., `ansible_pull_setup`)
 - Variables: lowercase with underscores (e.g., `server_features`)
-- Host names: UPPERCASE (e.g., `SVLAZDOCK1`)
+- Host names: lowercase (e.g., `svlazext`)
 - Tags: lowercase (e.g., `docker`, `traefik`)
 
 ### File Organization

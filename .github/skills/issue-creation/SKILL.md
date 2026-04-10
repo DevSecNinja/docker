@@ -84,7 +84,7 @@ or modules where applicable.]
 [What happens instead.]
 
 ### Environment
-- **Host**: [e.g., SVLAZDOCK1, SVLAZDEV1]
+- **Host**: [e.g., svlazext, SVLAZDEV1]
 - **OS**: [e.g., Ubuntu 24.04]
 - **Ansible version**: [e.g., 2.20+]
 - **Related roles/modules**: [e.g., docker_compose_modules, maintenance]
@@ -456,7 +456,7 @@ If not security-relevant: N/A]
 [What happens instead.]
 
 ### Environment
-- **Host**: [e.g., SVLAZDOCK1]
+- **Host**: [e.g., svlazext]
 - **OS**: [e.g., Ubuntu 24.04]
 - **Ansible version**: [e.g., 2.20+]
 - **Related roles/modules**: [e.g., maintenance]

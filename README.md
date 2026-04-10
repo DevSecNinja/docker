@@ -69,12 +69,11 @@ For Ansible documentation and structure, see [ansible/README.md](ansible/README.
 
 ## Configured Servers
 
-### SVLAZDOCK1 (Debian)
+### svlazext (Debian)
 
 Primary Docker host configured with:
 - ✅ Docker Engine (geerlingguy.docker)
-- ✅ UFW Firewall (HTTP, HTTPS, SSH, Traefik dashboard)
-- ✅ Traefik (via compose module)
+- ✅ UFW Firewall (HTTP, HTTPS, SSH)
 - ✅ Chezmoi dotfiles management
 - ✅ Automated ansible-pull updates
 - ✅ Automated maintenance (daily and weekly patches)
@@ -260,7 +259,7 @@ task dev:clean
 
 # View inventory and variables
 task dev:inventory
-task dev:vars -- HOST=SVLAZDOCK1
+task dev:vars -- HOST=svlazext
 ```
 
 ### Adding a New Server
@@ -301,7 +300,7 @@ The GitHub Actions workflow (`ansible-test.yml`) runs on every push and PR:
 
 1. **Lint**: YAML and Ansible linting
 2. **Syntax Check**: Validates playbook syntax
-3. **Test SVLAZDOCK1**: Tests server provisioning
+3. **Test svlazext**: Tests server provisioning
 4. **Test Ansible Pull**: Validates the pull script
 
 ## Requirements

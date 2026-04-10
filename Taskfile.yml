@@ -356,7 +356,7 @@ tasks:
       - ansible-inventory -i {{.ANSIBLE_INVENTORY}} --list
 
   dev:vars:
-    desc: Display variables for a host (usage - task dev:vars -- HOST=SVLAZDOCK1)
+    desc: Display variables for a host (usage - task dev:vars -- HOST=svlazext)
     dir: "{{.ANSIBLE_DIR}}"
     cmds:
       - ansible-inventory -i {{.ANSIBLE_INVENTORY}} --host "{{.HOST}}"
@@ -564,7 +564,7 @@ tasks:
         echo "  task ansible:playbook:tags -- TAG=docker"
         echo ""
         echo "  # Show variables for a specific host"
-        echo "  task dev:vars -- HOST=SVLAZDOCK1"
+        echo "  task dev:vars -- HOST=svlazext"
         echo ""
         echo "════════════════════════════════════════════════════"
         echo ""

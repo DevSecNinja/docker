@@ -324,8 +324,8 @@ else:
     done
 }
 
-@test "inventory: svlazdock1 has server_environment set to production" {
-    run grep "server_environment: production" "${ANSIBLE_DIR}/inventory/host_vars/svlazdock1.yml"
+@test "inventory: svlazext has server_environment set to production" {
+    run grep "server_environment: production" "${ANSIBLE_DIR}/inventory/host_vars/svlazext.yml"
     [ "$status" -eq 0 ]
 }
 

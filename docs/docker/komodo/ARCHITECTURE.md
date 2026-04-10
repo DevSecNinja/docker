@@ -82,7 +82,7 @@ Komodo provides most of these features **out of the box** — stack management, 
                     │             │                   │
             ┌───────▼──────┐ ┌───▼──────────┐ ┌──────▼───────┐
             │ Periphery    │ │ Periphery    │ │ Periphery    │
-            │ svlazdock1   │ │ (future      │ │ (future      │
+            │ svlazext     │ │ (future      │ │ (future      │
             │ (trusted)    │ │  trusted)    │ │  untrusted)  │
             └──────────────┘ └──────────────┘ └──────────────┘
 ```
@@ -750,7 +750,7 @@ Add to the main playbook:
 Each Docker server adds `komodo_periphery` to its `server_features`:
 
 ```yaml
-# ansible/inventory/host_vars/svlazdock1.yml (updated)
+# ansible/inventory/host_vars/svlazext.yml (updated)
 ---
 server_features:
   - system_setup
@@ -830,7 +830,7 @@ Servers are classified into **trust tiers** based on their network position and 
 Trust tiers are enforced via **Komodo server tags** and **Ansible host variables**:
 
 ```yaml
-# ansible/inventory/host_vars/svlazdock1.yml
+# ansible/inventory/host_vars/svlazext.yml
 ---
 server_trust_tier: trusted
 server_features:
@@ -917,7 +917,7 @@ all:
       children:
         trusted_servers:
           hosts:
-            svlazdock1:
+            svlazext:
               ansible_host: 10.0.1.20
               ansible_user: ansible
               ansible_become: true
@@ -1221,7 +1221,7 @@ A single ResourceSync resource connects this Git repo to Komodo Core:
 ## ── Trusted Servers ──
 
 [[server]]
-name = "svlazdock1"
+name = "svlazext"
 description = "Production application server (trusted VLAN)"
 tags = ["production", "trusted"]
 
@@ -1244,7 +1244,7 @@ tags = ["production", "trusted"]
 [[stack]]
 name = "traefik"
 description = "Reverse proxy and TLS termination"
-server = "svlazdock1"
+server = "svlazext"
 run_directory = "/home/komodo/.komodo/stacks/traefik"
 file_paths = ["komodo/stacks/traefik/docker-compose.yml"]
 git_account = "DevSecNinja"
@@ -1257,7 +1257,7 @@ tags = ["infrastructure"]
 [[stack]]
 name = "forward-auth"
 description = "Traefik forward authentication"
-server = "svlazdock1"
+server = "svlazext"
 run_directory = "/home/komodo/.komodo/stacks/forward-auth"
 file_paths = ["komodo/stacks/forward-auth/docker-compose.yml"]
 git_account = "DevSecNinja"
@@ -1271,7 +1271,7 @@ after = ["traefik"]
 [[stack]]
 name = "adguard"
 description = "DNS filtering and ad blocking"
-server = "svlazdock1"
+server = "svlazext"
 run_directory = "/home/komodo/.komodo/stacks/adguard"
 file_paths = ["komodo/stacks/adguard/docker-compose.yml"]
 git_account = "DevSecNinja"
@@ -1286,7 +1286,7 @@ after = ["traefik"]
 [[stack]]
 name = "vaultwarden"
 description = "Password manager"
-server = "svlazdock1"
+server = "svlazext"
 run_directory = "/home/komodo/.komodo/stacks/vaultwarden"
 file_paths = ["komodo/stacks/vaultwarden/docker-compose.yml"]
 git_account = "DevSecNinja"
@@ -1299,7 +1299,7 @@ after = ["traefik", "forward-auth"]
 [[stack]]
 name = "portainer"
 description = "Container management UI"
-server = "svlazdock1"
+server = "svlazext"
 run_directory = "/home/komodo/.komodo/stacks/portainer"
 file_paths = ["komodo/stacks/portainer/docker-compose.yml"]
 git_account = "DevSecNinja"

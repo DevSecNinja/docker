@@ -291,7 +291,7 @@ all:
 
     application_servers:
       hosts:
-        svlazdock1:
+        svlazext:
           ansible_host: 10.0.1.20     # mandatory
 
     development_servers:
@@ -324,10 +324,10 @@ An auto-merge / update strategy for Renovate PRs is on the roadmap (see §28).
 ### Host Variables Example
 
 ```yaml
-# ansible/inventory/host_vars/svlazdock1.yml
+# ansible/inventory/host_vars/svlazext.yml
 ---
 # server_type is NOT set here — derived from group membership (DD-37).
-# svlazdock1 is in the application_servers group.
+# svlazext is in the application_servers group.
 server_environment: production
 
 compose_modules:
@@ -434,7 +434,7 @@ ansible/roles/docker_compose_modules/
 │       │       ├── generic/
 │       │       │   └── traefik.yml.j2
 │       │       └── specific/
-│       │           └── svlazdock1-dynamic.yml.j2
+│       │           └── svlazext-dynamic.yml.j2
 │       ├── adguard/
 │       │   ├── docker-compose.yml.j2
 │       │   └── config/
@@ -797,7 +797,7 @@ SOPS + Age
 │   │   │   └── development_servers/
 │   │   │       └── secrets.sops.yml          # Dev/test secrets
 │   │   └── host_vars/
-│   │       ├── svlazdock1/
+│   │       ├── svlazext/
 │   │       │   └── secrets.sops.yml          # Host-specific secrets
 │   │       └── svlazdev1/
 │   │           └── secrets.sops.yml          # Host-specific secrets
@@ -841,9 +841,9 @@ multiple keys in a single file).
 ---
 creation_rules:
   # Host-specific secrets — encrypted to the host's own key + admin key
-  - path_regex: host_vars/svlazdock1/secrets\.sops\.yml$
+  - path_regex: host_vars/svlazext/secrets\.sops\.yml$
     age: >-
-      age1svlazdock1...,
+      age1svlazext...,
       age1admin...
 
   - path_regex: host_vars/svlazdev1/secrets\.sops\.yml$

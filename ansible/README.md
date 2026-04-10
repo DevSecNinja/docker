@@ -44,12 +44,11 @@ ansible/
 
 ## Configured Servers
 
-### SVLAZDOCK1 (Debian)
+### svlazext (Debian)
 
 Primary Docker host with the following features:
 - Docker Engine (via geerlingguy.docker role)
 - UFW firewall with HTTP/HTTPS/SSH access
-- Traefik reverse proxy (deployed via Docker Compose)
 - Chezmoi dotfiles management
 - Automated ansible-pull updates
 - Automated maintenance with daily and weekly patch schedules

@@ -55,13 +55,13 @@ sudo ansible-pull \
 
 ## Server-Specific Configuration
 
-### SVLAZDOCK1 Configuration
+### svlazext Configuration
 
-For SVLAZDOCK1, ensure the following:
+For svlazext, ensure the following:
 
 1. Hostname is set correctly:
    ```bash
-   sudo hostnamectl set-hostname SVLAZDOCK1
+   sudo hostnamectl set-hostname svlazext
    ```
 
 2. Create an `ansible` user (recommended):
@@ -82,7 +82,7 @@ For SVLAZDOCK1, ensure the following:
    ```bash
    # Create or update host_vars file
    sudo mkdir -p /var/lib/ansible/local/ansible/inventory/host_vars
-   sudo tee /var/lib/ansible/local/ansible/inventory/host_vars/SVLAZDOCK1.yml <<EOF
+   sudo tee /var/lib/ansible/local/ansible/inventory/host_vars/svlazext.yml <<EOF
    ---
    # Your GitHub username for SSH key installation
    github_ssh_keys_username: YourGitHubUsername
@@ -93,8 +93,8 @@ For SVLAZDOCK1, ensure the following:
    file (`ansible/inventory/hosts.yml`):
 
    ```yaml
-   SVLAZDOCK1:
-     ansible_host: svlazdock1.local
+   svlazext:
+     ansible_host: svlazext.local
      ansible_user: ansible
      server_features:
        - github_ssh_keys  # Add this line
@@ -110,7 +110,7 @@ For SVLAZDOCK1, ensure the following:
    ```bash
    # Create host_vars file (or add to existing one)
    sudo mkdir -p /var/lib/ansible/local/ansible/inventory/host_vars
-   sudo tee -a /var/lib/ansible/local/ansible/inventory/host_vars/SVLAZDOCK1.yml <<EOF
+   sudo tee -a /var/lib/ansible/local/ansible/inventory/host_vars/svlazext.yml <<EOF
    chezmoi_repo_url: "https://github.com/YourUsername/dotfiles.git"
    EOF
    ```
@@ -320,8 +320,8 @@ To add a new server to the infrastructure:
      children:
        application_servers:
          hosts:
-           SVLAZDOCK1:
-             ansible_host: svlazdock1.local
+           svlazext:
+             ansible_host: svlazext.local
              # ... existing config ...
            NEWSERVER:
              ansible_host: newserver.local

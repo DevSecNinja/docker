@@ -22,8 +22,7 @@ server_features:
   - maintenance
 
 # Docker Compose modules to deploy
-compose_modules:
-  - traefik
+compose_modules: []
 
 # Users to add to docker group
 docker_users:
