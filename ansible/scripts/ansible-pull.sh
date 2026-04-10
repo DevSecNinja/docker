@@ -30,13 +30,28 @@ if ! command -v ansible-pull &> /dev/null; then
     apt-get install -y ansible git gpg
 fi
 
-# Install required Ansible collections
-log "Ensuring required Ansible collections are installed..."
-ansible-galaxy collection install community.general --force 2>&1
-ansible-galaxy collection install community.docker --force 2>&1
+# Clone or update the repository first so requirements.yml is available
+# before running ansible-pull (which would fail on missing roles otherwise)
+if [ -d "$WORKDIR/.git" ]; then
+    log "Updating existing repository..."
+    git -C "$WORKDIR" fetch origin
+    git -C "$WORKDIR" reset --hard origin/main
+else
+    log "Cloning repository..."
+    git clone --branch main "$REPO_URL" "$WORKDIR"
+fi
+
+# Install all required collections and roles from requirements.yml upfront
+if [ -f "$WORKDIR/ansible/requirements.yml" ]; then
+    log "Ensuring required Ansible collections are installed..."
+    ansible-galaxy collection install -r "$WORKDIR/ansible/requirements.yml" 2>&1
+    log "Ensuring required Ansible roles are installed..."
+    ansible-galaxy role install -r "$WORKDIR/ansible/requirements.yml" 2>&1
+fi
 
 # Run ansible-pull to enforce configuration state
-# Note: ansible-pull will clone the repo first if it doesn't exist
+# The repo is already cloned above; ansible-pull will detect no changes and
+# skip the clone step, then proceed directly to running the playbook.
 ansible-pull \
     --url "$REPO_URL" \
     --checkout main \
@@ -45,32 +60,4 @@ ansible-pull \
     --extra-vars "target_host=$TARGET_HOST" \
     "$PLAYBOOK_PATH"
 
-PULL_EXIT_CODE=${PIPESTATUS[0]}
-
-# Install required external roles from requirements.yml after repo is cloned
-if [ -f "$WORKDIR/ansible/requirements.yml" ]; then
-    log "Installing required external roles..."
-    cd "$WORKDIR"
-    ansible-galaxy role install -r ansible/requirements.yml 2>&1
-
-    # Re-run ansible-pull after installing roles
-    log "Re-running ansible-pull with external roles installed..."
-    ansible-pull \
-        --url "$REPO_URL" \
-        --checkout main \
-        --directory "$WORKDIR" \
-        --inventory "$INVENTORY_PATH" \
-        --extra-vars "target_host=$TARGET_HOST" \
-        "$PLAYBOOK_PATH"
-
-    PULL_EXIT_CODE=$?
-fi
-
-PULL_EXIT_CODE=${PIPESTATUS[0]}
-
-if [ $PULL_EXIT_CODE -eq 0 ]; then
-    log "Ansible-pull completed successfully"
-else
-    log "Ansible-pull failed with exit code $PULL_EXIT_CODE"
-    exit $PULL_EXIT_CODE
-fi
+log "Ansible-pull completed successfully"
