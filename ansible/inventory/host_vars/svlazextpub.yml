@@ -1,0 +1,58 @@
+---
+# Host-specific variables for svlazextpub
+
+# Environment classification
+server_environment: production
+
+# GitHub username for SSH keys installation
+github_ssh_keys_username: DevSecNinja
+
+# Chezmoi dotfiles user
+chemzoi_user: jean-paul
+
+# Server features to enable
+server_features:
+  - system_setup
+  - github_ssh_keys
+  - docker
+  - ufw
+  - package_managers
+  - chezmoi
+  - ansible_pull_setup
+  - maintenance
+  - packages
+  - git_repos
+  - cron_jobs
+
+# Disable systemd-resolved stub listener so Adguard can bind port 53
+disable_systemd_resolved_stub: false
+
+# Packages to install
+packages_apt:
+  - jq
+
+# Git repositories to clone and keep up to date
+git_repos:
+  - repo: "https://github.com/DevSecNinja/truenas-apps"
+    dest: "/opt/apps"
+    version: main
+    user: jean-paul
+    group: jean-paul
+
+# Cron jobs to configure
+cron_jobs:
+  - name: "Run dccd for truenas-apps"
+    minute: "0"
+    hour: "0"
+    user: jean-paul
+    job: >-
+      bash /opt/apps/scripts/dccd.sh -d /opt/apps -S $(hostname -s)
+      -k /opt/apps/age.key -x shared 2>&1 | logger -t dccd
+
+# Docker Compose modules to deploy
+compose_modules: []
+
+# Users to add to docker group
+docker_users:
+  - ansible
+  - jean-paul

@@ -78,6 +78,17 @@ Primary Docker host configured with:
 - ✅ Automated ansible-pull updates
 - ✅ Automated maintenance (daily and weekly patches)
 
+### svlazextpub (Debian)
+
+DMZ/public-facing Docker host configured with:
+- ✅ Docker Engine (geerlingguy.docker)
+- ✅ UFW Firewall (HTTP, HTTPS, SSH)
+- ✅ Chezmoi dotfiles management
+- ✅ Automated ansible-pull updates
+- ✅ Automated maintenance (daily and weekly patches)
+
+**Compose Modules**: None (configure as needed)
+
 ### SVLAZDEV1 (Debian)
 
 Development/management server configured with:
