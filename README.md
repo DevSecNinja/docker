@@ -89,7 +89,7 @@ DMZ/public-facing Docker host configured with:
 
 **Compose Modules**: None (configure as needed)
 
-### SVLAZDEV1 (Debian)
+### svlazdev1 (Debian)
 
 Development/management server configured with:
 - ✅ Automated system setup (ansible user, sudo, SSH)

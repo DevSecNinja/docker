@@ -115,9 +115,9 @@ For svlazext, ensure the following:
    EOF
    ```
 
-### SVLAZDEV1 Configuration
+### svlazdev1 Configuration
 
-For SVLAZDEV1 (Development/Management Server), the following steps are largely automated:
+For svlazdev1 (Development/Management Server), the following steps are largely automated:
 
 **Automated Steps:**
 - ✅ Ansible user creation with sudo privileges (`system_setup` role)
@@ -128,14 +128,14 @@ For SVLAZDEV1 (Development/Management Server), the following steps are largely a
 
 1. Set hostname (run before first ansible-pull):
    ```bash
-   sudo hostnamectl set-hostname SVLAZDEV1
+   sudo hostnamectl set-hostname svlazdev1
    ```
 
 2. (Optional) Customize server-specific variables by creating a host_vars file:
    ```bash
    # Create host_vars file for server-specific configuration
    sudo mkdir -p /var/lib/ansible/local/ansible/inventory/host_vars
-   sudo tee /var/lib/ansible/local/ansible/inventory/host_vars/SVLAZDEV1.yml <<EOF
+   sudo tee /var/lib/ansible/local/ansible/inventory/host_vars/svlazdev1.yml <<EOF
    ---
    # Chezmoi dotfiles configuration
    chezmoi_repo_url: "https://github.com/YourUsername/dotfiles.git"
