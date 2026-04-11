@@ -97,7 +97,7 @@
 - name: Initialize Chezmoi with dotfiles repository
   become: true
   become_user: "{{ chezmoi_user }}"
-  ansible.builtin.command: "{{ chezmoi_install_path }} init {{ chezmoi_repo_url }}"
+  ansible.builtin.command: "{{ chezmoi_install_path }} init --no-tty {{ chezmoi_repo_url }}"
   args:
     creates: >-
       {{ chezmoi_getent_passwd.ansible_facts.getent_passwd[chezmoi_user][4] }}/
@@ -135,7 +135,7 @@
 - name: Apply Chezmoi dotfiles
   become: true
   become_user: "{{ chezmoi_user }}"
-  ansible.builtin.command: "{{ chezmoi_install_path }} apply"
+  ansible.builtin.command: "{{ chezmoi_install_path }} apply --no-tty"
   when:
     - chezmoi_user is defined
     - chezmoi_repo_url | length > 0
