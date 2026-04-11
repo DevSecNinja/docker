@@ -19,7 +19,7 @@ log() {
 log "Starting ansible-pull run"
 
 # Install Ansible if not present
-if ! command -v ansible-pull &> /dev/null; then
+if ! command -v ansible-playbook &> /dev/null; then
     log "Ansible not found, installing..."
     # Check if running as root
     if [ "$EUID" -ne 0 ]; then
@@ -49,15 +49,13 @@ if [ -f "$WORKDIR/ansible/requirements.yml" ]; then
     ansible-galaxy role install -r "$WORKDIR/ansible/requirements.yml" 2>&1
 fi
 
-# Run ansible-pull to enforce configuration state
-# The repo is already cloned above; ansible-pull will detect no changes and
-# skip the clone step, then proceed directly to running the playbook.
-ansible-pull \
-    --url "$REPO_URL" \
-    --checkout main \
-    --directory "$WORKDIR" \
-    --inventory "$INVENTORY_PATH" \
+# Run the playbook directly since the repo is already up to date above.
+# Using ansible-playbook avoids a redundant git pull and the host pattern
+# warning that ansible-pull emits during its internal git-check step.
+log "Starting Ansible Playbook at $(date +'%Y-%m-%d %H:%M:%S')"
+ansible-playbook \
+    --inventory "$WORKDIR/$INVENTORY_PATH" \
     --extra-vars "target_host=$TARGET_HOST" \
-    "$PLAYBOOK_PATH"
+    "$WORKDIR/$PLAYBOOK_PATH"
 
-log "Ansible-pull completed successfully"
+log "Ansible-playbook completed successfully"
