@@ -6,6 +6,10 @@
     name: "{{ packages_apt }}"
     state: present
   when: packages_apt | length > 0
+  register: packages_apt_result
+  retries: 10
+  delay: 30
+  until: packages_apt_result is succeeded
   tags: [packages]
 
 - name: Install Homebrew packages

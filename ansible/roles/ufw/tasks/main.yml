@@ -6,6 +6,10 @@
     state: present
     update_cache: true
   when: ansible_os_family == "Debian"
+  register: ufw_apt_result
+  retries: 10
+  delay: 30
+  until: ufw_apt_result is succeeded
 
 - name: Set UFW default policies
   community.general.ufw:

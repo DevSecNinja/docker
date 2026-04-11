@@ -5,6 +5,10 @@
   ansible.builtin.apt:
     name: cron
     state: present
+  register: cron_apt_result
+  retries: 10
+  delay: 30
+  until: cron_apt_result is succeeded
   tags: [cron_jobs]
 
 - name: Configure cron jobs

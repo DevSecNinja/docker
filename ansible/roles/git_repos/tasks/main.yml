@@ -5,6 +5,10 @@
   ansible.builtin.apt:
     name: git
     state: present
+  register: git_apt_result
+  retries: 10
+  delay: 30
+  until: git_apt_result is succeeded
   tags: [git_repos]
 
 - name: Clone or update git repositories

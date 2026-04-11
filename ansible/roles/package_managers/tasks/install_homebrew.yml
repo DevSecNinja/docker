@@ -17,6 +17,10 @@
         name: "{{ homebrew_dependencies }}"
         state: present
       when: ansible_os_family == "Debian"
+      register: homebrew_deps_apt_result
+      retries: 10
+      delay: 30
+      until: homebrew_deps_apt_result is succeeded
 
     - name: Check if user already has passwordless sudo
       ansible.builtin.command: >
