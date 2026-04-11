@@ -1,5 +1,5 @@
 ---
-# Host-specific variables for svlazdev1
+# Host-specific variables for svlazdev
 
 # Environment classification
 server_environment: development

@@ -329,12 +329,12 @@ else:
     [ "$status" -eq 0 ]
 }
 
-@test "inventory: svlazdev1 has server_environment set to development" {
-    run grep "server_environment: development" "${ANSIBLE_DIR}/inventory/host_vars/svlazdev1.yml"
+@test "inventory: svlazdev has server_environment set to development" {
+    run grep "server_environment: development" "${ANSIBLE_DIR}/inventory/host_vars/svlazdev.yml"
     [ "$status" -eq 0 ]
 }
 
-@test "inventory: svlazdev1 has deploy_all_modules enabled" {
-    run grep "deploy_all_modules: true" "${ANSIBLE_DIR}/inventory/host_vars/svlazdev1.yml"
+@test "inventory: svlazdev has deploy_all_modules enabled" {
+    run grep "deploy_all_modules: true" "${ANSIBLE_DIR}/inventory/host_vars/svlazdev.yml"
     [ "$status" -eq 0 ]
 }

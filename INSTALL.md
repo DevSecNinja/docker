@@ -115,9 +115,9 @@ For svlazext, ensure the following:
    EOF
    ```
 
-### svlazdev1 Configuration
+### svlazdev Configuration
 
-For svlazdev1 (Development/Management Server), the following steps are largely automated:
+For svlazdev (Development/Management Server), the following steps are largely automated:
 
 **Automated Steps:**
 - ✅ Ansible user creation with sudo privileges (`system_setup` role)
@@ -128,14 +128,14 @@ For svlazdev1 (Development/Management Server), the following steps are largely a
 
 1. Set hostname (run before first ansible-pull):
    ```bash
-   sudo hostnamectl set-hostname svlazdev1
+   sudo hostnamectl set-hostname svlazdev
    ```
 
 2. (Optional) Customize server-specific variables by creating a host_vars file:
    ```bash
    # Create host_vars file for server-specific configuration
    sudo mkdir -p /var/lib/ansible/local/ansible/inventory/host_vars
-   sudo tee /var/lib/ansible/local/ansible/inventory/host_vars/svlazdev1.yml <<EOF
+   sudo tee /var/lib/ansible/local/ansible/inventory/host_vars/svlazdev.yml <<EOF
    ---
    # Chezmoi dotfiles configuration
    chezmoi_repo_url: "https://github.com/YourUsername/dotfiles.git"
@@ -152,7 +152,7 @@ For svlazdev1 (Development/Management Server), the following steps are largely a
 3. Verify SSH access after provisioning (for VS Code Remote Development):
    ```bash
    # Test SSH access from your local machine
-   ssh ansible@svlazdev1.local
+   ssh ansible@svlazdev.local
    ```
 
 **Note:** The ansible user is created by the `system_setup` role, and docker group membership is managed by the `geerlingguy.docker` role. If running under a different initial user (e.g., jean-paul), ansible-pull will create the ansible user and subsequent runs can use that user.
