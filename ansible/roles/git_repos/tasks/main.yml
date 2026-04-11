@@ -24,3 +24,11 @@
     recurse: true
   loop: "{{ git_repos }}"
   tags: [git_repos]
+
+- name: Mark git repositories as safe directories
+  community.general.git_config:
+    name: safe.directory
+    value: "{{ item.dest }}"
+    scope: system
+  loop: "{{ git_repos }}"
+  tags: [git_repos]
