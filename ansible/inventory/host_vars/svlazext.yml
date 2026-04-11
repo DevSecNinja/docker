@@ -8,7 +8,7 @@ server_environment: production
 github_ssh_keys_username: DevSecNinja
 
 # Chezmoi dotfiles user
-chemzoi_user: jean-paul
+chezmoi_user: jean-paul
 
 # Server features to enable
 server_features:
