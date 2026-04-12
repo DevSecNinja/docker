@@ -34,7 +34,7 @@ git_repos:
       - "https://github.com/DevSecNinja/truenas-apps"
       - "https://github.com/DevSecNinja/v60-recipe"
       - "https://github.com/DevSecNinja/hadiscover"
-    dest: "~/projects"
+    dest: "/home/jean-paul/projects"
     version: main
     user: jean-paul
     group: jean-paul
