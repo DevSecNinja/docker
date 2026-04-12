@@ -21,11 +21,23 @@ server_features:
   - ansible_pull_setup
   - maintenance
   - packages
+  - git_repos
 
 # Packages to install
 packages_apt:
   - jq
 
+# Git repositories to clone and keep up to date
+git_repos:
+  - repos:
+      - "https://github.com/DevSecNinja/dotfiles"
+      - "https://github.com/DevSecNinja/truenas-apps"
+      - "https://github.com/DevSecNinja/v60-recipe"
+      - "https://github.com/DevSecNinja/hadiscover"
+    dest: "~/projects"
+    version: main
+    user: jean-paul
+    group: jean-paul
 
 # Docker Compose modules to deploy
 compose_modules: []

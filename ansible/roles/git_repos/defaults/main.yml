@@ -1,9 +1,23 @@
 ---
 # Default variables for Git Repos role
 
-# List of repositories to clone. Example:
+# List of repositories to clone. Two formats are supported:
+#
+# Single-repo format (repo cloned directly into dest):
 # git_repos:
 #   - repo: "https://github.com/example/repo"
 #     dest: "/opt/repo"
 #     version: main
+#     user: myuser
+#     group: myuser
+#
+# Multi-repo format (each repo cloned into dest/<repo-name>):
+# git_repos:
+#   - repos:
+#       - "https://github.com/example/repo-a"
+#       - "https://github.com/example/repo-b"
+#     dest: "~/projects"
+#     version: main
+#     user: myuser
+#     group: myuser
 git_repos: []
