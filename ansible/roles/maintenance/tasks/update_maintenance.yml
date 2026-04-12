@@ -57,7 +57,7 @@
 - name: Update chezmoi dotfiles
   become: true
   become_user: "{{ ansible_user }}"
-  ansible.builtin.command: "{{ maintenance_chezmoi_binary }} update"
+  ansible.builtin.command: "{{ maintenance_chezmoi_binary }} update --no-tty"
   register: maintenance_chezmoi_update
   changed_when: maintenance_chezmoi_update.stdout | length > 0
   failed_when: false
