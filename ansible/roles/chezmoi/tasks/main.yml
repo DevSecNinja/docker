@@ -135,7 +135,7 @@
 - name: Apply Chezmoi dotfiles
   become: true
   become_user: "{{ chezmoi_user }}"
-  ansible.builtin.command: "{{ chezmoi_install_path }} apply --no-tty"
+  ansible.builtin.command: "{{ chezmoi_install_path }} apply --no-tty --force"
   when:
     - chezmoi_user is defined
     - chezmoi_repo_url | length > 0
