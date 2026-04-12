@@ -16,7 +16,7 @@
 #   - repos:
 #       - "https://github.com/example/repo-a"
 #       - "https://github.com/example/repo-b"
-#     dest: "~/projects"
+#     dest: "/home/myuser/projects"
 #     version: main
 #     user: myuser
 #     group: myuser
