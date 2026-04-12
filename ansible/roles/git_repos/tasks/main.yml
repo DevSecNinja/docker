@@ -20,6 +20,10 @@
   loop: "{{ git_repos | selectattr('repo', 'defined') | list }}"
   become: true
   become_user: "{{ item.user | default(ansible_user) }}"
+  register: git_single_result
+  failed_when:
+    - git_single_result.failed
+    - "'Local modifications exist' not in (git_single_result.msg | default(''))"
   tags: [git_repos]
 
 - name: Clone or update git repositories (multi-repo format)
@@ -31,4 +35,8 @@
   loop: "{{ git_repos | selectattr('repos', 'defined') | list | subelements('repos') }}"
   become: true
   become_user: "{{ item.0.user | default(ansible_user) }}"
+  register: git_multi_result
+  failed_when:
+    - git_multi_result.failed
+    - "'Local modifications exist' not in (git_multi_result.msg | default(''))"
   tags: [git_repos]
