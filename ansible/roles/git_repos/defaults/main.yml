@@ -7,7 +7,7 @@
 # git_repos:
 #   - repo: "https://github.com/example/repo"
 #     dest: "/opt/repo"
-#     version: main
+#     version: main  # optional, defaults to HEAD (remote default branch)
 #     user: myuser
 #     group: myuser
 #
@@ -17,7 +17,7 @@
 #       - "https://github.com/example/repo-a"
 #       - "https://github.com/example/repo-b"
 #     dest: "/home/myuser/projects"
-#     version: main
+#     version: main  # optional, defaults to HEAD (remote default branch)
 #     user: myuser
 #     group: myuser
 git_repos: []

@@ -25,6 +25,7 @@ server_features:
 
 # Packages to install
 packages_apt:
+  - git-lfs
   - jq
 
 # Git repositories to clone and keep up to date
@@ -48,7 +49,6 @@ git_repos:
       - "https://github.com/DevSecNinja/v60-recipe"
       - "https://github.com/DevSecNinja/vidaud"
     dest: "/home/jean-paul/projects"
-    version: main
     user: jean-paul
     group: jean-paul
 
