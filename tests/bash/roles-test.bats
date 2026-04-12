@@ -329,7 +329,7 @@ else:
     [ "$status" -eq 0 ]
 }
 
-@test "inventory: svlazdev has server_environment set to development" {
-    run grep "server_environment: development" "${ANSIBLE_DIR}/inventory/host_vars/svlazdev.yml"
+@test "inventory: svldev has server_environment set to development" {
+    run grep "server_environment: development" "${ANSIBLE_DIR}/inventory/host_vars/svldev.yml"
     [ "$status" -eq 0 ]
 }
