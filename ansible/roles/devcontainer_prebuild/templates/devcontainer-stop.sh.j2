@@ -15,7 +15,7 @@ echo "=== Devcontainer idle stop (threshold: ${IDLE_THRESHOLD_SECONDS}s) ==="
 
 mapfile -t container_ids < <(docker ps --filter "label=devcontainer.local_folder" --format "{% raw %}{{.ID}}{% endraw %}")
 
-if [ "${#container_ids[@]}" -eq 0 ]; then
+if [ "{% raw %}${#container_ids[@]}{% endraw %}" -eq 0 ]; then
   echo "No running devcontainers found."
   exit 0
 fi
