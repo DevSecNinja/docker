@@ -38,7 +38,7 @@ maintenance_weekly_reboot_enabled: true
 
 # Docker maintenance (prune, health checks, log cleanup)
 maintenance_docker_enabled: true
-maintenance_docker_schedule: "Sun *-*-* 04:00:00" # Sunday 4 AM
+maintenance_docker_schedule: "monthly" # First day of each month at midnight
 
 # Docker prune settings
 maintenance_docker_prune_enabled: true
