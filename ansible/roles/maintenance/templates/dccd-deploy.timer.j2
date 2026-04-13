@@ -1,0 +1,11 @@
+[Unit]
+Description=dccd Deployment Timer
+Requires=dccd-deploy.service
+
+[Timer]
+OnCalendar={{ maintenance_dccd_schedule }}
+RandomizedDelaySec=5min
+Persistent=true
+
+[Install]
+WantedBy=timers.target

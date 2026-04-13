@@ -23,7 +23,7 @@ maintenance_os_update_enabled: true
 
 # Daily maintenance (non-disturbing updates)
 maintenance_daily_enabled: true
-maintenance_daily_schedule: "20:00"  # 8 PM
+maintenance_daily_schedule: "20:00" # 8 PM
 maintenance_daily_exclude_packages:
   - docker-ce
   - docker-ce-cli
@@ -33,12 +33,12 @@ maintenance_daily_exclude_packages:
 
 # Weekly maintenance (full updates with reboot)
 maintenance_weekly_enabled: true
-maintenance_weekly_schedule: "Sat *-*-* 08:00:00"  # Saturday 8 AM
+maintenance_weekly_schedule: "Sat *-*-* 08:00:00" # Saturday 8 AM
 maintenance_weekly_reboot_enabled: true
 
 # Docker maintenance (prune, health checks, log cleanup)
 maintenance_docker_enabled: true
-maintenance_docker_schedule: "Sun *-*-* 04:00:00"  # Sunday 4 AM
+maintenance_docker_schedule: "Sun *-*-* 04:00:00" # Sunday 4 AM
 
 # Docker prune settings
 maintenance_docker_prune_enabled: true
@@ -52,3 +52,13 @@ maintenance_docker_restart_unhealthy: true
 # Truncate container log files exceeding this size
 maintenance_docker_log_cleanup_enabled: true
 maintenance_docker_log_max_size: "100m"
+
+# dccd (Docker Compose CD) deployment service
+maintenance_dccd_enabled: false
+maintenance_dccd_schedule: "*-*-* 00:00:00" # Daily at midnight
+maintenance_dccd_script_path: "/opt/apps/scripts/dccd.sh"
+maintenance_dccd_user: "jean-paul"
+maintenance_dccd_dir: "/opt/apps"
+maintenance_dccd_age_key: "/opt/apps/age.key"
+maintenance_dccd_exclude: "shared"
+maintenance_dccd_old_cron_name: "Run dccd for truenas-apps"

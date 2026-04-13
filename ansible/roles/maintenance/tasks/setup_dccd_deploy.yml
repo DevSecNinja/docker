@@ -1,0 +1,30 @@
+---
+# Setup for dccd (Docker Compose CD) deployment service
+- name: Remove legacy dccd cron job
+  ansible.builtin.cron:
+    name: "{{ maintenance_dccd_old_cron_name }}"
+    user: "{{ maintenance_dccd_user }}"
+    state: absent
+
+- name: Create dccd deployment systemd service
+  ansible.builtin.template:
+    src: dccd-deploy.service.j2
+    dest: /etc/systemd/system/dccd-deploy.service
+    mode: "0644"
+  notify: Reload systemd
+
+- name: Create dccd deployment systemd timer
+  ansible.builtin.template:
+    src: dccd-deploy.timer.j2
+    dest: /etc/systemd/system/dccd-deploy.timer
+    mode: "0644"
+  notify: Reload systemd
+
+- name: Flush handlers to reload systemd
+  ansible.builtin.meta: flush_handlers
+
+- name: Enable and start dccd deployment timer
+  ansible.builtin.systemd_service:
+    name: dccd-deploy.timer
+    enabled: true
+    state: started

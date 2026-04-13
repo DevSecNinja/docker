@@ -22,7 +22,6 @@ server_features:
   - maintenance
   - packages
   - git_repos
-  - cron_jobs
 
 # Packages to install
 packages_apt:
@@ -36,15 +35,8 @@ git_repos:
     user: jean-paul
     group: jean-paul
 
-# Cron jobs to configure
-cron_jobs:
-  - name: "Run dccd for truenas-apps"
-    minute: "0"
-    hour: "0"
-    user: jean-paul
-    job: >-
-      bash /opt/apps/scripts/dccd.sh -d /opt/apps -S $(hostname -s)
-      -k /opt/apps/age.key -x shared 2>&1 | logger -t dccd
+# dccd deployment
+maintenance_dccd_enabled: true
 
 # Docker Compose modules to deploy
 compose_modules: []
