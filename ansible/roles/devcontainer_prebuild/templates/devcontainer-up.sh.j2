@@ -18,6 +18,9 @@ DEFAULT_CONFIG="{{ devcontainer_prebuild_config_dir }}/devcontainer.json"
 declare -a SUCCEEDED=()
 declare -a SKIPPED=()
 declare -a FAILED=()
+SUCCEEDED_COUNT=0
+SKIPPED_COUNT=0
+FAILED_COUNT=0
 
 echo "=== Phase 2: devcontainer up + stop ==="
 echo "Scanning repos in ${PROJECTS_DIR}"
@@ -36,6 +39,7 @@ for repo_dir in "${PROJECTS_DIR}"/*/; do
   if ! docker image inspect "${image_name}" > /dev/null 2>&1; then
     echo "--- Skipping ${repo_name} (image ${image_name} not found) ---"
     SKIPPED+=("${repo_name}")
+    SKIPPED_COUNT=$((SKIPPED_COUNT + 1))
     continue
   fi
 
@@ -58,29 +62,32 @@ for repo_dir in "${PROJECTS_DIR}"/*/; do
     if [ -z "${container_id}" ]; then
       echo "WARNING: Could not parse containerId for ${repo_name}, skipping stop" >&2
       SUCCEEDED+=("${repo_name}")
+      SUCCEEDED_COUNT=$((SUCCEEDED_COUNT + 1))
     else
       echo "Stopping ${container_id} (retained for VS Code fast-attach)..."
       docker stop "${container_id}"
       SUCCEEDED+=("${repo_name}")
+      SUCCEEDED_COUNT=$((SUCCEEDED_COUNT + 1))
     fi
   else
     rm -f "${up_tmpfile}"
     echo "ERROR: devcontainer up failed for ${repo_name}" >&2
     FAILED+=("${repo_name}")
+    FAILED_COUNT=$((FAILED_COUNT + 1))
   fi
 done
 
 echo ""
 echo "=== Phase 2 Summary ==="
-echo "  Succeeded : ${#SUCCEEDED[@]}"
+echo "  Succeeded : ${SUCCEEDED_COUNT}"
 for r in "${SUCCEEDED[@]:-}"; do [ -n "${r}" ] && echo "    [OK]      ${r}"; done
-echo "  Skipped   : ${#SKIPPED[@]}  (image not found - Phase 1 failure)"
+echo "  Skipped   : ${SKIPPED_COUNT}  (image not found - Phase 1 failure)"
 for r in "${SKIPPED[@]:-}"; do [ -n "${r}" ] && echo "    [SKIP]    ${r}"; done
-echo "  Failed    : ${#FAILED[@]}"
+echo "  Failed    : ${FAILED_COUNT}"
 for r in "${FAILED[@]:-}"; do [ -n "${r}" ] && echo "    [FAIL]    ${r}"; done
 
-if [ "${#FAILED[@]}" -gt 0 ]; then
-  echo "Phase 2 complete with ${#FAILED[@]} failure(s)." >&2
+if [ "${FAILED_COUNT}" -gt 0 ]; then
+  echo "Phase 2 complete with ${FAILED_COUNT} failure(s)." >&2
   exit 1
 fi
 

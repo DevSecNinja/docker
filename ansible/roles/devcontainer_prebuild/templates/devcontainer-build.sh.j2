@@ -15,6 +15,8 @@ DEFAULT_CONFIG="{{ devcontainer_prebuild_config_dir }}/devcontainer.json"
 
 declare -a SUCCEEDED=()
 declare -a FAILED=()
+SUCCEEDED_COUNT=0
+FAILED_COUNT=0
 
 echo "=== Phase 1: devcontainer build ==="
 echo "Scanning repos in ${PROJECTS_DIR}"
@@ -35,9 +37,11 @@ for repo_dir in "${PROJECTS_DIR}"/*/; do
       --workspace-folder "${repo_dir}" \
       --image-name "${image_name}"; then
       SUCCEEDED+=("${repo_name}")
+      SUCCEEDED_COUNT=$((SUCCEEDED_COUNT + 1))
     else
       echo "ERROR: build failed for ${repo_name}" >&2
       FAILED+=("${repo_name}")
+      FAILED_COUNT=$((FAILED_COUNT + 1))
     fi
   else
     echo "--- Building ${repo_name} (default Debian config) ---"
@@ -46,25 +50,27 @@ for repo_dir in "${PROJECTS_DIR}"/*/; do
       --config "${DEFAULT_CONFIG}" \
       --image-name "${image_name}"; then
       SUCCEEDED+=("${repo_name}")
+      SUCCEEDED_COUNT=$((SUCCEEDED_COUNT + 1))
     else
       echo "ERROR: build failed for ${repo_name}" >&2
       FAILED+=("${repo_name}")
+      FAILED_COUNT=$((FAILED_COUNT + 1))
     fi
   fi
 done
 
 echo ""
 echo "=== Phase 1 Summary ==="
-echo "  Succeeded : ${#SUCCEEDED[@]}"
+echo "  Succeeded : ${SUCCEEDED_COUNT}"
 for r in "${SUCCEEDED[@]:-}"; do [ -n "${r}" ] && echo "    [OK]   ${r}"; done
-echo "  Failed    : ${#FAILED[@]}"
+echo "  Failed    : ${FAILED_COUNT}"
 for r in "${FAILED[@]:-}"; do [ -n "${r}" ] && echo "    [FAIL] ${r}"; done
 
-if [ "${#SUCCEEDED[@]}" -eq 0 ]; then
+if [ "${SUCCEEDED_COUNT}" -eq 0 ]; then
   echo "All builds failed - skipping devcontainer-up." >&2
   exit 1
 fi
 
-echo "Phase 1 complete - devcontainer-up will start for ${#SUCCEEDED[@]} image(s)."
+echo "Phase 1 complete - devcontainer-up will start for ${SUCCEEDED_COUNT} image(s)."
 # Always exit 0 so OnSuccess= fires whenever at least one image was built
 exit 0
