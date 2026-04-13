@@ -1,10 +1,10 @@
 [Unit]
-Description=Stop idle devcontainers hourly
+Description=Stop all devcontainers daily at 2 AM
 Requires=devcontainer-stop.service
 
 [Timer]
-OnBootSec=1h
-OnUnitActiveSec=1h
+OnCalendar=*-*-* 02:00:00
+Persistent=true
 Unit=devcontainer-stop.service
 
 [Install]
