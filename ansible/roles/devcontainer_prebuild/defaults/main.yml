@@ -1,0 +1,27 @@
+---
+# Default variables for Devcontainer Prebuild role
+
+# User to run devcontainer builds as
+devcontainer_prebuild_user: "{{ ansible_user }}"
+
+# Directory containing cloned git repositories to scan
+devcontainer_prebuild_projects_dir: "/home/{{ devcontainer_prebuild_user }}/projects"
+
+# Directory for the default devcontainer config (for repos without .devcontainer/)
+devcontainer_prebuild_config_dir: "/home/{{ devcontainer_prebuild_user }}/.config/devcontainer-default"
+
+# Path for the prebuild shell script (system-wide, readable by systemd)
+devcontainer_prebuild_script: /usr/local/bin/devcontainer-prebuild.sh
+
+# Systemd timer schedule (OnCalendar format, default: daily at 02:00)
+devcontainer_prebuild_calendar: "*-*-* 02:00:00"
+
+# Default devcontainer image for repos without a .devcontainer/ folder
+devcontainer_default_image: "mcr.microsoft.com/devcontainers/base:debian"
+
+# Standalone devcontainer CLI install directory and script URL
+devcontainer_cli_install_dir: "/home/{{ devcontainer_prebuild_user }}/.devcontainers/bin"
+devcontainer_cli_install_script_url: "https://raw.githubusercontent.com/devcontainers/cli/main/scripts/install.sh"
+
+# Homebrew prefix (Linux default - matches package_managers role)
+homebrew_prefix: "/home/linuxbrew/.linuxbrew"

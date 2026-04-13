@@ -1,0 +1,49 @@
+---
+# Tasks to install mise for a specified user
+# Skips installation if mise is already present
+
+- name: Check if mise is already installed
+  ansible.builtin.stat:
+    path: "/home/{{ mise_user }}/.local/bin/mise"
+  register: mise_binary
+  tags: [package_managers, mise]
+
+- name: Install mise
+  when: not mise_binary.stat.exists
+  tags: [package_managers, mise]
+  block:
+    - name: Download mise install script
+      ansible.builtin.get_url:
+        url: "{{ mise_install_script_url }}"
+        dest: /tmp/mise_install.sh
+        mode: '0755'
+
+    - name: Run mise install script
+      become: true
+      become_user: "{{ mise_user }}"
+      ansible.builtin.command: /bin/bash /tmp/mise_install.sh
+      register: mise_install_result
+      changed_when: mise_install_result.rc == 0
+
+  always:
+    - name: Clean up mise install script
+      ansible.builtin.file:
+        path: /tmp/mise_install.sh
+        state: absent
+
+- name: Verify mise installation
+  become: true
+  become_user: "{{ mise_user }}"
+  ansible.builtin.command: "/home/{{ mise_user }}/.local/bin/mise --version"
+  register: mise_version_output
+  changed_when: false
+  when: >
+    mise_binary.stat.exists or
+    (mise_install_result is defined and mise_install_result.rc == 0)
+  tags: [package_managers, mise]
+
+- name: Display mise version
+  ansible.builtin.debug:
+    msg: "Mise version: {{ mise_version_output.stdout }}"
+  when: mise_version_output is not skipped
+  tags: [package_managers, mise]

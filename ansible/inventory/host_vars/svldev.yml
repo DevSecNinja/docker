@@ -10,6 +10,13 @@ github_ssh_keys_username: DevSecNinja
 # Chezmoi dotfiles user
 chezmoi_user: jean-paul
 
+# Mise version manager
+install_mise: true
+mise_user: jean-paul
+
+# Devcontainer prebuild
+devcontainer_prebuild_user: jean-paul
+
 # Server features to enable
 server_features:
   - system_setup
@@ -22,6 +29,7 @@ server_features:
   - maintenance
   - packages
   - git_repos
+  - devcontainer_prebuild
 
 # Packages to install
 packages_apt:

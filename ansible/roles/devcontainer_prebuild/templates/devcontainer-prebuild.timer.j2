@@ -1,0 +1,11 @@
+[Unit]
+Description=Run Devcontainer Prebuild nightly
+Requires=devcontainer-prebuild.service
+
+[Timer]
+OnCalendar={{ devcontainer_prebuild_calendar }}
+Persistent=true
+Unit=devcontainer-prebuild.service
+
+[Install]
+WantedBy=timers.target

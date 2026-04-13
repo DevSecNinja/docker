@@ -62,6 +62,10 @@
       when: "'git_repos' in server_features and git_repos | default([]) | length > 0"
       tags: [git_repos]
 
+    - role: devcontainer_prebuild
+      when: "'devcontainer_prebuild' in server_features"
+      tags: [devcontainer_prebuild]
+
     - role: cron_jobs
       when: "'cron_jobs' in server_features and cron_jobs | default([]) | length > 0"
       tags: [cron_jobs]

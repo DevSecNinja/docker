@@ -1,0 +1,56 @@
+#!/usr/bin/env bash
+# Devcontainer Prebuild Script
+# Managed by Ansible - do not edit manually
+# Logs are captured by systemd journal (journalctl -u devcontainer-prebuild)
+
+set -uo pipefail
+
+# Include devcontainer CLI locations in PATH
+export PATH="{{ devcontainer_cli_install_dir }}:{{ homebrew_prefix }}/bin:${PATH}"
+
+PROJECTS_DIR="{{ devcontainer_prebuild_projects_dir }}"
+DEFAULT_CONFIG="{{ devcontainer_prebuild_config_dir }}/devcontainer.json"
+FAILED=0
+
+echo "Starting devcontainer prebuild for repos in ${PROJECTS_DIR}"
+
+if [ ! -d "${PROJECTS_DIR}" ]; then
+  echo "Projects directory ${PROJECTS_DIR} does not exist, skipping."
+  exit 0
+fi
+
+for repo_dir in "${PROJECTS_DIR}"/*/; do
+  [ -d "${repo_dir}" ] || continue
+  repo_name=$(basename "${repo_dir}")
+  image_name="devcontainer-${repo_name}:latest"
+
+  if [ -f "${repo_dir}.devcontainer/devcontainer.json" ]; then
+    echo "--- Building devcontainer for ${repo_name} (has .devcontainer/) ---"
+    if devcontainer build \
+      --workspace-folder "${repo_dir}" \
+      --image-name "${image_name}"; then
+      echo "Built image: ${image_name}"
+    else
+      echo "ERROR: Failed to build devcontainer for ${repo_name}" >&2
+      FAILED=$((FAILED + 1))
+    fi
+  else
+    echo "--- Building default Debian devcontainer for ${repo_name} ---"
+    if devcontainer build \
+      --workspace-folder "${repo_dir}" \
+      --config "${DEFAULT_CONFIG}" \
+      --image-name "${image_name}"; then
+      echo "Built image: ${image_name}"
+    else
+      echo "ERROR: Failed to build default devcontainer for ${repo_name}" >&2
+      FAILED=$((FAILED + 1))
+    fi
+  fi
+done
+
+if [ "${FAILED}" -gt 0 ]; then
+  echo "Devcontainer prebuild complete with ${FAILED} failure(s)." >&2
+  exit 1
+fi
+
+echo "Devcontainer prebuild complete."

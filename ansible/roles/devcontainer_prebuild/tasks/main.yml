@@ -1,0 +1,101 @@
+---
+# Tasks for Devcontainer Prebuild role
+
+- name: Check if devcontainer CLI is installed (standalone location)
+  ansible.builtin.stat:
+    path: "{{ devcontainer_cli_install_dir }}/devcontainer"
+  register: devcontainer_standalone_binary
+  tags: [devcontainer_prebuild]
+
+- name: Check if devcontainer CLI is installed (Homebrew location)
+  ansible.builtin.stat:
+    path: "{{ homebrew_prefix }}/bin/devcontainer"
+  register: devcontainer_brew_binary
+  tags: [devcontainer_prebuild]
+
+- name: Install devcontainer CLI
+  when: not devcontainer_standalone_binary.stat.exists and not devcontainer_brew_binary.stat.exists
+  tags: [devcontainer_prebuild]
+  block:
+    - name: Install devcontainer CLI via Homebrew
+      become: true
+      become_user: "{{ devcontainer_prebuild_user }}"
+      community.general.homebrew:
+        name: devcontainer
+        state: present
+        path: "{{ homebrew_prefix }}/bin"
+      register: devcontainer_brew_result
+      ignore_errors: true
+
+    - name: Download devcontainer CLI install script (fallback)
+      when: devcontainer_brew_result is failed
+      ansible.builtin.get_url:
+        url: "{{ devcontainer_cli_install_script_url }}"
+        dest: /tmp/devcontainer_install.sh
+        mode: '0755'
+
+    - name: Run devcontainer CLI install script (fallback)
+      when: devcontainer_brew_result is failed
+      become: true
+      become_user: "{{ devcontainer_prebuild_user }}"
+      ansible.builtin.command: /bin/bash /tmp/devcontainer_install.sh
+      register: devcontainer_standalone_result
+      changed_when: devcontainer_standalone_result.rc == 0
+
+    - name: Clean up devcontainer CLI install script
+      ansible.builtin.file:
+        path: /tmp/devcontainer_install.sh
+        state: absent
+
+- name: Ensure devcontainer default config directory exists
+  become: true
+  become_user: "{{ devcontainer_prebuild_user }}"
+  ansible.builtin.file:
+    path: "{{ devcontainer_prebuild_config_dir }}"
+    state: directory
+    mode: '0755'
+  tags: [devcontainer_prebuild]
+
+- name: Deploy default devcontainer configuration
+  become: true
+  become_user: "{{ devcontainer_prebuild_user }}"
+  ansible.builtin.template:
+    src: devcontainer-default.json.j2
+    dest: "{{ devcontainer_prebuild_config_dir }}/devcontainer.json"
+    mode: '0644'
+  tags: [devcontainer_prebuild]
+
+- name: Deploy devcontainer prebuild script
+  ansible.builtin.template:
+    src: devcontainer-prebuild.sh.j2
+    dest: "{{ devcontainer_prebuild_script }}"
+    mode: '0755'
+    owner: root
+    group: root
+  tags: [devcontainer_prebuild]
+
+- name: Deploy devcontainer-prebuild systemd service unit
+  ansible.builtin.template:
+    src: devcontainer-prebuild.service.j2
+    dest: /etc/systemd/system/devcontainer-prebuild.service
+    mode: '0644'
+    owner: root
+    group: root
+  tags: [devcontainer_prebuild]
+
+- name: Deploy devcontainer-prebuild systemd timer unit
+  ansible.builtin.template:
+    src: devcontainer-prebuild.timer.j2
+    dest: /etc/systemd/system/devcontainer-prebuild.timer
+    mode: '0644'
+    owner: root
+    group: root
+  tags: [devcontainer_prebuild]
+
+- name: Enable and start devcontainer-prebuild timer
+  ansible.builtin.systemd:
+    name: devcontainer-prebuild.timer
+    enabled: true
+    state: started
+    daemon_reload: true
+  tags: [devcontainer_prebuild]
