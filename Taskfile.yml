@@ -370,6 +370,50 @@ tasks:
         echo "Following dccd deployment logs (Ctrl+C to exit)..."
         sudo journalctl -u dccd-deploy.service -f -o short-precise
 
+  # Devcontainer Prebuild
+  devcontainer:run:
+    desc: Manually trigger devcontainer prebuild now
+    cmds:
+      - |
+        echo "Triggering devcontainer prebuild..."
+        sudo systemctl start devcontainer-prebuild.service
+        echo "Waiting for service to complete..."
+        sleep 2
+        sudo systemctl status devcontainer-prebuild.service --no-pager -l || true
+
+  devcontainer:status:
+    desc: Check devcontainer prebuild timer and service status
+    cmds:
+      - |
+        echo "=== Devcontainer Prebuild Timer Status ==="
+        sudo systemctl list-timers devcontainer-prebuild.timer --no-pager --all 2>/dev/null || true
+        echo ""
+        echo "=== Service Status ==="
+        sudo systemctl status devcontainer-prebuild.timer --no-pager -l || true
+        echo ""
+        sudo systemctl status devcontainer-prebuild.service --no-pager -l || true
+
+  devcontainer:logs:
+    desc: View devcontainer prebuild logs
+    cmds:
+      - |
+        echo "=== Devcontainer Prebuild Logs ==="
+        sudo journalctl -u devcontainer-prebuild.service -n 100 --no-pager
+
+  devcontainer:logs:follow:
+    desc: Follow devcontainer prebuild logs in real-time
+    cmds:
+      - |
+        echo "Following devcontainer prebuild logs (Ctrl+C to exit)..."
+        sudo journalctl -u devcontainer-prebuild.service -f -o short-precise
+
+  devcontainer:images:
+    desc: List all prebuilt devcontainer images
+    cmds:
+      - |
+        echo "=== Prebuilt Devcontainer Images ==="
+        docker images --filter "reference=devcontainer-*" --format "table {{.Repository}}\t{{.Tag}}\t{{.Size}}\t{{.CreatedSince}}"
+
   # Development
   dev:format:
     desc: Format code (YAML files)
@@ -447,10 +491,10 @@ tasks:
         echo "═══════════════════════════════════════"
         echo ""
         echo "--- Timers ---"
-        sudo systemctl list-timers ansible-pull.timer maintenance-daily.timer maintenance-weekly.timer dccd-deploy.timer --no-pager --all 2>/dev/null || true
+        sudo systemctl list-timers ansible-pull.timer maintenance-daily.timer maintenance-weekly.timer dccd-deploy.timer devcontainer-prebuild.timer --no-pager --all 2>/dev/null || true
         echo ""
         echo "--- Service Status ---"
-        for svc in ansible-pull maintenance-daily maintenance-weekly dccd-deploy; do
+        for svc in ansible-pull maintenance-daily maintenance-weekly dccd-deploy devcontainer-prebuild; do
           echo "────────────────────────────────────"
           echo "  ${svc}"
           echo "────────────────────────────────────"
@@ -589,6 +633,12 @@ tasks:
         echo "    task dccd:status         Check dccd timer and service status"
         echo "    task dccd:run            Manually trigger dccd deployment"
         echo "    task dccd:logs           View dccd deployment logs"
+        echo ""
+        echo "  Devcontainer Prebuild:"
+        echo "    task devcontainer:status  Check prebuild timer and service status"
+        echo "    task devcontainer:run     Manually trigger prebuild now"
+        echo "    task devcontainer:logs    View prebuild logs"
+        echo "    task devcontainer:images  List all prebuilt devcontainer images"
         echo ""
         echo "  Information:"
         echo "    task info                Show system information"
