@@ -4,6 +4,7 @@
 # Phase 2 of 2: start each container (so VS Code can attach instantly), then
 # stop it to free resources. The stopped container retains the
 # devcontainer.local_folder label that VS Code uses for fast-attach.
+# Skips repos whose image does not exist (e.g. build failed in Phase 1).
 # Triggered automatically by devcontainer-build.service via OnSuccess=.
 # Logs are captured by systemd journal (journalctl -u devcontainer-up)
 
@@ -13,7 +14,10 @@ export PATH="{{ devcontainer_cli_install_dir }}:{{ homebrew_prefix }}/bin:${PATH
 
 PROJECTS_DIR="{{ devcontainer_prebuild_projects_dir }}"
 DEFAULT_CONFIG="{{ devcontainer_prebuild_config_dir }}/devcontainer.json"
-FAILED=0
+
+declare -a SUCCEEDED=()
+declare -a SKIPPED=()
+declare -a FAILED=()
 
 echo "=== Phase 2: devcontainer up + stop ==="
 echo "Scanning repos in ${PROJECTS_DIR}"
@@ -26,6 +30,14 @@ fi
 for repo_dir in "${PROJECTS_DIR}"/*/; do
   [ -d "${repo_dir}" ] || continue
   repo_name=$(basename "${repo_dir}")
+  image_name="devcontainer-${repo_name}:latest"
+
+  # Skip repos whose image was not built (e.g. Phase 1 failure)
+  if ! docker image inspect "${image_name}" > /dev/null 2>&1; then
+    echo "--- Skipping ${repo_name} (image ${image_name} not found) ---"
+    SKIPPED+=("${repo_name}")
+    continue
+  fi
 
   if [ -f "${repo_dir}.devcontainer/devcontainer.json" ]; then
     echo "--- Starting container for ${repo_name} (own .devcontainer/) ---"
@@ -45,20 +57,31 @@ for repo_dir in "${PROJECTS_DIR}"/*/; do
 
     if [ -z "${container_id}" ]; then
       echo "WARNING: Could not parse containerId for ${repo_name}, skipping stop" >&2
+      SUCCEEDED+=("${repo_name}")
     else
       echo "Stopping ${container_id} (retained for VS Code fast-attach)..."
       docker stop "${container_id}"
+      SUCCEEDED+=("${repo_name}")
     fi
   else
     rm -f "${up_tmpfile}"
     echo "ERROR: devcontainer up failed for ${repo_name}" >&2
-    FAILED=$((FAILED + 1))
+    FAILED+=("${repo_name}")
   fi
 done
 
-if [ "${FAILED}" -gt 0 ]; then
-  echo "Phase 2 complete with ${FAILED} failure(s)." >&2
+echo ""
+echo "=== Phase 2 Summary ==="
+echo "  Succeeded : ${#SUCCEEDED[@]}"
+for r in "${SUCCEEDED[@]:-}"; do [ -n "${r}" ] && echo "    [OK]      ${r}"; done
+echo "  Skipped   : ${#SKIPPED[@]}  (image not found - Phase 1 failure)"
+for r in "${SKIPPED[@]:-}"; do [ -n "${r}" ] && echo "    [SKIP]    ${r}"; done
+echo "  Failed    : ${#FAILED[@]}"
+for r in "${FAILED[@]:-}"; do [ -n "${r}" ] && echo "    [FAIL]    ${r}"; done
+
+if [ "${#FAILED[@]}" -gt 0 ]; then
+  echo "Phase 2 complete with ${#FAILED[@]} failure(s)." >&2
   exit 1
 fi
 
-echo "Phase 2 complete - all containers prewarmed and stopped."
+echo "Phase 2 complete."
