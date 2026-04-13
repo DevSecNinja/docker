@@ -27,3 +27,10 @@ devcontainer_cli_install_script_url: "https://raw.githubusercontent.com/devconta
 
 # Homebrew prefix (Linux default - matches package_managers role)
 homebrew_prefix: "/home/linuxbrew/.linuxbrew"
+
+# Idle-stop: stop running devcontainers that have been up longer than this threshold.
+# The systemd timer runs every hour; containers running >= this many seconds are stopped.
+devcontainer_idle_stop_threshold_seconds: 3600
+
+# Path for the idle-stop script (system-wide, readable by systemd)
+devcontainer_stop_script: /usr/local/bin/devcontainer-stop.sh

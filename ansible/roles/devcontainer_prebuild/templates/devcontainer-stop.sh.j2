@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+# Devcontainer Idle Stop Script
+# Managed by Ansible - do not edit manually
+# Stops running devcontainers that have been up for longer than the configured
+# threshold (default: {{ devcontainer_idle_stop_threshold_seconds }}s / 1 hour).
+# Devcontainers are identified by the 'devcontainer.local_folder' Docker label.
+# VS Code will restart the container automatically on next attach.
+# Logs are captured by systemd journal (journalctl -u devcontainer-stop)
+
+set -uo pipefail
+
+IDLE_THRESHOLD_SECONDS="{{ devcontainer_idle_stop_threshold_seconds }}"
+
+echo "=== Devcontainer idle stop (threshold: ${IDLE_THRESHOLD_SECONDS}s) ==="
+
+mapfile -t container_ids < <(docker ps --filter "label=devcontainer.local_folder" --format "{% raw %}{{.ID}}{% endraw %}")
+
+if [ "${#container_ids[@]}" -eq 0 ]; then
+  echo "No running devcontainers found."
+  exit 0
+fi
+
+now=$(date +%s)
+stopped_count=0
+skipped_count=0
+
+for id in "${container_ids[@]}"; do
+  started_at=$(docker inspect --format '{% raw %}{{.State.StartedAt}}{% endraw %}' "${id}")
+  started_ts=$(date -d "${started_at}" +%s 2>/dev/null) || {
+    echo "WARNING: Could not parse StartedAt for container ${id}, skipping" >&2
+    skipped_count=$((skipped_count + 1))
+    continue
+  }
+  running_seconds=$(( now - started_ts ))
+  folder=$(docker inspect --format '{% raw %}{{index .Config.Labels "devcontainer.local_folder"}}{% endraw %}' "${id}" 2>/dev/null || echo "${id}")
+
+  if [ "${running_seconds}" -ge "${IDLE_THRESHOLD_SECONDS}" ]; then
+    echo "Stopping devcontainer for ${folder} (running ${running_seconds}s >= ${IDLE_THRESHOLD_SECONDS}s threshold)"
+    docker stop "${id}"
+    stopped_count=$((stopped_count + 1))
+  else
+    echo "Skipping ${folder} (running ${running_seconds}s < ${IDLE_THRESHOLD_SECONDS}s threshold)"
+    skipped_count=$((skipped_count + 1))
+  fi
+done
+
+echo ""
+echo "=== Summary: stopped=${stopped_count} skipped=${skipped_count} ==="

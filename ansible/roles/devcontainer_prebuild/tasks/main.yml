@@ -129,3 +129,38 @@
     state: started
     daemon_reload: true
   tags: [devcontainer_prebuild]
+
+- name: Deploy devcontainer idle-stop script
+  ansible.builtin.template:
+    src: devcontainer-stop.sh.j2
+    dest: "{{ devcontainer_stop_script }}"
+    mode: "0755"
+    owner: root
+    group: root
+  tags: [devcontainer_prebuild]
+
+- name: Deploy devcontainer-stop systemd service unit
+  ansible.builtin.template:
+    src: devcontainer-stop.service.j2
+    dest: /etc/systemd/system/devcontainer-stop.service
+    mode: "0644"
+    owner: root
+    group: root
+  tags: [devcontainer_prebuild]
+
+- name: Deploy devcontainer-stop systemd timer unit
+  ansible.builtin.template:
+    src: devcontainer-stop.timer.j2
+    dest: /etc/systemd/system/devcontainer-stop.timer
+    mode: "0644"
+    owner: root
+    group: root
+  tags: [devcontainer_prebuild]
+
+- name: Enable and start devcontainer-stop timer
+  ansible.builtin.systemd:
+    name: devcontainer-stop.timer
+    enabled: true
+    state: started
+    daemon_reload: true
+  tags: [devcontainer_prebuild]

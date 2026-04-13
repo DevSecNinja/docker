@@ -1,0 +1,10 @@
+[Unit]
+Description=Devcontainer Idle Stop Service
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+ExecStart={{ devcontainer_stop_script }}
+StandardOutput=journal
+StandardError=journal
