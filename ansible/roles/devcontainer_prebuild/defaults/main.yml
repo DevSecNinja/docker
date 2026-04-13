@@ -13,8 +13,10 @@ devcontainer_prebuild_config_dir: "/home/{{ devcontainer_prebuild_user }}/.confi
 # Path for the prebuild shell script (system-wide, readable by systemd)
 devcontainer_prebuild_script: /usr/local/bin/devcontainer-prebuild.sh
 
-# Systemd timer schedule (OnCalendar format, default: daily at 02:00)
-devcontainer_prebuild_calendar: "*-*-* 02:00:00"
+# Systemd timer schedule (OnCalendar format, default: daily at 06:00)
+# Runs after the Docker maintenance prune (Sun *-*-* 04:00) to ensure images
+# are always rebuilt after the weekly cleanup.
+devcontainer_prebuild_calendar: "*-*-* 06:00:00"
 
 # Default devcontainer image for repos without a .devcontainer/ folder
 devcontainer_default_image: "mcr.microsoft.com/devcontainers/base:debian"
