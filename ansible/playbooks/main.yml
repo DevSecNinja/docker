@@ -62,10 +62,16 @@
       when: "'git_repos' in server_features and git_repos | default([]) | length > 0"
       tags: [git_repos]
 
-    - role: devcontainer_prebuild
-      when: "'devcontainer_prebuild' in server_features"
-      tags: [devcontainer_prebuild]
-
     - role: cron_jobs
       when: "'cron_jobs' in server_features and cron_jobs | default([]) | length > 0"
       tags: [cron_jobs]
+
+  post_tasks:
+    # Runs after all required roles. ignore_errors ensures ansible-pull
+    # succeeds even if devcontainer setup fails (e.g. broken upstream images).
+    - name: Apply devcontainer prebuild role (best-effort)
+      ansible.builtin.include_role:
+        name: devcontainer_prebuild
+      when: "'devcontainer_prebuild' in server_features"
+      ignore_errors: true
+      tags: [devcontainer_prebuild]
