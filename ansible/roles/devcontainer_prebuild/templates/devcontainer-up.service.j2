@@ -1,0 +1,13 @@
+[Unit]
+Description=Devcontainer Up Service (Phase 2/2)
+After=docker.service devcontainer-build.service
+Requires=docker.service
+# Triggered automatically by devcontainer-build.service via OnSuccess=
+# Can also be started manually to re-warm containers without rebuilding images
+
+[Service]
+Type=oneshot
+User={{ devcontainer_prebuild_user }}
+ExecStart={{ devcontainer_up_script }}
+StandardOutput=journal
+StandardError=journal

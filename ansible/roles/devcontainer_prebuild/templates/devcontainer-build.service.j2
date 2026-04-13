@@ -1,12 +1,14 @@
 [Unit]
-Description=Devcontainer Prebuild Service
+Description=Devcontainer Build Service (Phase 1/2)
 After=docker.service maintenance-docker.service
 Requires=docker.service
+# On success, automatically chain to Phase 2 (up + stop)
+OnSuccess=devcontainer-up.service
 
 [Service]
 Type=oneshot
 User={{ devcontainer_prebuild_user }}
-ExecStart={{ devcontainer_prebuild_script }}
+ExecStart={{ devcontainer_build_script }}
 StandardOutput=journal
 StandardError=journal
 

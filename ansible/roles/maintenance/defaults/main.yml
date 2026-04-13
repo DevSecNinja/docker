@@ -43,6 +43,10 @@ maintenance_docker_schedule: "Sun *-*-* 04:00:00" # Sunday 4 AM
 # Docker prune settings
 maintenance_docker_prune_enabled: true
 
+# Set to false on hosts that use devcontainer prebuild to preserve prewarmed
+# stopped containers (and the images referenced by them)
+maintenance_docker_prune_containers_enabled: true
+
 # Volume prune is disabled by default to prevent accidental data loss
 maintenance_docker_volume_prune_enabled: false
 

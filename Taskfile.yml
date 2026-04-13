@@ -372,14 +372,32 @@ tasks:
 
   # Devcontainer Prebuild
   devcontainer:run:
-    desc: Manually trigger devcontainer prebuild now
+    desc: Trigger full prebuild (build images then prewarm containers via OnSuccess chain)
     cmds:
       - |
-        echo "Triggering devcontainer prebuild..."
-        sudo systemctl start devcontainer-prebuild.service
+        echo "Triggering devcontainer build (Phase 1 - up will chain automatically on success)..."
+        sudo systemctl start devcontainer-build.service
         echo "Waiting for service to complete..."
         sleep 2
-        sudo systemctl status devcontainer-prebuild.service --no-pager -l || true
+        sudo systemctl status devcontainer-build.service --no-pager -l || true
+
+  devcontainer:build:
+    desc: Run Phase 1 only - build all devcontainer images (does not start containers)
+    cmds:
+      - |
+        echo "Triggering devcontainer-build.service (Phase 1)..."
+        sudo systemctl start devcontainer-build.service
+        sleep 2
+        sudo systemctl status devcontainer-build.service --no-pager -l || true
+
+  devcontainer:up:
+    desc: Run Phase 2 only - prewarm containers from existing images (does not rebuild)
+    cmds:
+      - |
+        echo "Triggering devcontainer-up.service (Phase 2)..."
+        sudo systemctl start devcontainer-up.service
+        sleep 2
+        sudo systemctl status devcontainer-up.service --no-pager -l || true
 
   devcontainer:status:
     desc: Check devcontainer prebuild timer and service status
@@ -388,24 +406,50 @@ tasks:
         echo "=== Devcontainer Prebuild Timer Status ==="
         sudo systemctl list-timers devcontainer-prebuild.timer --no-pager --all 2>/dev/null || true
         echo ""
-        echo "=== Service Status ==="
-        sudo systemctl status devcontainer-prebuild.timer --no-pager -l || true
+        echo "=== Build Service Status (Phase 1) ==="
+        sudo systemctl status devcontainer-build.service --no-pager -l || true
         echo ""
-        sudo systemctl status devcontainer-prebuild.service --no-pager -l || true
+        echo "=== Up Service Status (Phase 2) ==="
+        sudo systemctl status devcontainer-up.service --no-pager -l || true
 
   devcontainer:logs:
-    desc: View devcontainer prebuild logs
+    desc: View devcontainer prebuild logs (usage - task devcontainer:logs [-- build|up|all])
     cmds:
       - |
-        echo "=== Devcontainer Prebuild Logs ==="
-        sudo journalctl -u devcontainer-prebuild.service -n 100 --no-pager
+        TYPE="{{.CLI_ARGS | default "all"}}"
+        case "$TYPE" in
+          build)
+            echo "=== Devcontainer Build Logs (Phase 1) ==="
+            sudo journalctl -u devcontainer-build.service -n 100 --no-pager
+            ;;
+          up)
+            echo "=== Devcontainer Up Logs (Phase 2) ==="
+            sudo journalctl -u devcontainer-up.service -n 100 --no-pager
+            ;;
+          all|*)
+            echo "=== Devcontainer Build Logs (Phase 1) ==="
+            sudo journalctl -u devcontainer-build.service -n 50 --no-pager
+            echo ""
+            echo "=== Devcontainer Up Logs (Phase 2) ==="
+            sudo journalctl -u devcontainer-up.service -n 50 --no-pager
+            ;;
+        esac
 
   devcontainer:logs:follow:
-    desc: Follow devcontainer prebuild logs in real-time
+    desc: Follow devcontainer logs in real-time (usage - task devcontainer:logs:follow [-- build|up])
     cmds:
       - |
-        echo "Following devcontainer prebuild logs (Ctrl+C to exit)..."
-        sudo journalctl -u devcontainer-prebuild.service -f -o short-precise
+        TYPE="{{.CLI_ARGS | default "build"}}"
+        case "$TYPE" in
+          up)
+            echo "Following devcontainer-up logs (Phase 2)..."
+            sudo journalctl -u devcontainer-up.service -f -o short-precise
+            ;;
+          build|*)
+            echo "Following devcontainer-build logs (Phase 1)..."
+            sudo journalctl -u devcontainer-build.service -f -o short-precise
+            ;;
+        esac
 
   devcontainer:images:
     desc: List all prebuilt devcontainer images
@@ -494,7 +538,7 @@ tasks:
         sudo systemctl list-timers ansible-pull.timer maintenance-daily.timer maintenance-weekly.timer dccd-deploy.timer devcontainer-prebuild.timer --no-pager --all 2>/dev/null || true
         echo ""
         echo "--- Service Status ---"
-        for svc in ansible-pull maintenance-daily maintenance-weekly dccd-deploy devcontainer-prebuild; do
+        for svc in ansible-pull maintenance-daily maintenance-weekly dccd-deploy devcontainer-build devcontainer-up; do
           echo "────────────────────────────────────"
           echo "  ${svc}"
           echo "────────────────────────────────────"

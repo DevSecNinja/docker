@@ -5,7 +5,7 @@
 # --- Docker System Prune ---
 - name: Run Docker system prune (remove unused images, containers, networks)
   community.docker.docker_prune:
-    containers: true
+    containers: "{{ maintenance_docker_prune_containers_enabled | default(true) }}"
     images: true
     images_filters:
       dangling: false

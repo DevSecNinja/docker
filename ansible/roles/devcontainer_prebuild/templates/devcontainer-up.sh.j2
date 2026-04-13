@@ -1,0 +1,64 @@
+#!/usr/bin/env bash
+# Devcontainer Up Script
+# Managed by Ansible - do not edit manually
+# Phase 2 of 2: start each container (so VS Code can attach instantly), then
+# stop it to free resources. The stopped container retains the
+# devcontainer.local_folder label that VS Code uses for fast-attach.
+# Triggered automatically by devcontainer-build.service via OnSuccess=.
+# Logs are captured by systemd journal (journalctl -u devcontainer-up)
+
+set -uo pipefail
+
+export PATH="{{ devcontainer_cli_install_dir }}:{{ homebrew_prefix }}/bin:${PATH}"
+
+PROJECTS_DIR="{{ devcontainer_prebuild_projects_dir }}"
+DEFAULT_CONFIG="{{ devcontainer_prebuild_config_dir }}/devcontainer.json"
+FAILED=0
+
+echo "=== Phase 2: devcontainer up + stop ==="
+echo "Scanning repos in ${PROJECTS_DIR}"
+
+if [ ! -d "${PROJECTS_DIR}" ]; then
+  echo "Projects directory ${PROJECTS_DIR} does not exist, skipping."
+  exit 0
+fi
+
+for repo_dir in "${PROJECTS_DIR}"/*/; do
+  [ -d "${repo_dir}" ] || continue
+  repo_name=$(basename "${repo_dir}")
+
+  if [ -f "${repo_dir}.devcontainer/devcontainer.json" ]; then
+    echo "--- Starting container for ${repo_name} (own .devcontainer/) ---"
+    config_args=()
+  else
+    echo "--- Starting container for ${repo_name} (default Debian config) ---"
+    config_args=(--config "${DEFAULT_CONFIG}")
+  fi
+
+  up_tmpfile=$(mktemp)
+  if devcontainer up \
+    --workspace-folder "${repo_dir}" \
+    "${config_args[@]}" | tee "${up_tmpfile}"; then
+
+    container_id=$(tail -1 "${up_tmpfile}" | jq -r '.containerId // empty' 2>/dev/null)
+    rm -f "${up_tmpfile}"
+
+    if [ -z "${container_id}" ]; then
+      echo "WARNING: Could not parse containerId for ${repo_name}, skipping stop" >&2
+    else
+      echo "Stopping ${container_id} (retained for VS Code fast-attach)..."
+      docker stop "${container_id}"
+    fi
+  else
+    rm -f "${up_tmpfile}"
+    echo "ERROR: devcontainer up failed for ${repo_name}" >&2
+    FAILED=$((FAILED + 1))
+  fi
+done
+
+if [ "${FAILED}" -gt 0 ]; then
+  echo "Phase 2 complete with ${FAILED} failure(s)." >&2
+  exit 1
+fi
+
+echo "Phase 2 complete - all containers prewarmed and stopped."

@@ -10,8 +10,9 @@ devcontainer_prebuild_projects_dir: "/home/{{ devcontainer_prebuild_user }}/proj
 # Directory for the default devcontainer config (for repos without .devcontainer/)
 devcontainer_prebuild_config_dir: "/home/{{ devcontainer_prebuild_user }}/.config/devcontainer-default"
 
-# Path for the prebuild shell script (system-wide, readable by systemd)
-devcontainer_prebuild_script: /usr/local/bin/devcontainer-prebuild.sh
+# Paths for the split build + up scripts (system-wide, readable by systemd)
+devcontainer_build_script: /usr/local/bin/devcontainer-build.sh
+devcontainer_up_script: /usr/local/bin/devcontainer-up.sh
 
 # Systemd timer schedule (OnCalendar format, default: daily at 06:00)
 # Runs after the Docker maintenance prune (Sun *-*-* 04:00) to ensure images

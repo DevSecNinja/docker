@@ -17,6 +17,10 @@ mise_user: jean-paul
 # Devcontainer prebuild
 devcontainer_prebuild_user: jean-paul
 
+# Keep stopped devcontainer containers so VS Code can fast-attach;
+# their referenced images are also protected from image prune
+maintenance_docker_prune_containers_enabled: false
+
 # Server features to enable
 server_features:
   - system_setup

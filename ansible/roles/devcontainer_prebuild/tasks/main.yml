@@ -32,7 +32,7 @@
       ansible.builtin.get_url:
         url: "{{ devcontainer_cli_install_script_url }}"
         dest: /tmp/devcontainer_install.sh
-        mode: '0755'
+        mode: "0755"
 
     - name: Run devcontainer CLI install script (fallback)
       when: devcontainer_brew_result is failed
@@ -53,7 +53,7 @@
   ansible.builtin.file:
     path: "{{ devcontainer_prebuild_config_dir }}"
     state: directory
-    mode: '0755'
+    mode: "0755"
   tags: [devcontainer_prebuild]
 
 - name: Deploy default devcontainer configuration
@@ -62,23 +62,53 @@
   ansible.builtin.template:
     src: devcontainer-default.json.j2
     dest: "{{ devcontainer_prebuild_config_dir }}/devcontainer.json"
-    mode: '0644'
+    mode: "0644"
   tags: [devcontainer_prebuild]
 
-- name: Deploy devcontainer prebuild script
+- name: Remove legacy devcontainer-prebuild.service unit (replaced by build+up)
+  ansible.builtin.file:
+    path: /etc/systemd/system/devcontainer-prebuild.service
+    state: absent
+  tags: [devcontainer_prebuild]
+
+- name: Remove legacy devcontainer-prebuild.sh script (replaced by build+up)
+  ansible.builtin.file:
+    path: /usr/local/bin/devcontainer-prebuild.sh
+    state: absent
+  tags: [devcontainer_prebuild]
+
+- name: Deploy devcontainer build script (Phase 1)
   ansible.builtin.template:
-    src: devcontainer-prebuild.sh.j2
-    dest: "{{ devcontainer_prebuild_script }}"
-    mode: '0755'
+    src: devcontainer-build.sh.j2
+    dest: "{{ devcontainer_build_script }}"
+    mode: "0755"
     owner: root
     group: root
   tags: [devcontainer_prebuild]
 
-- name: Deploy devcontainer-prebuild systemd service unit
+- name: Deploy devcontainer up script (Phase 2)
   ansible.builtin.template:
-    src: devcontainer-prebuild.service.j2
-    dest: /etc/systemd/system/devcontainer-prebuild.service
-    mode: '0644'
+    src: devcontainer-up.sh.j2
+    dest: "{{ devcontainer_up_script }}"
+    mode: "0755"
+    owner: root
+    group: root
+  tags: [devcontainer_prebuild]
+
+- name: Deploy devcontainer-build systemd service unit (Phase 1)
+  ansible.builtin.template:
+    src: devcontainer-build.service.j2
+    dest: /etc/systemd/system/devcontainer-build.service
+    mode: "0644"
+    owner: root
+    group: root
+  tags: [devcontainer_prebuild]
+
+- name: Deploy devcontainer-up systemd service unit (Phase 2)
+  ansible.builtin.template:
+    src: devcontainer-up.service.j2
+    dest: /etc/systemd/system/devcontainer-up.service
+    mode: "0644"
     owner: root
     group: root
   tags: [devcontainer_prebuild]
@@ -87,7 +117,7 @@
   ansible.builtin.template:
     src: devcontainer-prebuild.timer.j2
     dest: /etc/systemd/system/devcontainer-prebuild.timer
-    mode: '0644'
+    mode: "0644"
     owner: root
     group: root
   tags: [devcontainer_prebuild]
