@@ -333,6 +333,43 @@ tasks:
         echo ""
         sudo systemctl status maintenance-weekly.timer --no-pager -l || true
 
+  # dccd Deployment
+  dccd:run:
+    desc: Manually trigger dccd deployment now
+    cmds:
+      - |
+        echo "Triggering dccd deployment..."
+        sudo systemctl start dccd-deploy.service
+        echo "Waiting for service to complete..."
+        sleep 2
+        sudo systemctl status dccd-deploy.service --no-pager -l || true
+
+  dccd:status:
+    desc: Check dccd deployment timer and service status
+    cmds:
+      - |
+        echo "=== dccd Deployment Timer Status ==="
+        sudo systemctl list-timers dccd-deploy.timer --no-pager --all 2>/dev/null || true
+        echo ""
+        echo "=== Service Status ==="
+        sudo systemctl status dccd-deploy.timer --no-pager -l || true
+        echo ""
+        sudo systemctl status dccd-deploy.service --no-pager -l || true
+
+  dccd:logs:
+    desc: View dccd deployment logs
+    cmds:
+      - |
+        echo "=== dccd Deployment Logs ==="
+        sudo journalctl -u dccd-deploy.service -n 100 --no-pager
+
+  dccd:logs:follow:
+    desc: Follow dccd deployment logs in real-time
+    cmds:
+      - |
+        echo "Following dccd deployment logs (Ctrl+C to exit)..."
+        sudo journalctl -u dccd-deploy.service -f -o short-precise
+
   # Development
   dev:format:
     desc: Format code (YAML files)
@@ -410,10 +447,10 @@ tasks:
         echo "═══════════════════════════════════════"
         echo ""
         echo "--- Timers ---"
-        sudo systemctl list-timers ansible-pull.timer maintenance-daily.timer maintenance-weekly.timer --no-pager --all 2>/dev/null || true
+        sudo systemctl list-timers ansible-pull.timer maintenance-daily.timer maintenance-weekly.timer dccd-deploy.timer --no-pager --all 2>/dev/null || true
         echo ""
         echo "--- Service Status ---"
-        for svc in ansible-pull maintenance-daily maintenance-weekly; do
+        for svc in ansible-pull maintenance-daily maintenance-weekly dccd-deploy; do
           echo "────────────────────────────────────"
           echo "  ${svc}"
           echo "────────────────────────────────────"
@@ -547,6 +584,11 @@ tasks:
         echo "  Maintenance:"
         echo "    task maintenance:update  Update configs and images"
         echo "    task maintenance:daily   Run daily patches"
+        echo ""
+        echo "  dccd Deployment:"
+        echo "    task dccd:status         Check dccd timer and service status"
+        echo "    task dccd:run            Manually trigger dccd deployment"
+        echo "    task dccd:logs           View dccd deployment logs"
         echo ""
         echo "  Information:"
         echo "    task info                Show system information"
