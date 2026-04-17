@@ -43,6 +43,7 @@ packages_apt:
 # Git repositories to clone and keep up to date
 git_repos:
   - repos:
+      - "https://github.com/DevSecNinja/.github"
       - "https://github.com/DevSecNinja/blog"
       - "https://github.com/DevSecNinja/deck-engine"
       - "https://github.com/DevSecNinja/deckio-starter"
