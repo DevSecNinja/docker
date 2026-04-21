@@ -32,7 +32,9 @@ shopt -s dotglob
 for repo_dir in "${PROJECTS_DIR}"/*/; do
   [ -d "${repo_dir}" ] || continue
   repo_name=$(basename "${repo_dir}")
-  image_name="devcontainer-${repo_name}:latest"
+  # Strip leading dots so dot-prefixed dirs (e.g. .github) produce valid Docker image names
+  image_safe_name="${repo_name#.}"
+  image_name="devcontainer-${image_safe_name}:latest"
 
   if [ -f "${repo_dir}.devcontainer/devcontainer.json" ]; then
     echo "--- Building ${repo_name} (own .devcontainer/) ---"
