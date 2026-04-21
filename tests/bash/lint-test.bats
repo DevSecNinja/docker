@@ -51,6 +51,13 @@ setup() {
 
 	cd "$ANSIBLE_DIR"
 	run ansible-lint -c .ansible-lint roles/
+
+	# Print output on failure to aid CI debugging
+	if [ "$status" -ne 0 ]; then
+		echo "ansible-lint failed (exit $status):" >&2
+		echo "$output" >&2
+	fi
+
 	[ "$status" -eq 0 ]
 }
 

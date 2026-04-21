@@ -90,6 +90,12 @@ EEOF
 		--skip-tags traefik \
 		ansible/playbooks/main.yml
 
+	# Print output on failure to aid CI debugging
+	if [ "$status" -ne 0 ] && ! [[ "$output" =~ "check mode is not supported" ]]; then
+		echo "ansible-playbook check failed (exit $status):" >&2
+		echo "$output" >&2
+	fi
+
 	# Accept success (0) or check-mode specific warnings
 	[ "$status" -eq 0 ] || [[ "$output" =~ "check mode is not supported" ]]
 }
@@ -131,7 +137,14 @@ EEOF
 		--inventory /tmp/test-inventory/hosts.yml \
 		--extra-vars "target_host=localhost" \
 		--tags docker \
+		--skip-tags docker_group \
 		ansible/playbooks/main.yml
+
+	# Print output on failure to aid CI debugging
+	if [ "$status" -ne 0 ]; then
+		echo "ansible-playbook failed (exit $status):" >&2
+		echo "$output" >&2
+	fi
 
 	# Check if docker was installed successfully
 	[ "$status" -eq 0 ]

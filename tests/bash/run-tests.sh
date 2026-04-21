@@ -168,14 +168,17 @@ echo ""
 
 # Run tests
 if [ "$CI_MODE" = true ]; then
-	# In CI mode, save output to file and show on stdout via tee
+	# In CI mode, produce human-readable output on terminal AND JUnit XML for reporting
 	if [ "$OUTPUT_FORMAT" = "junit" ]; then
-		# Use JUnit formatter for CI
-		# Using --formatter junit with stdout redirection creates a single unified report
-		# instead of multiple files (one per test file) that --report-formatter would create
-		# Also run with --formatter pretty on stderr so failures are visible in CI logs
-		bats --formatter junit "${TEST_FILES[@]}" 2>&1 | tee "$OUTPUT_FILE"
-		EXIT_CODE=${PIPESTATUS[0]}
+		# Run with pretty terminal output and a separate JUnit report file
+		# --report-formatter writes JUnit XML to --output directory
+		REPORT_DIR="$(dirname "$OUTPUT_FILE")"
+		bats --formatter tap --report-formatter junit --output "$REPORT_DIR" "${TEST_FILES[@]}"
+		EXIT_CODE=$?
+		# Rename the report file to the expected output filename
+		if [ -f "${REPORT_DIR}/report.xml" ]; then
+			mv "${REPORT_DIR}/report.xml" "$OUTPUT_FILE"
+		fi
 	else
 		# Use TAP format
 		bats --tap "${TEST_FILES[@]}" 2>&1 | tee "$OUTPUT_FILE"
