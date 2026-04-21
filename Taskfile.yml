@@ -372,23 +372,21 @@ tasks:
 
   # Devcontainer Prebuild
   devcontainer:run:
-    desc: Trigger full prebuild (build images then prewarm containers via OnSuccess chain)
+    desc: Run both phases - build images (Phase 1) then prewarm containers (Phase 2) via systemd OnSuccess chain
     cmds:
       - |
-        echo "Triggering devcontainer build (Phase 1 - up will chain automatically on success)..."
+        echo "Triggering devcontainer-build.service (Phase 1 + Phase 2 via OnSuccess chain)..."
         sudo systemctl start devcontainer-build.service
         echo "Waiting for service to complete..."
         sleep 2
         sudo systemctl status devcontainer-build.service --no-pager -l || true
 
   devcontainer:build:
-    desc: Run Phase 1 only - build all devcontainer images (does not start containers)
+    desc: Run Phase 1 only - build all devcontainer images (does not trigger Phase 2)
     cmds:
       - |
-        echo "Triggering devcontainer-build.service (Phase 1)..."
-        sudo systemctl start devcontainer-build.service
-        sleep 2
-        sudo systemctl status devcontainer-build.service --no-pager -l || true
+        echo "Running devcontainer-build.sh directly (Phase 1 only, bypasses OnSuccess chain)..."
+        sudo /usr/local/bin/devcontainer-build.sh
 
   devcontainer:up:
     desc: Run Phase 2 only - prewarm containers from existing images (does not rebuild)
