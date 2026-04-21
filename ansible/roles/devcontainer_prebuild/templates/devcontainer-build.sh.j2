@@ -26,6 +26,9 @@ if [ ! -d "${PROJECTS_DIR}" ]; then
   exit 0
 fi
 
+# Include dot-prefixed directories (e.g. .github)
+shopt -s dotglob
+
 for repo_dir in "${PROJECTS_DIR}"/*/; do
   [ -d "${repo_dir}" ] || continue
   repo_name=$(basename "${repo_dir}")
