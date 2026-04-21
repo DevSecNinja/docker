@@ -17,6 +17,9 @@ This is an Ansible-based infrastructure automation repository that manages Docke
 
 ## Key Commands
 
+### Important: Always Use Task Runner
+When suggesting commands to the user, **always prefer `task` commands** from `Taskfile.yml` over raw commands. Only fall back to raw commands if no equivalent task exists. Run `task --list` to discover available tasks.
+
 ### Task Runner (Recommended)
 ```bash
 # Show all available tasks
