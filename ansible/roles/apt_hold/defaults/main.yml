@@ -1,0 +1,5 @@
+---
+# Packages to hold via apt-mark hold
+# Held packages are skipped by apt-get upgrade and dist-upgrade
+# Define this list in group_vars or host_vars — empty by default
+apt_hold_packages: []

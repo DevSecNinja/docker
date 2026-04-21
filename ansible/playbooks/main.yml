@@ -13,6 +13,13 @@
       when: ansible_os_family == "Debian"
       tags: always
 
+    - name: Unhold managed apt packages before role execution
+      ansible.builtin.include_role:
+        name: apt_hold
+        tasks_from: unhold.yml
+      when: ansible_os_family == "Debian"
+      tags: always
+
   roles:
     - role: github_ssh_keys
       when: "'github_ssh_keys' in server_features"
@@ -29,6 +36,10 @@
     - role: geerlingguy.docker
       when: "'docker' in server_features"
       tags: docker
+
+    - role: apt_hold
+      when: ansible_os_family == "Debian"
+      tags: [apt_hold]
 
     - role: ufw
       when: "'ufw' in server_features or 'firewall' in server_features"

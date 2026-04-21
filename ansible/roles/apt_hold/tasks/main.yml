@@ -1,0 +1,10 @@
+---
+# Main entry point: hold all managed packages
+
+- name: Hold managed apt packages
+  ansible.builtin.dpkg_selections:
+    name: "{{ item }}"
+    selection: hold
+  loop: "{{ apt_hold_packages }}"
+  when: apt_hold_packages | length > 0
+  tags: [apt_hold]

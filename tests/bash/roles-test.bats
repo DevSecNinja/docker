@@ -239,8 +239,8 @@ setup() {
 # ============================================================
 
 @test "inventory: hosts.yml uses server type groups instead of docker_servers" {
-    # The old docker_servers group must not exist
-    run grep "docker_servers" "${ANSIBLE_DIR}/inventory/hosts.yml"
+    # docker_servers must not directly contain hosts (it should only be a parent group)
+    run bash -c "awk '/docker_servers:/,/^[^ ]/' ${ANSIBLE_DIR}/inventory/hosts.yml | grep -E '^\s+hosts:'"
     [ "$status" -eq 1 ]
 
     # Server type groups must exist

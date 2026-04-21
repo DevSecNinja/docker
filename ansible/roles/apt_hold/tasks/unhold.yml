@@ -1,0 +1,10 @@
+---
+# Unhold packages so Ansible can manage their versions
+
+- name: Unhold managed apt packages
+  ansible.builtin.dpkg_selections:
+    name: "{{ item }}"
+    selection: install
+  loop: "{{ apt_hold_packages }}"
+  when: apt_hold_packages | length > 0
+  tags: [apt_hold]
