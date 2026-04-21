@@ -248,8 +248,7 @@ setup() {
     [ "$status" -eq 0 ]
     run grep "development_servers" "${ANSIBLE_DIR}/inventory/hosts.yml"
     [ "$status" -eq 0 ]
-    run grep "dmz_servers" "${ANSIBLE_DIR}/inventory/hosts.yml"
-    [ "$status" -eq 0 ]
+    # dmz_servers removed (svlazextpub decommissioned)
 }
 
 @test "inventory: each host belongs to exactly one server type group" {
@@ -259,7 +258,7 @@ setup() {
     fi
 
     # Define server type groups
-    local server_type_groups="application_servers development_servers dmz_servers infrastructure_servers"
+    local server_type_groups="application_servers development_servers infrastructure_servers"
 
     # Get all hosts from the inventory
     cd "$REPO_ROOT"
