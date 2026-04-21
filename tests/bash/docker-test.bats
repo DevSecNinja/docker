@@ -114,6 +114,8 @@ EEOF
 	ansible-galaxy collection install community.general ansible.posix community.docker
 
 	# Create test inventory
+	# Override docker_packages to exclude docker-ce-rootless-extras which
+	# may not be available on all CI runner images (e.g. ubuntu-24.04)
 	mkdir -p /tmp/test-inventory
 	cat > /tmp/test-inventory/hosts.yml <<'EEOF'
 ---
@@ -127,6 +129,11 @@ all:
           server_features:
             - docker
           compose_modules: []
+          docker_packages:
+            - docker-ce
+            - docker-ce-cli
+            - containerd.io
+            - docker-buildx-plugin
     docker_servers:
       children:
         application_servers:
