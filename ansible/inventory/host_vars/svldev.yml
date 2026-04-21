@@ -47,7 +47,6 @@ git_repos:
       - "https://github.com/DevSecNinja/blog"
       - "https://github.com/DevSecNinja/deck-engine"
       - "https://github.com/DevSecNinja/deckio-starter"
-      - "https://github.com/DevSecNinja/DevSecNinja"
       - "https://github.com/DevSecNinja/docker"
       - "https://github.com/DevSecNinja/dotfiles"
       - "https://github.com/DevSecNinja/ESPHome-Zehnder-RF"
