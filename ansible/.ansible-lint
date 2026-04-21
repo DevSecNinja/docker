@@ -3,6 +3,7 @@
 skip_list:
   - yaml[line-length]
   - name[casing]
+  - name[template]  # Allow Jinja in task names for dynamic module deployments
   - fqcn-builtins  # Allow use of built-in modules without FQCN
   - fqcn[action-core]  # Allow use of built-in modules without FQCN
   - var-naming[no-role-prefix]  # Allow variables without role prefix

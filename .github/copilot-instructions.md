@@ -20,6 +20,19 @@ This is an Ansible-based infrastructure automation repository that manages Docke
 ### Important: Always Use Task Runner
 When suggesting commands to the user, **always prefer `task` commands** from `Taskfile.yml` over raw commands. Only fall back to raw commands if no equivalent task exists. Run `task --list` to discover available tasks.
 
+### Important: Always Use mise for Tool Management
+When installing or managing tool versions (Python, Ansible, ansible-lint, yamllint, Bats, Task, etc.), **always use `mise`** instead of `pip install`, `apt install`, or other package managers. Tool versions are defined in `.mise.toml` and must stay in sync.
+```bash
+# Install all tools at versions defined in .mise.toml
+mise install
+
+# Check installed tool versions
+mise ls
+
+# Update a tool version (edits .mise.toml)
+mise use pipx:ansible-lint@26.5.0
+```
+
 ### Task Runner (Recommended)
 ```bash
 # Show all available tasks

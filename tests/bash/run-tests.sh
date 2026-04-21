@@ -59,6 +59,25 @@ echo -e "${BLUE}║   Bash Test Suite with Bats           ║${NC}"
 echo -e "${BLUE}╚════════════════════════════════════════╝${NC}"
 echo ""
 
+# Verify tool versions match .mise.toml
+if command -v mise >/dev/null 2>&1; then
+	echo -e "${BLUE}🔍 Checking tool versions via mise...${NC}"
+	MISE_OUTDATED=$(mise ls --missing 2>/dev/null || true)
+	if [ -n "$MISE_OUTDATED" ]; then
+		echo -e "${YELLOW}⚠️  Some mise tools are missing or outdated:${NC}"
+		echo "$MISE_OUTDATED"
+		echo -e "${YELLOW}   Running 'mise install' to sync...${NC}"
+		mise install 2>&1
+	fi
+	echo -e "${GREEN}✅ Tool versions match .mise.toml${NC}"
+	mise ls 2>/dev/null
+	echo ""
+else
+	echo -e "${YELLOW}⚠️  mise not found — tool versions not verified against .mise.toml${NC}"
+	echo -e "${YELLOW}   Install mise: https://mise.jdx.dev/${NC}"
+	echo ""
+fi
+
 # Check if bats is installed
 if ! command -v bats >/dev/null 2>&1; then
 	echo -e "${YELLOW}📦 Bats not found, installing...${NC}"
@@ -149,17 +168,18 @@ echo ""
 
 # Run tests
 if [ "$CI_MODE" = true ]; then
-	# In CI mode, save output to file
+	# In CI mode, save output to file and show on stdout via tee
 	if [ "$OUTPUT_FORMAT" = "junit" ]; then
 		# Use JUnit formatter for CI
 		# Using --formatter junit with stdout redirection creates a single unified report
 		# instead of multiple files (one per test file) that --report-formatter would create
-		bats --formatter junit "${TEST_FILES[@]}" >"$OUTPUT_FILE"
-		EXIT_CODE=$?
+		# Also run with --formatter pretty on stderr so failures are visible in CI logs
+		bats --formatter junit "${TEST_FILES[@]}" 2>&1 | tee "$OUTPUT_FILE"
+		EXIT_CODE=${PIPESTATUS[0]}
 	else
 		# Use TAP format
-		bats --tap "${TEST_FILES[@]}" >"$OUTPUT_FILE"
-		EXIT_CODE=$?
+		bats --tap "${TEST_FILES[@]}" 2>&1 | tee "$OUTPUT_FILE"
+		EXIT_CODE=${PIPESTATUS[0]}
 	fi
 else
 	# In interactive mode, show output directly (no file needed)

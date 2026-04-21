@@ -62,14 +62,14 @@ setup() {
 	while IFS= read -r yaml_file; do
 		if [ -n "$yaml_file" ] && [ -f "$yaml_file" ]; then
 			found_yaml=true
-			# Basic syntax check using Python
-			run python3 -c "import yaml; yaml.safe_load(open('$yaml_file'))"
+			# Basic syntax check using yamllint
+			run yamllint -c "${REPO_ROOT}/.yamllint" "$yaml_file"
 			if [ "$status" -ne 0 ]; then
 				echo "YAML syntax error in: $yaml_file"
 				return 1
 			fi
 		fi
-	done < <(find ansible -name "*.yml" -o -name "*.yaml" 2>/dev/null)
+	done < <(find ansible -name "*.yml" -o -name "*.yaml" 2>/dev/null | grep -v '.ansible/' | grep -v 'geerlingguy')
 
 	if [ "$found_yaml" = false ]; then
 		skip "No YAML files found"

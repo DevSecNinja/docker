@@ -22,7 +22,7 @@ setup() {
 
 @test "system_setup role: main.yml exists and has valid syntax" {
     [ -f "${ANSIBLE_DIR}/roles/system_setup/tasks/main.yml" ]
-    run python3 -c "import yaml; yaml.safe_load(open('${ANSIBLE_DIR}/roles/system_setup/tasks/main.yml'))"
+    run yamllint -c "${REPO_ROOT}/.yamllint" "${ANSIBLE_DIR}/roles/system_setup/tasks/main.yml"
     [ "$status" -eq 0 ]
 }
 
@@ -51,7 +51,7 @@ setup() {
 
 @test "docker_group role: main.yml exists and has valid syntax" {
     [ -f "${ANSIBLE_DIR}/roles/docker_group/tasks/main.yml" ]
-    run python3 -c "import yaml; yaml.safe_load(open('${ANSIBLE_DIR}/roles/docker_group/tasks/main.yml'))"
+    run yamllint -c "${REPO_ROOT}/.yamllint" "${ANSIBLE_DIR}/roles/docker_group/tasks/main.yml"
     [ "$status" -eq 0 ]
 }
 
@@ -78,7 +78,7 @@ setup() {
 
 @test "ufw role: main.yml exists and has valid syntax" {
     [ -f "${ANSIBLE_DIR}/roles/ufw/tasks/main.yml" ]
-    run python3 -c "import yaml; yaml.safe_load(open('${ANSIBLE_DIR}/roles/ufw/tasks/main.yml'))"
+    run yamllint -c "${REPO_ROOT}/.yamllint" "${ANSIBLE_DIR}/roles/ufw/tasks/main.yml"
     [ "$status" -eq 0 ]
 }
 
@@ -112,19 +112,19 @@ setup() {
 
 @test "maintenance role: main.yml exists and has valid syntax" {
     [ -f "${ANSIBLE_DIR}/roles/maintenance/tasks/main.yml" ]
-    run python3 -c "import yaml; yaml.safe_load(open('${ANSIBLE_DIR}/roles/maintenance/tasks/main.yml'))"
+    run yamllint -c "${REPO_ROOT}/.yamllint" "${ANSIBLE_DIR}/roles/maintenance/tasks/main.yml"
     [ "$status" -eq 0 ]
 }
 
 @test "maintenance role: daily maintenance tasks exist and valid" {
     [ -f "${ANSIBLE_DIR}/roles/maintenance/tasks/setup_daily_maintenance.yml" ]
-    run python3 -c "import yaml; yaml.safe_load(open('${ANSIBLE_DIR}/roles/maintenance/tasks/setup_daily_maintenance.yml'))"
+    run yamllint -c "${REPO_ROOT}/.yamllint" "${ANSIBLE_DIR}/roles/maintenance/tasks/setup_daily_maintenance.yml"
     [ "$status" -eq 0 ]
 }
 
 @test "maintenance role: weekly maintenance tasks exist and valid" {
     [ -f "${ANSIBLE_DIR}/roles/maintenance/tasks/setup_weekly_maintenance.yml" ]
-    run python3 -c "import yaml; yaml.safe_load(open('${ANSIBLE_DIR}/roles/maintenance/tasks/setup_weekly_maintenance.yml'))"
+    run yamllint -c "${REPO_ROOT}/.yamllint" "${ANSIBLE_DIR}/roles/maintenance/tasks/setup_weekly_maintenance.yml"
     [ "$status" -eq 0 ]
 }
 
@@ -170,13 +170,13 @@ setup() {
 
 @test "package_managers role: main.yml exists and has valid syntax" {
     [ -f "${ANSIBLE_DIR}/roles/package_managers/tasks/main.yml" ]
-    run python3 -c "import yaml; yaml.safe_load(open('${ANSIBLE_DIR}/roles/package_managers/tasks/main.yml'))"
+    run yamllint -c "${REPO_ROOT}/.yamllint" "${ANSIBLE_DIR}/roles/package_managers/tasks/main.yml"
     [ "$status" -eq 0 ]
 }
 
 @test "package_managers role: install_homebrew.yml exists and has valid syntax" {
     [ -f "${ANSIBLE_DIR}/roles/package_managers/tasks/install_homebrew.yml" ]
-    run python3 -c "import yaml; yaml.safe_load(open('${ANSIBLE_DIR}/roles/package_managers/tasks/install_homebrew.yml'))"
+    run yamllint -c "${REPO_ROOT}/.yamllint" "${ANSIBLE_DIR}/roles/package_managers/tasks/install_homebrew.yml"
     [ "$status" -eq 0 ]
 }
 
@@ -222,7 +222,7 @@ setup() {
 
 @test "docker_compose_modules role: traefik module configuration exists" {
     [ -f "${ANSIBLE_DIR}/roles/docker_compose_modules/vars/modules/traefik.yml" ]
-    run python3 -c "import yaml; yaml.safe_load(open('${ANSIBLE_DIR}/roles/docker_compose_modules/vars/modules/traefik.yml'))"
+    run yamllint -c "${REPO_ROOT}/.yamllint" "${ANSIBLE_DIR}/roles/docker_compose_modules/vars/modules/traefik.yml"
     [ "$status" -eq 0 ]
 }
 

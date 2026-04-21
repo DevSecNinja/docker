@@ -121,6 +121,9 @@ all:
           server_features:
             - docker
           compose_modules: []
+    docker_servers:
+      children:
+        application_servers:
 EEOF
 
 	cd "$REPO_ROOT"
