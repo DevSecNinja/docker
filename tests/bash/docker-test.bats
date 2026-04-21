@@ -114,8 +114,11 @@ EEOF
 	ansible-galaxy collection install community.general ansible.posix community.docker
 
 	# Create test inventory
-	# Override docker_packages to exclude docker-ce-rootless-extras which
-	# may not be available on all CI runner images (e.g. ubuntu-24.04)
+	# CI runners (ubuntu-24.04) have Docker pre-installed. The geerlingguy.docker
+	# role's apt update handler skips when run with --tags, leaving the apt cache
+	# stale after adding the docker-ce repo. Work around this by skipping package
+	# installation (docker_packages: [], docker_install_compose_plugin: false)
+	# and repo setup (docker_add_repo: false) since Docker is already present.
 	mkdir -p /tmp/test-inventory
 	cat > /tmp/test-inventory/hosts.yml <<'EEOF'
 ---
@@ -129,11 +132,9 @@ all:
           server_features:
             - docker
           compose_modules: []
-          docker_packages:
-            - docker-ce
-            - docker-ce-cli
-            - containerd.io
-            - docker-buildx-plugin
+          docker_packages: []
+          docker_install_compose_plugin: false
+          docker_add_repo: false
     docker_servers:
       children:
         application_servers:
