@@ -46,11 +46,15 @@
 
 - name: Display chezmoi update result
   ansible.builtin.debug:
-    msg: >-
-      chezmoi update: {{ 'changed' if
-      maintenance_user_tools_chezmoi_result.changed | default(false) else 'no
-      changes' }} (rc={{ maintenance_user_tools_chezmoi_result.rc |
-      default('skipped') }})
+    msg: |-
+      chezmoi update: {{
+        'changed' if maintenance_user_tools_chezmoi_result.changed | default(false)
+        else 'no changes'
+      }} (rc={{ maintenance_user_tools_chezmoi_result.rc | default('skipped') }})
+      {% set lines = maintenance_user_tools_chezmoi_result.stdout_lines | default([]) %}
+      {% if lines %}output:
+      {% for line in lines %}  {{ line }}
+      {% endfor %}{% endif %}
   when: maintenance_user_tools_chezmoi_result is defined
 
 # ---------------------------------------------------------------------------
@@ -106,12 +110,26 @@
     - maintenance_user_tools_brew_enabled
     - maintenance_user_tools_brew_stat.stat.exists
 
+- name: Summarise brew upgrade result
+  ansible.builtin.set_fact:
+    maintenance_user_tools_brew_upgraded: >-
+      {{
+        (maintenance_user_tools_brew_upgrade.stdout_lines | default([]))
+        | select('match', '^==> Upgrading ')
+        | map('regex_replace', '^==> Upgrading ([^ ]+).*$', '\1')
+        | list
+      }}
+  when: maintenance_user_tools_brew_upgrade is defined
+
 - name: Display brew upgrade result
   ansible.builtin.debug:
-    msg: >-
-      brew upgrade: {{ maintenance_user_tools_brew_upgrade.stdout_lines |
-      default(['skipped']) | length }} lines of output (rc={{
-      maintenance_user_tools_brew_upgrade.rc | default('skipped') }})
+    msg: |-
+      brew upgrade: {{
+        (maintenance_user_tools_brew_upgraded | length)
+      }} formula(e) upgraded (rc={{ maintenance_user_tools_brew_upgrade.rc | default('skipped') }})
+      {% if maintenance_user_tools_brew_upgraded | length %}upgraded:
+      {% for f in maintenance_user_tools_brew_upgraded %}  - {{ f }}
+      {% endfor %}{% endif %}
   when: maintenance_user_tools_brew_upgrade is defined
 
 # ---------------------------------------------------------------------------
@@ -140,7 +158,12 @@
 
 - name: Display mise install result
   ansible.builtin.debug:
-    msg: >-
-      mise install: rc={{ maintenance_user_tools_mise_install.rc |
-      default('skipped') }}
+    msg: |-
+      mise install: rc={{ maintenance_user_tools_mise_install.rc | default('skipped') }}
+      {% set lines = maintenance_user_tools_mise_install.stderr_lines | default([])
+         + maintenance_user_tools_mise_install.stdout_lines | default([]) %}
+      {% set installed = lines | select('match', '.*[Ii]nstall(ed|ing) ') | list %}
+      {% if installed %}installed:
+      {% for line in installed %}  - {{ line | trim }}
+      {% endfor %}{% endif %}
   when: maintenance_user_tools_mise_install is defined

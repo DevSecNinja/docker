@@ -12,10 +12,20 @@
         'docker-compose-plugin',
         'linux-image-*',
         'linux-headers-*']) }}
+
+- name: Build exclude regex from package list
+  ansible.builtin.set_fact:
+    # Convert each entry into a regex fragment:
+    #   trailing '*'      -> prefix match (e.g. 'linux-image-*' -> 'linux-image-.*')
+    #   literal '.'       -> escaped (e.g. 'containerd.io' -> 'containerd\.io')
+    # Then join with '|' and anchor with ^...$.
     maintenance_exclude_pattern: >-
-      ^(docker-ce|docker-ce-cli|docker-buildx-plugin|
-      docker-compose-plugin|containerd\.io|linux-image-|
-      linux-headers-).*
+      ^({{
+        maintenance_exclude_pkgs
+        | map('regex_replace', '\\.', '\\.')
+        | map('regex_replace', '\\*$', '.*')
+        | join('|')
+      }})$
 
 - name: Update apt cache
   ansible.builtin.apt:

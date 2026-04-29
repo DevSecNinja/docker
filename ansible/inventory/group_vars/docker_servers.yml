@@ -1,6 +1,9 @@
 ---
 # Group variables for Docker servers
 
+# Silence "discovered Python interpreter" warnings — auto-detect, no warning.
+ansible_python_interpreter: auto_silent
+
 # Docker version pinning
 # renovate: datasource=github-releases depName=moby/moby
 docker_version: "29.4.0"
