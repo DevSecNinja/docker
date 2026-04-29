@@ -270,32 +270,39 @@ tasks:
         sudo systemctl status ansible-pull.service --no-pager -l || true
 
   # Maintenance
+  # Note: run from repo root and pass ANSIBLE_CONFIG explicitly so manual
+  # invocations pick up roles_path. Timer-driven runs use the systemd unit's
+  # WorkingDirectory (the ansible-pull workdir) where ansible.cfg also lives.
   maintenance:update:
     desc: Run maintenance update playbook (update config & images)
-    dir: "{{.ANSIBLE_DIR}}"
+    dir: "{{.REPO_ROOT}}"
     cmds:
-      - sudo ansible-playbook playbooks/maintenance-update.yml -i
+      - sudo ANSIBLE_CONFIG={{.REPO_ROOT}}/ansible.cfg ansible-playbook
+        {{.ANSIBLE_DIR}}/playbooks/maintenance-update.yml -i
         {{.ANSIBLE_INVENTORY}} --extra-vars "target_host=$(hostname)"
 
   maintenance:daily:
     desc: Run daily maintenance playbook (OS patches)
-    dir: "{{.ANSIBLE_DIR}}"
+    dir: "{{.REPO_ROOT}}"
     cmds:
-      - sudo ansible-playbook playbooks/maintenance-daily.yml -i
+      - sudo ANSIBLE_CONFIG={{.REPO_ROOT}}/ansible.cfg ansible-playbook
+        {{.ANSIBLE_DIR}}/playbooks/maintenance-daily.yml -i
         {{.ANSIBLE_INVENTORY}} --extra-vars "target_host=$(hostname)"
 
   maintenance:weekly:
     desc: Run weekly maintenance playbook (patches & reboot)
-    dir: "{{.ANSIBLE_DIR}}"
+    dir: "{{.REPO_ROOT}}"
     cmds:
-      - sudo ansible-playbook playbooks/maintenance-weekly.yml -i
+      - sudo ANSIBLE_CONFIG={{.REPO_ROOT}}/ansible.cfg ansible-playbook
+        {{.ANSIBLE_DIR}}/playbooks/maintenance-weekly.yml -i
         {{.ANSIBLE_INVENTORY}} --extra-vars "target_host=$(hostname)"
 
   maintenance:user-tools:
     desc: Run user-tools maintenance playbook (chezmoi, Homebrew, mise)
-    dir: "{{.ANSIBLE_DIR}}"
+    dir: "{{.REPO_ROOT}}"
     cmds:
-      - sudo ansible-playbook playbooks/maintenance-user-tools.yml -i
+      - sudo ANSIBLE_CONFIG={{.REPO_ROOT}}/ansible.cfg ansible-playbook
+        {{.ANSIBLE_DIR}}/playbooks/maintenance-user-tools.yml -i
         {{.ANSIBLE_INVENTORY}} --extra-vars "target_host=$(hostname)"
 
   maintenance:logs:
