@@ -6,6 +6,8 @@
   connection: local
   become: true
 
-  roles:
-    - role: maintenance
-      tasks_from: user_tools_maintenance
+  tasks:
+    - name: Run user-tools maintenance tasks
+      ansible.builtin.import_role:
+        name: maintenance
+        tasks_from: user_tools_maintenance
