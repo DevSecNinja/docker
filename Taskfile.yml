@@ -63,7 +63,8 @@ tasks:
   install:ansible-collections:
     desc: Install required Ansible collections
     cmds:
-      - ansible-galaxy collection install -r {{.ANSIBLE_DIR}}/requirements.yml --force
+      - ansible-galaxy collection install -r {{.ANSIBLE_DIR}}/requirements.yml
+        --force
     sources:
       - "{{.ANSIBLE_DIR}}/requirements.yml"
 
@@ -183,7 +184,8 @@ tasks:
     desc: Check Ansible playbook syntax
     dir: "{{.ANSIBLE_DIR}}"
     cmds:
-      - ansible-playbook --syntax-check {{.ANSIBLE_PLAYBOOK}} -i {{.ANSIBLE_INVENTORY}}
+      - ansible-playbook --syntax-check {{.ANSIBLE_PLAYBOOK}} -i
+        {{.ANSIBLE_INVENTORY}}
 
   syntax:scripts:
     desc: Check shell script syntax
@@ -223,19 +225,23 @@ tasks:
     desc: Run main playbook locally (requires sudo)
     dir: "{{.ANSIBLE_DIR}}"
     cmds:
-      - sudo ansible-playbook {{.ANSIBLE_PLAYBOOK}} -i {{.ANSIBLE_INVENTORY}} --extra-vars "target_host=$(hostname)"
+      - sudo ansible-playbook {{.ANSIBLE_PLAYBOOK}} -i {{.ANSIBLE_INVENTORY}}
+        --extra-vars "target_host=$(hostname)"
 
   ansible:playbook:check:
     desc: Run main playbook in check mode (dry-run)
     dir: "{{.ANSIBLE_DIR}}"
     cmds:
-      - sudo ansible-playbook {{.ANSIBLE_PLAYBOOK}} -i {{.ANSIBLE_INVENTORY}} --extra-vars "target_host=$(hostname)" --check
+      - sudo ansible-playbook {{.ANSIBLE_PLAYBOOK}} -i {{.ANSIBLE_INVENTORY}}
+        --extra-vars "target_host=$(hostname)" --check
 
   ansible:playbook:tags:
-    desc: Run playbook with specific tags (usage - task ansible:playbook:tags -- TAG=docker)
+    desc: Run playbook with specific tags (usage - task ansible:playbook:tags --
+      TAG=docker)
     dir: "{{.ANSIBLE_DIR}}"
     cmds:
-      - sudo ansible-playbook {{.ANSIBLE_PLAYBOOK}} -i {{.ANSIBLE_INVENTORY}} --extra-vars "target_host=$(hostname)" --tags "{{.TAG}}"
+      - sudo ansible-playbook {{.ANSIBLE_PLAYBOOK}} -i {{.ANSIBLE_INVENTORY}}
+        --extra-vars "target_host=$(hostname)" --tags "{{.TAG}}"
 
   ansible:logs:
     desc: View ansible-pull logs (journalctl)
@@ -268,19 +274,29 @@ tasks:
     desc: Run maintenance update playbook (update config & images)
     dir: "{{.ANSIBLE_DIR}}"
     cmds:
-      - sudo ansible-playbook playbooks/maintenance-update.yml -i {{.ANSIBLE_INVENTORY}} --extra-vars "target_host=$(hostname)"
+      - sudo ansible-playbook playbooks/maintenance-update.yml -i
+        {{.ANSIBLE_INVENTORY}} --extra-vars "target_host=$(hostname)"
 
   maintenance:daily:
     desc: Run daily maintenance playbook (OS patches)
     dir: "{{.ANSIBLE_DIR}}"
     cmds:
-      - sudo ansible-playbook playbooks/maintenance-daily.yml -i {{.ANSIBLE_INVENTORY}} --extra-vars "target_host=$(hostname)"
+      - sudo ansible-playbook playbooks/maintenance-daily.yml -i
+        {{.ANSIBLE_INVENTORY}} --extra-vars "target_host=$(hostname)"
 
   maintenance:weekly:
     desc: Run weekly maintenance playbook (patches & reboot)
     dir: "{{.ANSIBLE_DIR}}"
     cmds:
-      - sudo ansible-playbook playbooks/maintenance-weekly.yml -i {{.ANSIBLE_INVENTORY}} --extra-vars "target_host=$(hostname)"
+      - sudo ansible-playbook playbooks/maintenance-weekly.yml -i
+        {{.ANSIBLE_INVENTORY}} --extra-vars "target_host=$(hostname)"
+
+  maintenance:user-tools:
+    desc: Run user-tools maintenance playbook (chezmoi, Homebrew, mise)
+    dir: "{{.ANSIBLE_DIR}}"
+    cmds:
+      - sudo ansible-playbook playbooks/maintenance-user-tools.yml -i
+        {{.ANSIBLE_INVENTORY}} --extra-vars "target_host=$(hostname)"
 
   maintenance:logs:
     desc: View maintenance logs (usage - task maintenance:logs [-- daily|weekly|all])
@@ -306,7 +322,8 @@ tasks:
         esac
 
   maintenance:logs:follow:
-    desc: Follow maintenance logs in real-time (usage - task maintenance:logs:follow [-- daily|weekly])
+    desc: Follow maintenance logs in real-time (usage - task maintenance:logs:follow
+      [-- daily|weekly])
     cmds:
       - |
         TYPE="{{.CLI_ARGS | default "daily"}}"
@@ -372,7 +389,8 @@ tasks:
 
   # Devcontainer Prebuild
   devcontainer:run:
-    desc: Run both phases - build images (Phase 1) then prewarm containers (Phase 2) via systemd OnSuccess chain
+    desc: Run both phases - build images (Phase 1) then prewarm containers (Phase 2)
+      via systemd OnSuccess chain
     cmds:
       - |
         echo "Triggering devcontainer-build.service (Phase 1 + Phase 2 via OnSuccess chain)..."
@@ -389,7 +407,8 @@ tasks:
         sudo /usr/local/bin/devcontainer-build.sh
 
   devcontainer:up:
-    desc: Run Phase 2 only - prewarm containers from existing images (does not rebuild)
+    desc: Run Phase 2 only - prewarm containers from existing images (does not
+      rebuild)
     cmds:
       - |
         echo "Triggering devcontainer-up.service (Phase 2)..."
@@ -411,7 +430,8 @@ tasks:
         sudo systemctl status devcontainer-up.service --no-pager -l || true
 
   devcontainer:logs:
-    desc: View devcontainer prebuild logs (usage - task devcontainer:logs [-- build|up|all])
+    desc: View devcontainer prebuild logs (usage - task devcontainer:logs [--
+      build|up|all])
     cmds:
       - |
         TYPE="{{.CLI_ARGS | default "all"}}"
@@ -434,7 +454,8 @@ tasks:
         esac
 
   devcontainer:logs:follow:
-    desc: Follow devcontainer logs in real-time (usage - task devcontainer:logs:follow [-- build|up])
+    desc: Follow devcontainer logs in real-time (usage - task
+      devcontainer:logs:follow [-- build|up])
     cmds:
       - |
         TYPE="{{.CLI_ARGS | default "build"}}"
@@ -460,7 +481,8 @@ tasks:
   dev:format:
     desc: Format code (YAML files)
     cmds:
-      - echo "YAML formatting is done via yamllint checks. Run 'task lint:yaml' to check."
+      - echo "YAML formatting is done via yamllint checks. Run 'task lint:yaml'
+        to check."
 
   dev:clean:
     desc: Clean temporary files and caches

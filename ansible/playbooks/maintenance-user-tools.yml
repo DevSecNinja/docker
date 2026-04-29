@@ -1,0 +1,11 @@
+---
+# User-tools maintenance playbook: refresh chezmoi dotfiles, Homebrew formulae
+# and mise-managed tools (in that order).
+- name: User-tools maintenance - chezmoi, Homebrew, mise
+  hosts: "{{ target_host | default('all') }}"
+  connection: local
+  become: true
+
+  roles:
+    - role: maintenance
+      tasks_from: user_tools_maintenance

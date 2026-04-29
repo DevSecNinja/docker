@@ -40,6 +40,27 @@ maintenance_weekly_reboot_enabled: true
 maintenance_docker_enabled: true
 maintenance_docker_schedule: "monthly" # First day of each month at midnight
 
+# User-tools maintenance (chezmoi dotfiles, Homebrew formulae, mise tools)
+# Runs weekly after the Saturday reboot to refresh user-managed tooling.
+# Order: chezmoi update -> brew update/upgrade -> mise install
+# (chezmoi may ship updated mise.toml / Brewfile, so it must run first.)
+maintenance_user_tools_enabled: true
+maintenance_user_tools_schedule: "Sun *-*-* 09:00:00" # Sunday 9 AM
+
+# User running these tools. Defaults derived from other roles' vars,
+# falling back to ansible_user.
+maintenance_user_tools_user: >-
+  {{ chezmoi_user | default(homebrew_user | default(mise_user |
+  default(ansible_user))) }}
+
+# Toggle individual steps (all default true; auto-skip if tool absent)
+maintenance_user_tools_chezmoi_enabled: true
+maintenance_user_tools_brew_enabled: true
+maintenance_user_tools_mise_enabled: true
+
+# Brew prefix (Linuxbrew default)
+maintenance_user_tools_brew_prefix: "/home/linuxbrew/.linuxbrew"
+
 # Docker prune settings
 maintenance_docker_prune_enabled: true
 

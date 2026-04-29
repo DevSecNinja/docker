@@ -25,6 +25,10 @@
     - maintenance_docker_enabled
     - "'docker' in server_features"
 
+- name: Include user-tools maintenance setup
+  ansible.builtin.include_tasks: setup_user_tools_maintenance.yml
+  when: maintenance_user_tools_enabled
+
 - name: Include dccd deployment setup
   ansible.builtin.include_tasks: setup_dccd_deploy.yml
   when:
@@ -45,6 +49,9 @@
       - Docker maintenance:
         {{ 'Enabled' if (maintenance_docker_enabled and 'docker' in server_features) else 'Disabled' }}
         ({{ maintenance_docker_schedule if (maintenance_docker_enabled and 'docker' in server_features) else 'N/A' }})
+      - User-tools maintenance:
+        {{ 'Enabled' if maintenance_user_tools_enabled else 'Disabled' }}
+        ({{ maintenance_user_tools_schedule if maintenance_user_tools_enabled else 'N/A' }})
       - dccd deployment:
         {{ 'Enabled' if (maintenance_dccd_enabled and 'docker' in server_features) else 'Disabled' }}
         ({{ maintenance_dccd_schedule if (maintenance_dccd_enabled and 'docker' in server_features) else 'N/A' }})

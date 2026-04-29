@@ -1,0 +1,146 @@
+---
+# User-tools maintenance: refresh chezmoi dotfiles, Homebrew formulae and
+# mise-managed tools.
+#
+# Order is intentional:
+#   1. chezmoi update  - may ship updated mise.toml / Brewfile / pin lists
+#   2. brew update + upgrade + cleanup - applies any new pins from dotfiles
+#   3. mise install    - installs pinned versions from the (possibly updated)
+#                        mise config; does not bump pins
+- name: Resolve user-tools target user
+  ansible.builtin.set_fact:
+    maintenance_user_tools_resolved_user: "{{ maintenance_user_tools_user }}"
+
+- name: Look up target user home directory
+  ansible.builtin.getent:
+    database: passwd
+    key: "{{ maintenance_user_tools_resolved_user }}"
+  register: maintenance_user_tools_passwd
+
+- name: Set target user home fact
+  ansible.builtin.set_fact:
+    maintenance_user_tools_home: >-
+      {{
+        maintenance_user_tools_passwd.ansible_facts
+        .getent_passwd[maintenance_user_tools_resolved_user][4]
+      }}
+
+# ---------------------------------------------------------------------------
+# 1. chezmoi update
+# ---------------------------------------------------------------------------
+- name: Check if chezmoi is installed
+  ansible.builtin.stat:
+    path: "{{ maintenance_chezmoi_binary }}"
+  register: maintenance_user_tools_chezmoi_stat
+
+- name: Update chezmoi dotfiles
+  become: true
+  become_user: "{{ maintenance_user_tools_resolved_user }}"
+  ansible.builtin.command: "{{ maintenance_chezmoi_binary }} update --no-tty --force"
+  register: maintenance_user_tools_chezmoi_result
+  changed_when: maintenance_user_tools_chezmoi_result.stdout | length > 0
+  failed_when: false
+  when:
+    - maintenance_user_tools_chezmoi_enabled
+    - maintenance_user_tools_chezmoi_stat.stat.exists
+
+- name: Display chezmoi update result
+  ansible.builtin.debug:
+    msg: >-
+      chezmoi update: {{ 'changed' if
+      maintenance_user_tools_chezmoi_result.changed | default(false) else 'no
+      changes' }} (rc={{ maintenance_user_tools_chezmoi_result.rc |
+      default('skipped') }})
+  when: maintenance_user_tools_chezmoi_result is defined
+
+# ---------------------------------------------------------------------------
+# 2. Homebrew update + upgrade + cleanup
+# ---------------------------------------------------------------------------
+- name: Check if Homebrew is installed
+  ansible.builtin.stat:
+    path: "{{ maintenance_user_tools_brew_prefix }}/bin/brew"
+  register: maintenance_user_tools_brew_stat
+
+- name: Run brew update
+  become: true
+  become_user: "{{ maintenance_user_tools_resolved_user }}"
+  ansible.builtin.command: "{{ maintenance_user_tools_brew_prefix }}/bin/brew update"
+  environment:
+    HOMEBREW_NO_ENV_HINTS: "1"
+    HOMEBREW_NO_ANALYTICS: "1"
+  register: maintenance_user_tools_brew_update
+  changed_when: >-
+    'Already up-to-date' not in (maintenance_user_tools_brew_update.stdout |
+    default(''))
+  when:
+    - maintenance_user_tools_brew_enabled
+    - maintenance_user_tools_brew_stat.stat.exists
+
+- name: Run brew upgrade (respects pinned formulae)
+  become: true
+  become_user: "{{ maintenance_user_tools_resolved_user }}"
+  ansible.builtin.command: "{{ maintenance_user_tools_brew_prefix }}/bin/brew upgrade"
+  environment:
+    HOMEBREW_NO_ENV_HINTS: "1"
+    HOMEBREW_NO_ANALYTICS: "1"
+  register: maintenance_user_tools_brew_upgrade
+  changed_when: >-
+    (maintenance_user_tools_brew_upgrade.stdout | default('') | length) > 0
+  failed_when: false
+  when:
+    - maintenance_user_tools_brew_enabled
+    - maintenance_user_tools_brew_stat.stat.exists
+
+- name: Run brew cleanup
+  become: true
+  become_user: "{{ maintenance_user_tools_resolved_user }}"
+  ansible.builtin.command: "{{ maintenance_user_tools_brew_prefix }}/bin/brew cleanup"
+  environment:
+    HOMEBREW_NO_ENV_HINTS: "1"
+    HOMEBREW_NO_ANALYTICS: "1"
+  register: maintenance_user_tools_brew_cleanup
+  changed_when: >-
+    (maintenance_user_tools_brew_cleanup.stdout | default('') | length) > 0
+  failed_when: false
+  when:
+    - maintenance_user_tools_brew_enabled
+    - maintenance_user_tools_brew_stat.stat.exists
+
+- name: Display brew upgrade result
+  ansible.builtin.debug:
+    msg: >-
+      brew upgrade: {{ maintenance_user_tools_brew_upgrade.stdout_lines |
+      default(['skipped']) | length }} lines of output (rc={{
+      maintenance_user_tools_brew_upgrade.rc | default('skipped') }})
+  when: maintenance_user_tools_brew_upgrade is defined
+
+# ---------------------------------------------------------------------------
+# 3. mise install (respects pinned versions in mise config)
+# ---------------------------------------------------------------------------
+- name: Locate mise binary for target user
+  ansible.builtin.stat:
+    path: "{{ maintenance_user_tools_home }}/.local/bin/mise"
+  register: maintenance_user_tools_mise_stat
+
+- name: Run mise install (apply pinned versions from mise config)
+  become: true
+  become_user: "{{ maintenance_user_tools_resolved_user }}"
+  ansible.builtin.command: "{{ maintenance_user_tools_home }}/.local/bin/mise install --yes"
+  environment:
+    MISE_YES: "1"
+  register: maintenance_user_tools_mise_install
+  changed_when: >-
+    (maintenance_user_tools_mise_install.stdout | default('') | length) > 0 or
+    (maintenance_user_tools_mise_install.stderr | default('') |
+        regex_search('install') is not none)
+  failed_when: false
+  when:
+    - maintenance_user_tools_mise_enabled
+    - maintenance_user_tools_mise_stat.stat.exists
+
+- name: Display mise install result
+  ansible.builtin.debug:
+    msg: >-
+      mise install: rc={{ maintenance_user_tools_mise_install.rc |
+      default('skipped') }}
+  when: maintenance_user_tools_mise_install is defined
