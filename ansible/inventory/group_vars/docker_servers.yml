@@ -8,7 +8,7 @@ ansible_python_interpreter: auto_silent
 # renovate: datasource=github-releases depName=moby/moby
 docker_version: "29.4.0"
 # renovate: datasource=github-releases depName=containerd/containerd
-containerd_version: "2.2.2"
+containerd_version: "2.2.3"
 # renovate: datasource=github-releases depName=docker/buildx
 docker_buildx_version: "0.33.0"
 # renovate: datasource=github-releases depName=docker/compose
