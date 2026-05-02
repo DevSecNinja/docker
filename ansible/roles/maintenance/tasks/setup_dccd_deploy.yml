@@ -42,9 +42,11 @@
     name: dccd-deploy.timer
     enabled: true
     state: started
+  when: maintenance_dccd_enabled
 
 - name: Enable and start quiet dccd commit check timer
   ansible.builtin.systemd_service:
     name: dccd-commit-check.timer
     enabled: true
     state: started
+  when: maintenance_dccd_enabled

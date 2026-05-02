@@ -131,7 +131,7 @@ setup() {
 @test "maintenance role: uses FQCN for ansible.builtin modules" {
     # Check all maintenance task files
     for file in main.yml setup_daily_maintenance.yml setup_weekly_maintenance.yml setup_docker_maintenance.yml setup_dccd_deploy.yml docker_maintenance.yml; do
-        run grep -E "^\s+(cron|debug|file|include_tasks|meta|systemd(_service)?|template):" \
+        run grep -E "^\s+(cron|debug|file|include_tasks|meta|systemd(|_service)|template):" \
             "${ANSIBLE_DIR}/roles/maintenance/tasks/${file}"
         # Should find nothing (all should use FQCN)
         [ "$status" -eq 1 ] || [ -z "$output" ]
