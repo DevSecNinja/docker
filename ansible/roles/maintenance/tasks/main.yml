@@ -31,6 +31,8 @@
 
 - name: Include dccd deployment setup
   ansible.builtin.include_tasks: setup_dccd_deploy.yml
+  # Included when Docker is present so setup_dccd_deploy.yml can also stop
+  # dccd timers after maintenance_dccd_enabled is switched off.
   when:
     - "'docker' in server_features"
 

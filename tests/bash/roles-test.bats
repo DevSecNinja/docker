@@ -130,6 +130,7 @@ setup() {
 
 @test "maintenance role: uses FQCN for ansible.builtin modules" {
     # Check all maintenance task files
+    # Any module listed here must be referenced as ansible.builtin.<module>.
     local disallowed_modules="cron|debug|file|include_tasks|meta|stat|systemd_service|systemd|template"
     for file in main.yml setup_daily_maintenance.yml setup_weekly_maintenance.yml setup_docker_maintenance.yml setup_dccd_deploy.yml docker_maintenance.yml; do
         run grep -E "^\s+(${disallowed_modules}):" \
