@@ -37,16 +37,12 @@
 - name: Flush handlers to reload systemd
   ansible.builtin.meta: flush_handlers
 
-- name: Enable and start dccd deployment timer
+- name: Enable and start dccd timers
   ansible.builtin.systemd_service:
-    name: dccd-deploy.timer
+    name: "{{ item }}"
     enabled: true
     state: started
-  when: maintenance_dccd_enabled
-
-- name: Enable and start quiet dccd commit check timer
-  ansible.builtin.systemd_service:
-    name: dccd-commit-check.timer
-    enabled: true
-    state: started
+  loop:
+    - dccd-deploy.timer
+    - dccd-commit-check.timer
   when: maintenance_dccd_enabled
