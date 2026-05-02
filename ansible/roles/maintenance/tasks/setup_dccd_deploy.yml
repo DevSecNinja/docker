@@ -5,6 +5,24 @@
     name: "{{ maintenance_dccd_old_cron_name }}"
     user: "{{ maintenance_dccd_user }}"
     state: absent
+  when: maintenance_dccd_enabled
+
+- name: Check dccd timer unit files
+  ansible.builtin.stat:
+    path: "/etc/systemd/system/{{ item }}"
+  loop: "{{ maintenance_dccd_timer_units }}"
+  register: maintenance_dccd_timer_unit_files
+  when: not maintenance_dccd_enabled
+
+- name: Stop and disable dccd timers
+  ansible.builtin.systemd_service:
+    name: "{{ item.item }}"
+    enabled: false
+    state: stopped
+  loop: "{{ maintenance_dccd_timer_unit_files.results | default([]) }}"
+  when:
+    - not maintenance_dccd_enabled
+    - item.stat.exists
 
 - name: Create dccd deployment systemd service
   ansible.builtin.template:
@@ -12,6 +30,7 @@
     dest: /etc/systemd/system/dccd-deploy.service
     mode: "0644"
   notify: Reload systemd
+  when: maintenance_dccd_enabled
 
 - name: Create dccd deployment systemd timer
   ansible.builtin.template:
@@ -19,6 +38,7 @@
     dest: /etc/systemd/system/dccd-deploy.timer
     mode: "0644"
   notify: Reload systemd
+  when: maintenance_dccd_enabled
 
 - name: Create quiet dccd commit check systemd service
   ansible.builtin.template:
@@ -26,6 +46,7 @@
     dest: /etc/systemd/system/dccd-commit-check.service
     mode: "0644"
   notify: Reload systemd
+  when: maintenance_dccd_enabled
 
 - name: Create quiet dccd commit check systemd timer
   ansible.builtin.template:
@@ -33,6 +54,7 @@
     dest: /etc/systemd/system/dccd-commit-check.timer
     mode: "0644"
   notify: Reload systemd
+  when: maintenance_dccd_enabled
 
 - name: Flush handlers to reload systemd
   ansible.builtin.meta: flush_handlers

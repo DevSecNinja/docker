@@ -32,7 +32,6 @@
 - name: Include dccd deployment setup
   ansible.builtin.include_tasks: setup_dccd_deploy.yml
   when:
-    - maintenance_dccd_enabled
     - "'docker' in server_features"
 
 - name: Display maintenance information
