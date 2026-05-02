@@ -85,6 +85,11 @@ maintenance_dccd_quiet_schedule: "*-*-* *:00:00" # Hourly
 maintenance_dccd_timer_units:
   - dccd-deploy.timer
   - dccd-commit-check.timer
+maintenance_dccd_systemd_units:
+  - dccd-deploy.service
+  - dccd-deploy.timer
+  - dccd-commit-check.service
+  - dccd-commit-check.timer
 maintenance_dccd_script_path: "/opt/apps/scripts/dccd.sh"
 maintenance_dccd_user: "jean-paul"
 maintenance_dccd_dir: "/opt/apps"
