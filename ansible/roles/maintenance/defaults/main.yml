@@ -90,5 +90,6 @@ maintenance_dccd_user: "jean-paul"
 maintenance_dccd_dir: "/opt/apps"
 maintenance_dccd_age_key: "/opt/apps/age.key"
 maintenance_dccd_exclude: "shared"
+maintenance_dccd_server_name: "{{ ansible_hostname }}"
 # Retained only to remove pre-existing TrueNAS cron jobs during migration to systemd.
 maintenance_dccd_old_cron_name: "Run dccd for truenas-apps"

@@ -12,7 +12,6 @@
     path: "/etc/systemd/system/{{ item }}"
   loop: "{{ maintenance_dccd_timer_units }}"
   register: maintenance_dccd_timer_unit_files
-  when: not maintenance_dccd_enabled
 
 - name: Stop and disable dccd timers
   ansible.builtin.systemd_service:

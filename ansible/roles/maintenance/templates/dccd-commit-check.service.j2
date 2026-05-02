@@ -9,7 +9,7 @@ Type=oneshot
 User={{ maintenance_dccd_user }}
 ExecStart=/bin/bash {{ maintenance_dccd_script_path }} \
   -d {{ maintenance_dccd_dir }} \
-  -S {{ ansible_hostname }} \
+  -S {{ maintenance_dccd_server_name }} \
   -k {{ maintenance_dccd_age_key }} \
   -x {{ maintenance_dccd_exclude }} \
   -q
