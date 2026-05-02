@@ -6,12 +6,38 @@
     user: "{{ maintenance_dccd_user }}"
     state: absent
 
+- name: Check dccd timer unit files
+  ansible.builtin.stat:
+    path: "/etc/systemd/system/{{ item }}"
+  loop: "{{ maintenance_dccd_timer_units }}"
+  register: maintenance_dccd_timer_unit_files
+  when: not maintenance_dccd_enabled
+
+- name: Stop and disable dccd timers
+  ansible.builtin.systemd_service:
+    name: "{{ item.item }}"
+    enabled: false
+    state: stopped
+  loop: "{{ maintenance_dccd_timer_unit_files.results | default([]) }}"
+  when:
+    - not maintenance_dccd_enabled
+    - item.stat.exists
+
+- name: Remove dccd systemd unit files
+  ansible.builtin.file:
+    path: "/etc/systemd/system/{{ item }}"
+    state: absent
+  loop: "{{ maintenance_dccd_systemd_units }}"
+  notify: Reload systemd
+  when: not maintenance_dccd_enabled
+
 - name: Create dccd deployment systemd service
   ansible.builtin.template:
     src: dccd-deploy.service.j2
     dest: /etc/systemd/system/dccd-deploy.service
     mode: "0644"
   notify: Reload systemd
+  when: maintenance_dccd_enabled
 
 - name: Create dccd deployment systemd timer
   ansible.builtin.template:
@@ -19,12 +45,31 @@
     dest: /etc/systemd/system/dccd-deploy.timer
     mode: "0644"
   notify: Reload systemd
+  when: maintenance_dccd_enabled
 
-- name: Flush handlers to reload systemd
-  ansible.builtin.meta: flush_handlers
+- name: Create quiet dccd commit check systemd service
+  ansible.builtin.template:
+    src: dccd-commit-check.service.j2
+    dest: /etc/systemd/system/dccd-commit-check.service
+    mode: "0644"
+  notify: Reload systemd
+  when: maintenance_dccd_enabled
 
-- name: Enable and start dccd deployment timer
+- name: Create quiet dccd commit check systemd timer
+  ansible.builtin.template:
+    src: dccd-commit-check.timer.j2
+    dest: /etc/systemd/system/dccd-commit-check.timer
+    mode: "0644"
+  notify: Reload systemd
+  when: maintenance_dccd_enabled
+
+- name: Enable and start dccd timers
   ansible.builtin.systemd_service:
-    name: dccd-deploy.timer
+    name: "{{ item }}"
     enabled: true
     state: started
+    daemon_reload: true
+  loop:
+    - dccd-deploy.timer
+    - dccd-commit-check.timer
+  when: maintenance_dccd_enabled
