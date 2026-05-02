@@ -130,8 +130,8 @@ setup() {
 
 @test "maintenance role: uses FQCN for ansible.builtin modules" {
     # Check all maintenance task files
-    for file in main.yml setup_daily_maintenance.yml setup_weekly_maintenance.yml setup_docker_maintenance.yml docker_maintenance.yml; do
-        run grep -E "^\s+(file|template|debug|include_tasks|meta|systemd):" \
+    for file in main.yml setup_daily_maintenance.yml setup_weekly_maintenance.yml setup_docker_maintenance.yml setup_dccd_deploy.yml docker_maintenance.yml; do
+        run grep -E "^\s+(apt|cron|file|stat|systemd_service|template|debug|include_tasks|meta|systemd):" \
             "${ANSIBLE_DIR}/roles/maintenance/tasks/${file}"
         # Should find nothing (all should use FQCN)
         [ "$status" -eq 1 ] || [ -z "$output" ]
@@ -145,6 +145,24 @@ setup() {
     [ -f "${ANSIBLE_DIR}/roles/maintenance/templates/maintenance-weekly.timer.j2" ]
     [ -f "${ANSIBLE_DIR}/roles/maintenance/templates/maintenance-docker.service.j2" ]
     [ -f "${ANSIBLE_DIR}/roles/maintenance/templates/maintenance-docker.timer.j2" ]
+}
+
+@test "maintenance role: dccd commit check cron is hourly and quiet" {
+    local dccd_tasks="${ANSIBLE_DIR}/roles/maintenance/tasks/setup_dccd_deploy.yml"
+    local dccd_defaults="${ANSIBLE_DIR}/roles/maintenance/defaults/main.yml"
+
+    [ -f "$dccd_tasks" ]
+    run yamllint -c "${REPO_ROOT}/.yamllint" "$dccd_tasks"
+    [ "$status" -eq 0 ]
+
+    run grep -F 'maintenance_dccd_cron_minute: "0"' "$dccd_defaults"
+    [ "$status" -eq 0 ]
+    run grep -F 'maintenance_dccd_cron_hour: "*"' "$dccd_defaults"
+    [ "$status" -eq 0 ]
+    run grep -F "name: MAILTO" "$dccd_tasks"
+    [ "$status" -eq 0 ]
+    run grep -F -- "-q" "$dccd_tasks"
+    [ "$status" -eq 0 ]
 }
 
 @test "maintenance role: docker maintenance tasks exist" {

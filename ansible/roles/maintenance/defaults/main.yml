@@ -78,12 +78,16 @@ maintenance_docker_restart_unhealthy: true
 maintenance_docker_log_cleanup_enabled: true
 maintenance_docker_log_max_size: "100m"
 
-# dccd (Docker Compose CD) deployment service
+# dccd (Docker Compose CD) deployment cron job
 maintenance_dccd_enabled: false
-maintenance_dccd_schedule: "*-*-* 00:00:00" # Daily at midnight
+maintenance_dccd_cron_minute: "0"
+maintenance_dccd_cron_hour: "*" # Hourly
+maintenance_dccd_mailto: "{{ maintenance_dccd_user }}"
 maintenance_dccd_script_path: "/opt/apps/scripts/dccd.sh"
 maintenance_dccd_user: "jean-paul"
 maintenance_dccd_dir: "/opt/apps"
 maintenance_dccd_age_key: "/opt/apps/age.key"
 maintenance_dccd_exclude: "shared"
+maintenance_dccd_server_name: "{{ ansible_hostname }}"
 maintenance_dccd_old_cron_name: "Run dccd for truenas-apps"
+maintenance_dccd_cron_name: "Run dccd commit check"
