@@ -10,7 +10,7 @@ setup() {
 }
 
 @test "requirements-test: uses maintained Molecule Docker driver plugin" {
-	run bash -c "grep -Eq '^molecule-plugins\\[docker\\]==[0-9][^[:space:]]*$' \"${REQUIREMENTS_FILE}\""
+	run bash -c "grep -Eq '^molecule-plugins\\[docker\\]==[0-9]+\\.[0-9]+\\.[0-9]+$' \"${REQUIREMENTS_FILE}\""
 	[ "$status" -eq 0 ]
 }
 

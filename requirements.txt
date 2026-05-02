@@ -4,7 +4,7 @@
 # Ansible and related tools
 ansible==13.6.0
 ansible-lint==26.4.0
-# Jinja is installed as an Ansible dependency; no direct pin needed.
+# Jinja2 is installed as an Ansible dependency; no direct pin needed.
 
 # YAML linting
 yamllint==1.38.0
