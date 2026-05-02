@@ -5,7 +5,6 @@
     name: "{{ maintenance_dccd_old_cron_name }}"
     user: "{{ maintenance_dccd_user }}"
     state: absent
-  when: maintenance_dccd_enabled
 
 - name: Check dccd timer unit files
   ansible.builtin.stat:
