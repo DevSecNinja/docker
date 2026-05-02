@@ -42,7 +42,10 @@
     env: true
     user: "{{ maintenance_dccd_user }}"
     job: "{{ maintenance_dccd_mailto }}"
-    state: "{{ 'present' if maintenance_dccd_mailto | length > 0 else 'absent' }}"
+    state: >-
+      {{ 'present'
+         if maintenance_dccd_enabled and maintenance_dccd_mailto | length > 0
+         else 'absent' }}
 
 - name: Create hourly dccd commit check cron job
   ansible.builtin.cron:
@@ -57,3 +60,4 @@
       -k {{ maintenance_dccd_age_key }}
       -x {{ maintenance_dccd_exclude }}
       -q
+    state: "{{ 'present' if maintenance_dccd_enabled else 'absent' }}"

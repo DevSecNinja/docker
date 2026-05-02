@@ -82,7 +82,7 @@ maintenance_docker_log_max_size: "100m"
 maintenance_dccd_enabled: false
 maintenance_dccd_cron_minute: "0"
 maintenance_dccd_cron_hour: "*" # Hourly
-maintenance_dccd_mailto: "{{ maintenance_dccd_user }}"
+maintenance_dccd_mailto: "root"
 maintenance_dccd_script_path: "/opt/apps/scripts/dccd.sh"
 maintenance_dccd_user: "jean-paul"
 maintenance_dccd_dir: "/opt/apps"
