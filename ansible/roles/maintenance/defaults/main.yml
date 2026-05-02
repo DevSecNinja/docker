@@ -87,4 +87,5 @@ maintenance_dccd_user: "jean-paul"
 maintenance_dccd_dir: "/opt/apps"
 maintenance_dccd_age_key: "/opt/apps/age.key"
 maintenance_dccd_exclude: "shared"
+# Migration cleanup for legacy TrueNAS cron entries.
 maintenance_dccd_old_cron_name: "Run dccd for truenas-apps"
