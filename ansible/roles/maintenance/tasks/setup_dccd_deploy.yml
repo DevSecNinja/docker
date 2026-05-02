@@ -1,63 +1,50 @@
 ---
-# Setup for dccd (Docker Compose CD) deployment cron job
-- name: Ensure cron is installed
-  ansible.builtin.apt:
-    name: cron
-    state: present
-
+# Setup for dccd (Docker Compose CD) deployment service
 - name: Remove legacy dccd cron job
   ansible.builtin.cron:
     name: "{{ maintenance_dccd_old_cron_name }}"
     user: "{{ maintenance_dccd_user }}"
     state: absent
 
-- name: Check for legacy dccd deployment systemd timer
-  ansible.builtin.stat:
-    path: /etc/systemd/system/dccd-deploy.timer
-  register: maintenance_dccd_legacy_timer
-
-- name: Stop and disable legacy dccd deployment timer
-  ansible.builtin.systemd_service:
-    name: dccd-deploy.timer
-    enabled: false
-    state: stopped
-  when: maintenance_dccd_legacy_timer.stat.exists
-
-- name: Remove legacy dccd deployment systemd timer
-  ansible.builtin.file:
-    path: /etc/systemd/system/dccd-deploy.timer
-    state: absent
-  notify: Reload systemd
-
-- name: Create dccd deployment systemd service for manual runs
+- name: Create dccd deployment systemd service
   ansible.builtin.template:
     src: dccd-deploy.service.j2
     dest: /etc/systemd/system/dccd-deploy.service
     mode: "0644"
   notify: Reload systemd
 
-- name: Configure dccd cron MAILTO
-  ansible.builtin.cron:
-    name: MAILTO
-    env: true
-    user: "{{ maintenance_dccd_user }}"
-    job: "{{ maintenance_dccd_mailto }}"
-    state: >-
-      {{ 'present'
-         if maintenance_dccd_enabled and maintenance_dccd_mailto | length > 0
-         else 'absent' }}
+- name: Create dccd deployment systemd timer
+  ansible.builtin.template:
+    src: dccd-deploy.timer.j2
+    dest: /etc/systemd/system/dccd-deploy.timer
+    mode: "0644"
+  notify: Reload systemd
 
-- name: Create hourly dccd commit check cron job
-  ansible.builtin.cron:
-    name: "{{ maintenance_dccd_cron_name }}"
-    minute: "{{ maintenance_dccd_cron_minute }}"
-    hour: "{{ maintenance_dccd_cron_hour }}"
-    user: "{{ maintenance_dccd_user }}"
-    job: >-
-      /bin/bash {{ maintenance_dccd_script_path }}
-      -d {{ maintenance_dccd_dir }}
-      -S {{ maintenance_dccd_server_name }}
-      -k {{ maintenance_dccd_age_key }}
-      -x {{ maintenance_dccd_exclude }}
-      -q
-    state: "{{ 'present' if maintenance_dccd_enabled else 'absent' }}"
+- name: Create quiet dccd commit check systemd service
+  ansible.builtin.template:
+    src: dccd-commit-check.service.j2
+    dest: /etc/systemd/system/dccd-commit-check.service
+    mode: "0644"
+  notify: Reload systemd
+
+- name: Create quiet dccd commit check systemd timer
+  ansible.builtin.template:
+    src: dccd-commit-check.timer.j2
+    dest: /etc/systemd/system/dccd-commit-check.timer
+    mode: "0644"
+  notify: Reload systemd
+
+- name: Flush handlers to reload systemd
+  ansible.builtin.meta: flush_handlers
+
+- name: Enable and start dccd deployment timer
+  ansible.builtin.systemd_service:
+    name: dccd-deploy.timer
+    enabled: true
+    state: started
+
+- name: Enable and start quiet dccd commit check timer
+  ansible.builtin.systemd_service:
+    name: dccd-commit-check.timer
+    enabled: true
+    state: started

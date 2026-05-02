@@ -1,0 +1,12 @@
+[Unit]
+Description=dccd Quiet Commit Check Timer
+Requires=dccd-commit-check.service
+
+[Timer]
+OnCalendar={{ maintenance_dccd_quiet_schedule }}
+RandomizedDelaySec=5min
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+

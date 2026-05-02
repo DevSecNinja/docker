@@ -131,7 +131,7 @@ setup() {
 @test "maintenance role: uses FQCN for ansible.builtin modules" {
     # Check all maintenance task files
     for file in main.yml setup_daily_maintenance.yml setup_weekly_maintenance.yml setup_docker_maintenance.yml setup_dccd_deploy.yml docker_maintenance.yml; do
-        run grep -E "^\s+(apt|cron|file|stat|systemd_service|template|debug|include_tasks|meta|systemd):" \
+        run grep -E "^\s+(cron|file|template|debug|include_tasks|meta|systemd|systemd_service):" \
             "${ANSIBLE_DIR}/roles/maintenance/tasks/${file}"
         # Should find nothing (all should use FQCN)
         [ "$status" -eq 1 ] || [ -z "$output" ]
@@ -145,23 +145,35 @@ setup() {
     [ -f "${ANSIBLE_DIR}/roles/maintenance/templates/maintenance-weekly.timer.j2" ]
     [ -f "${ANSIBLE_DIR}/roles/maintenance/templates/maintenance-docker.service.j2" ]
     [ -f "${ANSIBLE_DIR}/roles/maintenance/templates/maintenance-docker.timer.j2" ]
+    [ -f "${ANSIBLE_DIR}/roles/maintenance/templates/dccd-deploy.service.j2" ]
+    [ -f "${ANSIBLE_DIR}/roles/maintenance/templates/dccd-deploy.timer.j2" ]
+    [ -f "${ANSIBLE_DIR}/roles/maintenance/templates/dccd-commit-check.service.j2" ]
+    [ -f "${ANSIBLE_DIR}/roles/maintenance/templates/dccd-commit-check.timer.j2" ]
 }
 
-@test "maintenance role: dccd commit check cron is hourly and quiet" {
+@test "maintenance role: dccd quiet commit check uses extra hourly systemd timer" {
     local dccd_tasks="${ANSIBLE_DIR}/roles/maintenance/tasks/setup_dccd_deploy.yml"
     local dccd_defaults="${ANSIBLE_DIR}/roles/maintenance/defaults/main.yml"
+    local dccd_quiet_service="${ANSIBLE_DIR}/roles/maintenance/templates/dccd-commit-check.service.j2"
+    local dccd_quiet_timer="${ANSIBLE_DIR}/roles/maintenance/templates/dccd-commit-check.timer.j2"
 
     [ -f "$dccd_tasks" ]
+    [ -f "$dccd_quiet_service" ]
+    [ -f "$dccd_quiet_timer" ]
     run yamllint -c "${REPO_ROOT}/.yamllint" "$dccd_tasks"
     [ "$status" -eq 0 ]
 
-    run grep -F 'maintenance_dccd_cron_minute: "0"' "$dccd_defaults"
+    run grep -F 'maintenance_dccd_schedule: "*-*-* 00:00:00"' "$dccd_defaults"
     [ "$status" -eq 0 ]
-    run grep -F 'maintenance_dccd_cron_hour: "*"' "$dccd_defaults"
+    run grep -F 'maintenance_dccd_quiet_schedule: "*-*-* *:00:00"' "$dccd_defaults"
     [ "$status" -eq 0 ]
-    run grep -F "name: MAILTO" "$dccd_tasks"
+    run grep -F "src: dccd-deploy.timer.j2" "$dccd_tasks"
     [ "$status" -eq 0 ]
-    run grep -F -- "-q" "$dccd_tasks"
+    run grep -F "src: dccd-commit-check.timer.j2" "$dccd_tasks"
+    [ "$status" -eq 0 ]
+    run grep -F "OnCalendar={{ maintenance_dccd_quiet_schedule }}" "$dccd_quiet_timer"
+    [ "$status" -eq 0 ]
+    run grep -F -- "-q" "$dccd_quiet_service"
     [ "$status" -eq 0 ]
 }
 

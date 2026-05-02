@@ -1,0 +1,19 @@
+[Unit]
+Description=dccd - Quiet Docker Compose CD Commit Check
+After=network-online.target docker.service
+Wants=network-online.target
+Requires=docker.service
+
+[Service]
+Type=oneshot
+User={{ maintenance_dccd_user }}
+ExecStart=/bin/bash {{ maintenance_dccd_script_path }} \
+  -d {{ maintenance_dccd_dir }} \
+  -S %l \
+  -k {{ maintenance_dccd_age_key }} \
+  -x {{ maintenance_dccd_exclude }} \
+  -q
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=dccd-commit-check
+
