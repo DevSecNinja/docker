@@ -19,7 +19,7 @@ setup() {
 	[ "$status" -eq 0 ]
 }
 
-@test "requirements-test: does not pin transitive Jinja dependency directly" {
+@test "requirements-test: does not pin transitive Jinja2 dependency directly" {
 	run bash -c "! grep -Eiq '^[[:space:]]*jinja2([=<>~![:space:]]|$)' \"${REQUIREMENTS_FILE}\""
 	[ "$status" -eq 0 ]
 }
