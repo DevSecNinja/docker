@@ -7,6 +7,9 @@ server_environment: development
 # GitHub username for SSH keys installation
 github_ssh_keys_username: DevSecNinja
 
+# User that will receive the SSH keys from GitHub
+github_ssh_keys_target_user: jean-paul
+
 # Chezmoi dotfiles user
 chezmoi_user: jean-paul
 
