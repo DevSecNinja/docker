@@ -19,6 +19,17 @@
   "ansible-galaxy": {
     managerFilePatterns: ["/requirements\\.ya?ml$/"],
   },
+  packageRules: [
+    {
+      description: "Enable digest updates for DevSecNinja devcontainer images",
+      matchManagers: ["devcontainer"],
+      matchDatasources: ["docker"],
+      matchPackageNames: ["/^ghcr\\.io\\/devsecninja\\//"],
+      matchUpdateTypes: ["digest"],
+      enabled: true,
+      minimumReleaseAge: "0",
+    },
+  ],
   customManagers: [
     {
       customType: "regex",
