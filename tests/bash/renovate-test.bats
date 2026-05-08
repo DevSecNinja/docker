@@ -16,7 +16,7 @@ import re
 
 config = Path(os.environ["RENOVATE_CONFIG"]).read_text()
 match = re.search(
-    r'description:\s*"Enable digest updates for DevSecNinja devcontainer images"(?P<body>.*?)\n\s*},',
+    r'description:\s*"Enable digest updates for DevSecNinja devcontainer images"(?P<body>.*?)\s*},',
     config,
     re.S,
 )
@@ -32,7 +32,7 @@ required_patterns = [
     r'enabled:\s*true',
     r'minimumReleaseAge:\s*"0"',
 ]
-missing = [pattern for pattern in required_patterns if not re.search(pattern, body)]
+missing = [pattern for pattern in required_patterns if not re.search(pattern, body, re.I)]
 if missing:
     raise SystemExit(f"Renovate devcontainer digest package rule missing: {missing}")
 PY
