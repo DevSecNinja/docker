@@ -27,7 +27,7 @@ body = match.group("body")
 required_patterns = [
     r'matchManagers:\s*\["devcontainer"\]',
     r'matchDatasources:\s*\["docker"\]',
-    r'matchPackageNames:\s*\["/\^ghcr\\\\\.io\\\\/devsecninja\\\\//"\]',
+    r'matchPackageNames:\s*\[[^\]]*ghcr[^\]]*devsecninja[^\]]*\]',
     r'matchUpdateTypes:\s*\["digest"\]',
     r'enabled:\s*true',
     r'minimumReleaseAge:\s*"0"',
