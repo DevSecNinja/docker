@@ -15,24 +15,51 @@ import os
 import re
 
 config = Path(os.environ["RENOVATE_CONFIG"]).read_text()
-match = re.search(
-    r'description:\s*"Enable digest updates for DevSecNinja devcontainer images"(?P<body>.*?)\s*},',
-    config,
-    re.S,
-)
-if not match:
+
+description = 'description: "Enable digest updates for DevSecNinja devcontainer images"'
+description_index = config.find(description)
+if description_index == -1:
     raise SystemExit("Renovate devcontainer digest package rule is missing")
 
-body = match.group("body")
-required_patterns = [
-    r'matchManagers:\s*\["devcontainer"\]',
-    r'matchDatasources:\s*\["docker"\]',
-    r'matchPackageNames:\s*\[[^\]]*ghcr[^\]]*devsecninja[^\]]*\]',
-    r'matchUpdateTypes:\s*\["digest"\]',
-    r'enabled:\s*true',
-    r'minimumReleaseAge:\s*"0"',
-]
-missing = [pattern for pattern in required_patterns if not re.search(pattern, body, re.I)]
+rule_start = config.rfind("{", 0, description_index)
+if rule_start == -1:
+    raise SystemExit("Renovate devcontainer digest package rule start is missing")
+
+depth = 0
+rule_end = None
+for index, character in enumerate(config[rule_start:], start=rule_start):
+    if character == "{":
+        depth += 1
+    elif character == "}":
+        depth -= 1
+        if depth == 0:
+            rule_end = index + 1
+            break
+
+if rule_end is None:
+    raise SystemExit("Renovate devcontainer digest package rule end is missing")
+
+rule = config[rule_start:rule_end]
+
+def array_values(key):
+    match = re.search(rf'{key}:\s*\[(?P<values>[^\]]*)\]', rule, re.S)
+    if not match:
+        return []
+    return [
+        value.strip().strip('"\'')
+        for value in match.group("values").split(",")
+        if value.strip()
+    ]
+
+checks = {
+    "matchManagers": "devcontainer" in array_values("matchManagers"),
+    "matchDatasources": "docker" in array_values("matchDatasources"),
+    "matchPackageNames": "/^ghcr\\\\.io\\\\/devsecninja\\\\//" in array_values("matchPackageNames"),
+    "matchUpdateTypes": "digest" in array_values("matchUpdateTypes"),
+    "enabled": re.search(r'enabled:\s*true\b', rule) is not None,
+    "minimumReleaseAge": re.search(r'minimumReleaseAge:\s*"0"', rule) is not None,
+}
+missing = [name for name, found in checks.items() if not found]
 if missing:
     raise SystemExit(f"Renovate devcontainer digest package rule missing: {missing}")
 PY
