@@ -11,9 +11,10 @@ setup() {
 @test "renovate-test: enables digest updates for DevSecNinja devcontainer images" {
 	run python3 - <<'PY'
 from pathlib import Path
+import os
 import re
 
-config = Path(__import__("os").environ["RENOVATE_CONFIG"]).read_text()
+config = Path(os.environ["RENOVATE_CONFIG"]).read_text()
 match = re.search(
     r'description:\s*"Enable digest updates for DevSecNinja devcontainer images"(?P<body>.*?)\n\s*},',
     config,
@@ -26,13 +27,12 @@ body = match.group("body")
 required_patterns = [
     r'matchManagers:\s*\["devcontainer"\]',
     r'matchDatasources:\s*\["docker"\]',
+    r'matchPackageNames:\s*\["/\^ghcr\\\\\.io\\\\/devsecninja\\\\//"\]',
     r'matchUpdateTypes:\s*\["digest"\]',
     r'enabled:\s*true',
     r'minimumReleaseAge:\s*"0"',
 ]
 missing = [pattern for pattern in required_patterns if not re.search(pattern, body)]
-if 'matchPackageNames: ["/^ghcr\\\\.io\\\\/devsecninja\\\\//"]' not in body:
-    missing.append("DevSecNinja GHCR package matcher")
 if missing:
     raise SystemExit(f"Renovate devcontainer digest package rule missing: {missing}")
 PY
