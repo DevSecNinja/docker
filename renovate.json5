@@ -24,10 +24,18 @@
       description: "Enable digest updates for DevSecNinja devcontainer images",
       matchManagers: ["devcontainer"],
       matchDatasources: ["docker"],
+      matchDepTypes: ["image"],
       matchPackageNames: ["/^ghcr\\.io\\/devsecninja\\//"],
       matchUpdateTypes: ["digest"],
       enabled: true,
       minimumReleaseAge: "0",
+    },
+    {
+      description: "Disable Docker lookups for Dev Container feature references",
+      matchManagers: ["devcontainer"],
+      matchDatasources: ["docker"],
+      matchDepTypes: ["feature"],
+      enabled: false,
     },
   ],
   customManagers: [
