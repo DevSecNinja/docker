@@ -128,13 +128,19 @@ setup() {
     [ "$status" -eq 0 ]
 }
 
+@test "maintenance role: user tools maintenance tasks exist and valid" {
+    [ -f "${ANSIBLE_DIR}/roles/maintenance/tasks/user_tools_maintenance.yml" ]
+    run yamllint -c "${REPO_ROOT}/.yamllint" "${ANSIBLE_DIR}/roles/maintenance/tasks/user_tools_maintenance.yml"
+    [ "$status" -eq 0 ]
+}
+
 @test "maintenance role: uses FQCN for ansible.builtin modules" {
     # Check all maintenance task files
     # Any module listed here must be referenced as ansible.builtin.<module>.
     # Keep both systemd names so deprecated systemd and current systemd_service
     # shorthand are rejected.
-    local disallowed_modules="apt|cron|debug|file|include_tasks|meta|stat|systemd_service|systemd|template"
-    for file in main.yml setup_daily_maintenance.yml setup_weekly_maintenance.yml setup_docker_maintenance.yml setup_dccd_deploy.yml docker_maintenance.yml; do
+    local disallowed_modules="apt|command|cron|debug|file|getent|include_tasks|meta|set_fact|stat|systemd_service|systemd|template"
+    for file in main.yml setup_daily_maintenance.yml setup_weekly_maintenance.yml setup_docker_maintenance.yml setup_dccd_deploy.yml docker_maintenance.yml user_tools_maintenance.yml; do
         run grep -E "^\s+(${disallowed_modules}):" \
             "${ANSIBLE_DIR}/roles/maintenance/tasks/${file}"
         # Should find nothing (all should use FQCN)
@@ -365,4 +371,18 @@ else:
 @test "inventory: svldev has server_environment set to development" {
     run grep "server_environment: development" "${ANSIBLE_DIR}/inventory/host_vars/svldev.yml"
     [ "$status" -eq 0 ]
+}
+
+@test "inventory: Homebrew owner matches interactive user" {
+    for host_vars in "${ANSIBLE_DIR}"/inventory/host_vars/*.yml; do
+        if grep -q "^chezmoi_user:" "$host_vars"; then
+            local chezmoi_user
+            local homebrew_user
+            chezmoi_user="$(grep "^chezmoi_user:" "$host_vars" | awk '{print $2}')"
+            homebrew_user="$(grep "^homebrew_user:" "$host_vars" | awk '{print $2}')"
+
+            [ -n "$homebrew_user" ]
+            [ "$homebrew_user" = "$chezmoi_user" ]
+        fi
+    done
 }
