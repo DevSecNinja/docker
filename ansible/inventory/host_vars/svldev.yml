@@ -66,6 +66,7 @@ git_repos:
       - "https://github.com/DevSecNinja/gpt-prompts"
       - "https://github.com/DevSecNinja/hadiscover"
       - "https://github.com/DevSecNinja/home-assistant-config"
+      - "https://github.com/DevSecNinja/m365-consolidation"
       - "https://github.com/DevSecNinja/Office365AliasModule"
       - "https://github.com/DevSecNinja/python-bandit-scan"
       - "https://github.com/DevSecNinja/subgrid"
