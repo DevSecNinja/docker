@@ -75,29 +75,18 @@
   become: true
   tags: [git_repos]
 
-- name: "Clone or update repositories for '{{ git_repos_entry.github_user }}'"
-  ansible.builtin.git:
-    repo: "{{ item.clone_url }}"
-    dest: "{{ git_repos_dest }}/{{ item.name }}"
-    version: "{{ item.default_branch }}"
-    update: true
+- name: "Create git repository shims for '{{ git_repos_entry.github_user }}'"
+  ansible.builtin.include_tasks: clone_shim.yml
   loop: "{{ git_repos_to_clone }}"
   loop_control:
-    label: "{{ item.name }}"
-  become: true
-  become_user: "{{ git_repos_owner }}"
-  environment:
-    GIT_TERMINAL_PROMPT: "0"
-  register: git_repos_user_clone_result
-  failed_when:
-    - git_repos_user_clone_result.failed
-    - >-
-      'Local modifications exist' not in
-      (git_repos_user_clone_result.msg | default(''))
-    - "'git-lfs' not in (git_repos_user_clone_result.stderr | default(''))"
-    - >-
-      'not found' not in
-      (git_repos_user_clone_result.msg | default('') | lower)
+    loop_var: shim_item
+    label: "{{ shim_item.name }}"
+  vars:
+    shim_repo: "{{ shim_item.clone_url }}"
+    shim_dest: "{{ git_repos_dest }}/{{ shim_item.name }}"
+    shim_version: "{{ shim_item.default_branch }}"
+    shim_owner: "{{ git_repos_owner }}"
+    shim_group: "{{ git_repos_group }}"
   tags: [git_repos]
 
 - name: "Relocate archived repositories for '{{ git_repos_entry.github_user }}'"

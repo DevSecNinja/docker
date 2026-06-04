@@ -1,9 +1,14 @@
 ---
 # Default variables for Git Repos role
 
-# List of repositories to clone. Three formats are supported:
+# List of repositories to set up. Each repository is created as an empty "shim"
+# (an initialised git repo with the remote and branch tracking configured but no
+# content fetched); run `git pull` inside the directory to populate it. Once a
+# repository has been populated, subsequent runs fast-forward it to the latest
+# upstream commit (only when the checked-out branch tracks an upstream and can
+# fast-forward, so local work is never disturbed). Three formats are supported:
 #
-# Single-repo format (repo cloned directly into dest):
+# Single-repo format (shim created directly at dest):
 # git_repos:
 #   - repo: "https://github.com/example/repo"
 #     dest: "/opt/repo"
@@ -41,6 +46,16 @@
 #     # default). Useful for testing.
 #     limit: 0
 git_repos: []
+
+# Default branch used when a repository's branch cannot be determined (no
+# 'version' set and the remote default branch could not be detected). Each
+# repository is created as an empty "shim" (initialised repo with the remote and
+# branch tracking configured but no content fetched); running `git pull` inside
+# the directory populates it. Once populated, a repository is fast-forwarded to
+# the latest upstream commit on subsequent runs (only when its checked-out
+# branch tracks an upstream and can fast-forward, so local work is never
+# disturbed); un-pulled shims have no upstream yet and are left untouched.
+git_repos_default_branch: main
 
 # Base URL for the GitHub REST API (override for GitHub Enterprise).
 git_repos_github_api_url: "https://api.github.com"

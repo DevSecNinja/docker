@@ -18,6 +18,7 @@ setup() {
 @test "git-repos-test: role files exist" {
 	[ -f "$ROLE_DIR/tasks/main.yml" ]
 	[ -f "$ROLE_DIR/tasks/github_user.yml" ]
+	[ -f "$ROLE_DIR/tasks/clone_shim.yml" ]
 	[ -f "$ROLE_DIR/defaults/main.yml" ]
 }
 
@@ -28,6 +29,28 @@ setup() {
 	fi
 	cd "$REPO_ROOT"
 	run yamllint "$ROLE_DIR/tasks/github_user.yml"
+	[ "$status" -eq 0 ]
+}
+
+@test "git-repos-test: clone_shim task file is valid YAML" {
+	if ! command -v yamllint >/dev/null 2>&1; then
+		run pip install yamllint
+		[ "$status" -eq 0 ]
+	fi
+	cd "$REPO_ROOT"
+	run yamllint "$ROLE_DIR/tasks/clone_shim.yml"
+	[ "$status" -eq 0 ]
+}
+
+@test "git-repos-test: clone paths use the shim task" {
+	# All three clone formats must delegate to clone_shim.yml so repositories
+	# are created as empty shims rather than fully cloned. main.yml includes it
+	# exactly twice (single-repo + multi-repo formats); github_user.yml includes
+	# it for the enumerated format.
+	run grep -c "clone_shim.yml" "$ROLE_DIR/tasks/main.yml"
+	[ "$status" -eq 0 ]
+	[ "$output" -eq 2 ]
+	run grep -q "clone_shim.yml" "$ROLE_DIR/tasks/github_user.yml"
 	[ "$status" -eq 0 ]
 }
 
@@ -77,8 +100,36 @@ EEOF
 	run timeout 180 ansible-playbook /tmp/git-repos-e2e-playbook.yml
 	[ "$status" -eq 0 ]
 
-	# Exactly one repository should have been cloned
+	# Exactly one repository should have been created
 	local cloned
 	cloned=$(find "$dest" -mindepth 2 -maxdepth 2 -name ".git" -type d | wc -l)
 	[ "$cloned" -eq 1 ]
+
+	# Locate the single repository directory
+	local repo_dir
+	repo_dir=$(dirname "$(find "$dest" -mindepth 2 -maxdepth 2 -name ".git" -type d)")
+
+	# It must be a shim: a git repo with origin configured but no checked-out
+	# working tree files (only the .git directory present).
+	run git -C "$repo_dir" remote get-url origin
+	[ "$status" -eq 0 ]
+	[[ "$output" =~ github.com ]]
+
+	local worktree_entries
+	worktree_entries=$(find "$repo_dir" -mindepth 1 -maxdepth 1 ! -name ".git" | wc -l)
+	[ "$worktree_entries" -eq 0 ]
+
+	# Running git pull must populate the working tree from the configured remote.
+	run git -C "$repo_dir" pull
+	[ "$status" -eq 0 ]
+	worktree_entries=$(find "$repo_dir" -mindepth 1 -maxdepth 1 ! -name ".git" | wc -l)
+	[ "$worktree_entries" -gt 0 ]
+
+	# Re-applying the role against a now-populated repo must succeed and leave it
+	# fast-forwarded (idempotent: already up to date), not re-shimmed/emptied.
+	cd "$REPO_ROOT"
+	run timeout 180 ansible-playbook /tmp/git-repos-e2e-playbook.yml
+	[ "$status" -eq 0 ]
+	worktree_entries=$(find "$repo_dir" -mindepth 1 -maxdepth 1 ! -name ".git" | wc -l)
+	[ "$worktree_entries" -gt 0 ]
 }
