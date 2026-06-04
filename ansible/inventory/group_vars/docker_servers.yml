@@ -50,31 +50,19 @@ docker_pins: "{{ docker_pinned_packages[docker_pin_key] | default({}) }}"
 
 # Override geerlingguy.docker packages with the resolved pinned versions when the
 # host's suite/arch is mapped; otherwise install unpinned (latest available).
-docker_packages: >-
-  {{
-    [
-      'docker-ce=' ~ docker_pins.docker_ce,
-      'docker-ce-cli=' ~ docker_pins.docker_ce,
-      'docker-ce-rootless-extras=' ~ docker_pins.docker_ce,
-      'containerd.io=' ~ docker_pins.containerd_io,
-      'docker-buildx-plugin=' ~ docker_pins.docker_buildx_plugin,
-      'docker-compose-plugin=' ~ docker_pins.docker_compose_plugin,
-    ] if docker_pins else [
-      'docker-ce',
-      'docker-ce-cli',
-      'docker-ce-rootless-extras',
-      'containerd.io',
-      'docker-buildx-plugin',
-      'docker-compose-plugin',
-    ]
-  }}
+# Kept as a real YAML list; each element appends "=<version>" only when a pin is
+# resolved, so the value is always a list of package specs (no reliance on
+# templating a string back into a list).
+docker_packages:
+  - "docker-ce{{ ('=' ~ docker_pins.docker_ce) if docker_pins else '' }}"
+  - "docker-ce-cli{{ ('=' ~ docker_pins.docker_ce) if docker_pins else '' }}"
+  - "docker-ce-rootless-extras{{ ('=' ~ docker_pins.docker_ce) if docker_pins else '' }}"
+  - "containerd.io{{ ('=' ~ docker_pins.containerd_io) if docker_pins else '' }}"
+  - "docker-buildx-plugin{{ ('=' ~ docker_pins.docker_buildx_plugin) if docker_pins else '' }}"
+  - "docker-compose-plugin{{ ('=' ~ docker_pins.docker_compose_plugin) if docker_pins else '' }}"
 
 # Override geerlingguy.docker compose plugin package to match the resolved pin.
-docker_compose_package: >-
-  {{
-    ('docker-compose-plugin=' ~ docker_pins.docker_compose_plugin)
-    if docker_pins else 'docker-compose-plugin'
-  }}
+docker_compose_package: "docker-compose-plugin{{ ('=' ~ docker_pins.docker_compose_plugin) if docker_pins else '' }}"
 
 # Packages to hold via apt-mark hold
 # Held packages are skipped by apt-get upgrade and dist-upgrade
