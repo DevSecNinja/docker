@@ -4,27 +4,77 @@
 # Silence "discovered Python interpreter" warnings — auto-detect, no warning.
 ansible_python_interpreter: auto_silent
 
-# Docker version pinning
-# renovate: datasource=github-releases depName=moby/moby
-docker_version: "29.4.0"
-# renovate: datasource=github-releases depName=containerd/containerd
-containerd_version: "2.3.0"
-# renovate: datasource=github-releases depName=docker/buildx
-docker_buildx_version: "0.34.0"
-# renovate: datasource=github-releases depName=docker/compose
-docker_compose_version: "5.1.3"
+# --- Docker version pinning (Renovate-managed via the deb datasource) ---
+#
+# Docker publishes different package versions per Debian suite and CPU
+# architecture, and a version released upstream is not necessarily packaged in
+# Docker's apt repository for every suite/arch yet. Versions are therefore
+# pinned per "<suite>-<arch>" combination and kept up to date by Renovate, which
+# queries Docker's apt repository directly (deb datasource) so a pinned version
+# is always installable on the matching host.
+#
+# To add a new suite/arch combination, copy one of the blocks below and change
+# the suite/binaryArch in each Renovate annotation; Renovate then maintains the
+# new versions automatically. Unmapped combinations fall back to unpinned
+# package names (install whatever the repo offers).
+docker_pinned_packages:
+  trixie-amd64:
+    # renovate: datasource=deb depName=docker-ce registryUrl=https://download.docker.com/linux/debian?suite=trixie&components=stable&binaryArch=amd64
+    docker_ce: "5:29.5.2-1~debian.13~trixie"
+    # renovate: datasource=deb depName=containerd.io registryUrl=https://download.docker.com/linux/debian?suite=trixie&components=stable&binaryArch=amd64
+    containerd_io: "2.2.4-1~debian.13~trixie"
+    # renovate: datasource=deb depName=docker-buildx-plugin registryUrl=https://download.docker.com/linux/debian?suite=trixie&components=stable&binaryArch=amd64
+    docker_buildx_plugin: "0.34.1-1~debian.13~trixie"
+    # renovate: datasource=deb depName=docker-compose-plugin registryUrl=https://download.docker.com/linux/debian?suite=trixie&components=stable&binaryArch=amd64
+    docker_compose_plugin: "5.1.4-1~debian.13~trixie"
+  trixie-arm64:
+    # renovate: datasource=deb depName=docker-ce registryUrl=https://download.docker.com/linux/debian?suite=trixie&components=stable&binaryArch=arm64
+    docker_ce: "5:29.5.3-1~debian.13~trixie"
+    # renovate: datasource=deb depName=containerd.io registryUrl=https://download.docker.com/linux/debian?suite=trixie&components=stable&binaryArch=arm64
+    containerd_io: "2.2.4-1~debian.13~trixie"
+    # renovate: datasource=deb depName=docker-buildx-plugin registryUrl=https://download.docker.com/linux/debian?suite=trixie&components=stable&binaryArch=arm64
+    docker_buildx_plugin: "0.34.1-1~debian.13~trixie"
+    # renovate: datasource=deb depName=docker-compose-plugin registryUrl=https://download.docker.com/linux/debian?suite=trixie&components=stable&binaryArch=arm64
+    docker_compose_plugin: "5.1.4-1~debian.13~trixie"
 
-# Override geerlingguy.docker packages with pinned versions
-docker_packages:
-  - "docker-ce=5:{{ docker_version }}*"
-  - "docker-ce-cli=5:{{ docker_version }}*"
-  - "docker-ce-rootless-extras=5:{{ docker_version }}*"
-  - "containerd.io={{ containerd_version }}*"
-  - "docker-buildx-plugin={{ docker_buildx_version }}*"
-  - "docker-compose-plugin={{ docker_compose_version }}*"
+# Map Ansible's reported CPU architecture to Debian's apt architecture name.
+docker_apt_arch_map:
+  x86_64: amd64
+  aarch64: arm64
 
-# Override geerlingguy.docker compose plugin package to match pinned version
-docker_compose_package: "docker-compose-plugin={{ docker_compose_version }}*"
+# Resolve the pinned package set for this host's suite + architecture. Unmapped
+# combinations resolve to an empty mapping and fall back to unpinned names below.
+docker_apt_arch: "{{ docker_apt_arch_map[ansible_architecture] | default(ansible_architecture) }}"
+docker_pin_key: "{{ ansible_distribution_release }}-{{ docker_apt_arch }}"
+docker_pins: "{{ docker_pinned_packages[docker_pin_key] | default({}) }}"
+
+# Override geerlingguy.docker packages with the resolved pinned versions when the
+# host's suite/arch is mapped; otherwise install unpinned (latest available).
+docker_packages: >-
+  {{
+    [
+      'docker-ce=' ~ docker_pins.docker_ce,
+      'docker-ce-cli=' ~ docker_pins.docker_ce,
+      'docker-ce-rootless-extras=' ~ docker_pins.docker_ce,
+      'containerd.io=' ~ docker_pins.containerd_io,
+      'docker-buildx-plugin=' ~ docker_pins.docker_buildx_plugin,
+      'docker-compose-plugin=' ~ docker_pins.docker_compose_plugin,
+    ] if docker_pins else [
+      'docker-ce',
+      'docker-ce-cli',
+      'docker-ce-rootless-extras',
+      'containerd.io',
+      'docker-buildx-plugin',
+      'docker-compose-plugin',
+    ]
+  }}
+
+# Override geerlingguy.docker compose plugin package to match the resolved pin.
+docker_compose_package: >-
+  {{
+    ('docker-compose-plugin=' ~ docker_pins.docker_compose_plugin)
+    if docker_pins else 'docker-compose-plugin'
+  }}
 
 # Packages to hold via apt-mark hold
 # Held packages are skipped by apt-get upgrade and dist-upgrade

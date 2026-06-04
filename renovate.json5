@@ -57,5 +57,18 @@
       datasourceTemplate: "github-releases",
       packageNameTemplate: "bats-core/bats-core",
     },
+    {
+      customType: "regex",
+      description: "Track Docker apt package versions (deb datasource) in docker_servers group_vars",
+      managerFilePatterns: [
+        "/ansible/inventory/group_vars/docker_servers\\.yml$/",
+      ],
+      matchStrings: [
+        "#\\s*renovate:\\s*datasource=deb\\s+depName=(?<depName>\\S+)\\s+registryUrl=(?<registryUrl>\\S+)\\s*\\r?\\n\\s*\\w+:\\s*\"(?<currentValue>[^\"]+)\"",
+      ],
+      datasourceTemplate: "deb",
+      versioningTemplate: "deb",
+      registryUrlTemplate: "{{{registryUrl}}}",
+    },
   ],
 }
