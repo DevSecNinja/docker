@@ -1,0 +1,121 @@
+---
+# Create a lightweight "shim" git repository: an initialised repository with the
+# remote and branch tracking configured, but no objects fetched and no working
+# tree checked out. Running `git pull` inside the directory later populates it.
+#
+# Existing repositories are never re-shimmed or emptied: if the destination
+# already contains a .git directory it is kept. A populated repository whose
+# checked-out branch tracks an upstream is fast-forwarded to the latest commit
+# (non-destructive); an un-pulled shim has no upstream yet and is left as-is.
+#
+# Expected variables:
+#   shim_repo    - clone URL
+#   shim_dest    - target repository directory
+#   shim_version - desired branch (optional; 'HEAD' or empty means auto-detect
+#                  the remote default branch)
+#   shim_owner   - owning user
+#   shim_group   - owning group (optional; defaults to shim_owner)
+
+- name: "Check whether '{{ shim_dest }}' already contains a git repository"
+  ansible.builtin.stat:
+    path: "{{ shim_dest }}/.git"
+  register: git_repos_shim_stat
+  tags: [git_repos]
+
+- name: "Create git shim for '{{ shim_repo }}'"
+  when: not git_repos_shim_stat.stat.exists
+  become: true
+  become_user: "{{ shim_owner }}"
+  environment:
+    GIT_TERMINAL_PROMPT: "0"
+  tags: [git_repos]
+  vars:
+    git_repos_shim_version_effective: "{{ (shim_version | default('HEAD') | string | trim) }}"
+    git_repos_shim_need_detect: "{{ (shim_version | default('HEAD') | string | trim) in ['', 'HEAD'] }}"
+  block:
+    - name: "Detect remote default branch for '{{ shim_repo }}'"
+      ansible.builtin.shell:
+        cmd: >-
+          set -o pipefail;
+          git ls-remote --symref {{ shim_repo | quote }} HEAD
+          | awk '/^ref:/ {sub("refs/heads/", "", $2); print $2; exit}'
+      args:
+        executable: /bin/bash
+      register: git_repos_shim_head
+      changed_when: false
+      check_mode: false
+      failed_when: false
+      when: git_repos_shim_need_detect | bool
+
+    - name: "Resolve target branch for '{{ shim_repo }}'"
+      ansible.builtin.set_fact:
+        git_repos_shim_branch: >-
+          {{ git_repos_shim_version_effective
+             if not (git_repos_shim_need_detect | bool)
+             else (git_repos_shim_head.stdout | default('') | trim
+                   | default(git_repos_default_branch, true)) }}
+
+    - name: "Initialise empty repository at '{{ shim_dest }}'"
+      ansible.builtin.command:
+        cmd: "git init -q {{ shim_dest | quote }}"
+        creates: "{{ shim_dest }}/.git"
+
+    - name: "Configure remote and branch tracking for '{{ shim_dest }}'"
+      ansible.builtin.command:
+        cmd: "{{ item }}"
+        chdir: "{{ shim_dest }}"
+      loop:
+        - "git remote add origin {{ shim_repo | quote }}"
+        - "git symbolic-ref HEAD refs/heads/{{ git_repos_shim_branch }}"
+        - "git config branch.{{ git_repos_shim_branch }}.remote origin"
+        - >-
+          git config branch.{{ git_repos_shim_branch }}.merge
+          refs/heads/{{ git_repos_shim_branch }}
+      loop_control:
+        label: "{{ item }}"
+      changed_when: true
+
+    - name: "Set ownership of shim '{{ shim_dest }}'"
+      ansible.builtin.file:
+        path: "{{ shim_dest }}"
+        state: directory
+        owner: "{{ shim_owner }}"
+        group: "{{ shim_group | default(shim_owner) }}"
+        mode: "0755"
+      become: true
+      become_user: root
+
+- name: "Update '{{ shim_dest }}' if it has been populated"
+  when: git_repos_shim_stat.stat.exists
+  become: true
+  become_user: "{{ shim_owner }}"
+  environment:
+    GIT_TERMINAL_PROMPT: "0"
+  tags: [git_repos]
+  block:
+    # An un-pulled shim has no remote-tracking ref, so '@{u}' does not resolve
+    # and the repository is left as an empty shim. Once the user has run
+    # `git pull` (populating the repo), the checked-out branch gains an upstream
+    # and is fast-forwarded to the latest commit on subsequent runs.
+    - name: "Check whether '{{ shim_dest }}' tracks an upstream branch"
+      ansible.builtin.command:
+        cmd: git rev-parse --abbrev-ref --symbolic-full-name @{u}
+        chdir: "{{ shim_dest }}"
+      register: git_repos_shim_upstream
+      changed_when: false
+      failed_when: false
+
+    - name: "Fast-forward '{{ shim_dest }}' to the latest upstream commit"
+      ansible.builtin.command:
+        cmd: git pull --ff-only
+        chdir: "{{ shim_dest }}"
+      register: git_repos_shim_pull
+      when: git_repos_shim_upstream.rc == 0
+      changed_when: >-
+        ('up to date' not in (git_repos_shim_pull.stdout | lower))
+        and ('up-to-date' not in (git_repos_shim_pull.stdout | lower))
+      failed_when:
+        - git_repos_shim_pull.rc != 0
+        - "'fast-forward' not in (git_repos_shim_pull.stderr | default('') | lower)"
+        - "'would be overwritten' not in (git_repos_shim_pull.stderr | default('') | lower)"
+        - "'local changes' not in (git_repos_shim_pull.stderr | default('') | lower)"

@@ -127,13 +127,16 @@ Tests ansible-pull functionality:
 ### Git Repos Tests (`git-repos-test.bats`)
 
 Tests the `git_repos` role `github_user` enumeration format:
-- Role task and defaults files exist
-- `github_user.yml` task file is valid YAML
+- Role task and defaults files exist (including `clone_shim.yml`)
+- `github_user.yml` and `clone_shim.yml` task files are valid YAML
 - `main.yml` wires in the `github_user` sub-tasks
+- All clone formats delegate to the shared `clone_shim.yml` shim task
 - The GitHub repos API is reachable for the test user
 - End-to-end: applies the role against `localhost` for a real GitHub
   handle, capped to a single repository via `limit: 1`, and asserts exactly
-  one repository was cloned (CI only — requires sudo and network access)
+  one empty shim was created (remote configured, working tree empty), that
+  `git pull` then populates it, and that re-running the role fast-forwards the
+  now-populated repo without emptying it (CI only — requires sudo and network)
 
 ## CI/CD Integration
 

@@ -11,43 +11,33 @@
   until: git_apt_result is succeeded
   tags: [git_repos]
 
-- name: Clone or update git repositories (single-repo format)
-  ansible.builtin.git:
-    repo: "{{ item.repo }}"
-    dest: "{{ item.dest }}"
-    version: "{{ item.version | default('HEAD') }}"
-    update: true
+- name: Create git repository shims (single-repo format)
+  ansible.builtin.include_tasks: clone_shim.yml
   loop: "{{ git_repos | selectattr('repo', 'defined') | list }}"
-  become: true
-  become_user: "{{ item.user | default(ansible_user) }}"
-  environment:
-    GIT_TERMINAL_PROMPT: "0"
-  register: git_single_result
-  failed_when:
-    - git_single_result.failed
-    - "'Local modifications exist' not in (git_single_result.msg | default(''))"
-    - "'git-lfs' not in (git_single_result.stderr | default(''))"
-    - "'not found' not in (git_single_result.msg | default('') | lower)"
+  loop_control:
+    loop_var: shim_item
+    label: "{{ shim_item.repo }}"
+  vars:
+    shim_repo: "{{ shim_item.repo }}"
+    shim_dest: "{{ shim_item.dest }}"
+    shim_version: "{{ shim_item.version | default('HEAD') }}"
+    shim_owner: "{{ shim_item.user | default(ansible_user) }}"
+    shim_group: "{{ shim_item.group | default(shim_item.user | default(ansible_user)) }}"
   tags: [git_repos]
 
-- name: Clone or update git repositories (multi-repo format)
-  ansible.builtin.git:
-    repo: "{{ item.1 }}"
-    dest: "{{ item.0.dest }}/{{ item.1 | basename }}"
-    version: "{{ item.0.version | default('HEAD') }}"
-    update: true
+- name: Create git repository shims (multi-repo format)
+  ansible.builtin.include_tasks: clone_shim.yml
   loop: "{{ git_repos | selectattr('repos', 'defined') | list |
     subelements('repos') }}"
-  become: true
-  become_user: "{{ item.0.user | default(ansible_user) }}"
-  environment:
-    GIT_TERMINAL_PROMPT: "0"
-  register: git_multi_result
-  failed_when:
-    - git_multi_result.failed
-    - "'Local modifications exist' not in (git_multi_result.msg | default(''))"
-    - "'git-lfs' not in (git_multi_result.stderr | default(''))"
-    - "'not found' not in (git_multi_result.msg | default('') | lower)"
+  loop_control:
+    loop_var: shim_item
+    label: "{{ shim_item.1 }}"
+  vars:
+    shim_repo: "{{ shim_item.1 }}"
+    shim_dest: "{{ shim_item.0.dest }}/{{ shim_item.1 | basename }}"
+    shim_version: "{{ shim_item.0.version | default('HEAD') }}"
+    shim_owner: "{{ shim_item.0.user | default(ansible_user) }}"
+    shim_group: "{{ shim_item.0.group | default(shim_item.0.user | default(ansible_user)) }}"
   tags: [git_repos]
 
 - name: Synchronise repositories for GitHub users
