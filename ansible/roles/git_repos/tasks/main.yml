@@ -49,3 +49,11 @@
     - "'git-lfs' not in (git_multi_result.stderr | default(''))"
     - "'not found' not in (git_multi_result.msg | default('') | lower)"
   tags: [git_repos]
+
+- name: Synchronise repositories for GitHub users
+  ansible.builtin.include_tasks: github_user.yml
+  loop: "{{ git_repos | selectattr('github_user', 'defined') | list }}"
+  loop_control:
+    loop_var: git_repos_entry
+    label: "{{ git_repos_entry.github_user }}"
+  tags: [git_repos]

@@ -19,7 +19,9 @@ tests/bash/
 ├── lint-test.bats            # Linting tests (yamllint, ansible-lint)
 ├── syntax-test.bats          # Syntax validation tests
 ├── docker-test.bats          # Docker provisioning tests
-└── ansible-pull-test.bats    # ansible-pull functionality tests
+├── ansible-pull-test.bats    # ansible-pull functionality tests
+├── github-ssh-keys-test.bats # github_ssh_keys role tests
+└── git-repos-test.bats       # git_repos role tests (github_user format + e2e clone)
 ```
 
 ## Running Tests
@@ -121,6 +123,17 @@ Tests ansible-pull functionality:
 - ansible-pull script exists and is valid
 - ansible-pull can run from local repository
 - Inventory files are in correct locations
+
+### Git Repos Tests (`git-repos-test.bats`)
+
+Tests the `git_repos` role `github_user` enumeration format:
+- Role task and defaults files exist
+- `github_user.yml` task file is valid YAML
+- `main.yml` wires in the `github_user` sub-tasks
+- The GitHub repos API is reachable for the test user
+- End-to-end: applies the role against `localhost` for a real GitHub
+  handle, capped to a single repository via `limit: 1`, and asserts exactly
+  one repository was cloned (CI only — requires sudo and network access)
 
 ## CI/CD Integration
 

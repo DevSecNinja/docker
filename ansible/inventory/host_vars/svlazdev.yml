@@ -1,0 +1,68 @@
+---
+# Host-specific variables for svlazdev
+
+# Environment classification
+server_environment: development
+
+# GitHub username for SSH keys installation
+github_ssh_keys_username: DevSecNinja
+
+# User that will receive the SSH keys from GitHub
+github_ssh_keys_target_user: jean-paul
+
+# Ensure only GitHub SSH Keys are kept, removes other SSH keys
+github_ssh_keys_exclusive: true
+
+# Chezmoi dotfiles user
+chezmoi_user: jean-paul
+
+# Homebrew is used interactively by the dotfiles user.
+homebrew_user: jean-paul
+
+# Mise version manager
+install_mise: true
+mise_user: jean-paul
+
+# Devcontainer prebuild
+devcontainer_prebuild_user: jean-paul
+
+# Keep stopped devcontainer containers so VS Code can fast-attach;
+# their referenced images are also protected from image prune
+maintenance_docker_prune_containers_enabled: false
+
+# Server features to enable
+server_features:
+  - system_setup
+  - github_ssh_keys
+  - docker
+  - ufw
+  - package_managers
+  - chezmoi
+  - ansible_pull_setup
+  - maintenance
+  - packages
+  - git_repos
+  - devcontainer_prebuild
+
+# Packages to install
+packages_apt:
+  - git-lfs
+  - jq
+
+# Clone every non-archived public repository owned by the GitHub handle and
+# relocate any repositories that have since been archived into the
+# projects/.archive folder.
+git_repos:
+  - github_user: DevSecNinja
+    dest: "/home/jean-paul/projects"
+    user: jean-paul
+    group: jean-paul
+    archive_mode: true
+
+# Docker Compose modules to deploy
+compose_modules: []
+
+# Users to add to docker group
+docker_users:
+  - ansible
+  - jean-paul

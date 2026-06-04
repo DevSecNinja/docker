@@ -1,0 +1,127 @@
+---
+# Synchronise all public repositories of a single GitHub user.
+# Expects the loop variable 'git_repos_entry' (github_user format).
+
+- name: "Resolve settings for GitHub user '{{ git_repos_entry.github_user }}'"
+  ansible.builtin.set_fact:
+    git_repos_dest: "{{ git_repos_entry.dest }}"
+    git_repos_owner: "{{ git_repos_entry.user | default(ansible_user) }}"
+    git_repos_group: >-
+      {{ git_repos_entry.group
+         | default(git_repos_entry.user | default(ansible_user)) }}
+    git_repos_include_archived: >-
+      {{ git_repos_entry.include_archived | default(false) | bool }}
+    git_repos_archive_mode: >-
+      {{ git_repos_entry.archive_mode | default(false) | bool }}
+    git_repos_resolved_token: >-
+      {{ git_repos_entry.token | default(git_repos_github_token) }}
+    git_repos_limit: >-
+      {{ git_repos_entry.limit | default(0) | int }}
+  tags: [git_repos]
+
+- name: "Query GitHub API for repositories of '{{ git_repos_entry.github_user }}'"
+  ansible.builtin.uri:
+    url: >-
+      {{ git_repos_github_api_url }}/users/{{ git_repos_entry.github_user }}/repos?per_page=100&page={{ item }}&type=owner&sort=full_name
+    method: GET
+    return_content: true
+    headers: >-
+      {{ {'Accept': 'application/vnd.github+json'}
+         | combine({'Authorization': 'Bearer ' + git_repos_resolved_token}
+                   if git_repos_resolved_token | length > 0 else {}) }}
+  loop: "{{ range(1, (git_repos_github_max_pages | int) + 1) | list }}"
+  register: git_repos_api_pages
+  until: git_repos_api_pages is succeeded
+  retries: 3
+  delay: 5
+  check_mode: false
+  changed_when: false
+  no_log: "{{ git_repos_resolved_token | length > 0 }}"
+  tags: [git_repos]
+
+- name: "Build repository lists for '{{ git_repos_entry.github_user }}'"
+  ansible.builtin.set_fact:
+    git_repos_public: >-
+      {{ git_repos_api_pages.results
+         | map(attribute='json') | flatten
+         | rejectattr('private') | list }}
+  tags: [git_repos]
+
+- name: "Select archived and clone targets for '{{ git_repos_entry.github_user }}'"
+  ansible.builtin.set_fact:
+    git_repos_archived: >-
+      {{ git_repos_public | selectattr('archived') | list }}
+    git_repos_clone_candidates: >-
+      {{ git_repos_public
+         if (git_repos_include_archived and not git_repos_archive_mode)
+         else (git_repos_public | rejectattr('archived') | list) }}
+  tags: [git_repos]
+
+- name: "Apply clone limit for '{{ git_repos_entry.github_user }}'"
+  ansible.builtin.set_fact:
+    git_repos_to_clone: >-
+      {{ git_repos_clone_candidates[:git_repos_limit]
+         if git_repos_limit > 0
+         else git_repos_clone_candidates }}
+  tags: [git_repos]
+
+- name: "Ensure projects directory exists for '{{ git_repos_entry.github_user }}'"
+  ansible.builtin.file:
+    path: "{{ git_repos_dest }}"
+    state: directory
+    owner: "{{ git_repos_owner }}"
+    group: "{{ git_repos_group }}"
+    mode: "0755"
+  become: true
+  tags: [git_repos]
+
+- name: "Clone or update repositories for '{{ git_repos_entry.github_user }}'"
+  ansible.builtin.git:
+    repo: "{{ item.clone_url }}"
+    dest: "{{ git_repos_dest }}/{{ item.name }}"
+    version: "{{ item.default_branch }}"
+    update: true
+  loop: "{{ git_repos_to_clone }}"
+  loop_control:
+    label: "{{ item.name }}"
+  become: true
+  become_user: "{{ git_repos_owner }}"
+  environment:
+    GIT_TERMINAL_PROMPT: "0"
+  register: git_repos_user_clone_result
+  failed_when:
+    - git_repos_user_clone_result.failed
+    - >-
+      'Local modifications exist' not in
+      (git_repos_user_clone_result.msg | default(''))
+    - "'git-lfs' not in (git_repos_user_clone_result.stderr | default(''))"
+    - >-
+      'not found' not in
+      (git_repos_user_clone_result.msg | default('') | lower)
+  tags: [git_repos]
+
+- name: "Relocate archived repositories for '{{ git_repos_entry.github_user }}'"
+  when: git_repos_archive_mode
+  tags: [git_repos]
+  block:
+    - name: "Ensure .archive directory exists in '{{ git_repos_dest }}'"
+      ansible.builtin.file:
+        path: "{{ git_repos_dest }}/.archive"
+        state: directory
+        owner: "{{ git_repos_owner }}"
+        group: "{{ git_repos_group }}"
+        mode: "0755"
+      become: true
+
+    - name: "Move archived repositories into {{ git_repos_dest }}/.archive"
+      ansible.builtin.command:
+        cmd: >-
+          mv {{ (git_repos_dest + '/' + item.name) | quote }}
+             {{ (git_repos_dest + '/.archive/' + item.name) | quote }}
+        removes: "{{ git_repos_dest }}/{{ item.name }}"
+        creates: "{{ git_repos_dest }}/.archive/{{ item.name }}"
+      loop: "{{ git_repos_archived }}"
+      loop_control:
+        label: "{{ item.name }}"
+      become: true
+      become_user: "{{ git_repos_owner }}"
