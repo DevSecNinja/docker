@@ -30,6 +30,21 @@ devcontainer_prebuild_user: jean-paul
 # their referenced images are also protected from image prune
 maintenance_docker_prune_containers_enabled: false
 
+# Docker version handling for Debian Trixie.
+# The docker_servers group pins the bookworm Docker versions (e.g.
+# docker-ce 29.x), but Docker's trixie repository lags behind and does not
+# publish those exact versions yet. Install whatever trixie offers (latest
+# available) and let apt_hold freeze it afterwards so unattended upgrades
+# won't move it. This keeps the dev box self-healing without manual pins.
+docker_packages:
+  - docker-ce
+  - docker-ce-cli
+  - docker-ce-rootless-extras
+  - containerd.io
+  - docker-buildx-plugin
+  - docker-compose-plugin
+docker_compose_package: docker-compose-plugin
+
 # Server features to enable
 server_features:
   - system_setup
