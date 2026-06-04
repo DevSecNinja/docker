@@ -13,6 +13,28 @@
       when: ansible_os_family == "Debian"
       tags: always
 
+    # geerlingguy.docker only refreshes the apt cache via a handler when it
+    # (re)writes the Docker repository file. If the repo file already exists
+    # from an earlier (possibly interrupted) run, that handler never fires and
+    # the Docker packages can be missing from the cache, causing
+    # "No package matching 'docker-ce' is available". Force an unconditional
+    # refresh whenever the repo file is already present so the Docker packages
+    # are always indexed before the role installs them.
+    - name: Check whether the Docker apt repository is already configured
+      ansible.builtin.stat:
+        path: /etc/apt/sources.list.d/docker.sources
+      register: docker_apt_repo_file
+      when: ansible_os_family == "Debian"
+      tags: always
+
+    - name: Refresh apt cache so an existing Docker repository is indexed
+      ansible.builtin.apt:
+        update_cache: true
+      when:
+        - ansible_os_family == "Debian"
+        - docker_apt_repo_file.stat.exists | default(false)
+      tags: always
+
     - name: Unhold managed apt packages before role execution
       ansible.builtin.include_role:
         name: apt_hold
