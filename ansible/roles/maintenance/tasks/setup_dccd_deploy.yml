@@ -1,10 +1,21 @@
 ---
 # Setup for dccd (Docker Compose CD) deployment service
+
+# The legacy cron cleanup below uses ansible.builtin.cron, which requires the
+# crontab executable. Minimal hosts (e.g. fresh Debian Trixie) ship without
+# cron installed. Since this only removes a pre-existing legacy cron job during
+# migration to systemd timers, skip it entirely when crontab is unavailable.
+- name: Check whether crontab is available for legacy cron cleanup
+  ansible.builtin.stat:
+    path: /usr/bin/crontab
+  register: maintenance_crontab_bin
+
 - name: Remove legacy dccd cron job
   ansible.builtin.cron:
     name: "{{ maintenance_dccd_old_cron_name }}"
     user: "{{ maintenance_dccd_user }}"
     state: absent
+  when: maintenance_crontab_bin.stat.exists
 
 - name: Check dccd timer unit files
   ansible.builtin.stat:
