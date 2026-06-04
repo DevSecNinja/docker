@@ -44,9 +44,12 @@ setup() {
 
 @test "git-repos-test: clone paths use the shim task" {
 	# All three clone formats must delegate to clone_shim.yml so repositories
-	# are created as empty shims rather than fully cloned.
-	run grep -q "clone_shim.yml" "$ROLE_DIR/tasks/main.yml"
+	# are created as empty shims rather than fully cloned. main.yml includes it
+	# exactly twice (single-repo + multi-repo formats); github_user.yml includes
+	# it for the enumerated format.
+	run grep -c "clone_shim.yml" "$ROLE_DIR/tasks/main.yml"
 	[ "$status" -eq 0 ]
+	[ "$output" -eq 2 ]
 	run grep -q "clone_shim.yml" "$ROLE_DIR/tasks/github_user.yml"
 	[ "$status" -eq 0 ]
 }

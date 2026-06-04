@@ -8,10 +8,6 @@ skip_list:
   - fqcn[action-core]  # Allow use of built-in modules without FQCN
   - var-naming[no-role-prefix]  # Allow variables without role prefix
   - key-order  # Allow flexible task key ordering
-  # The git_repos role drives low-level git operations (shim creation via
-  # git init/symbolic-ref, ls-remote default-branch detection, fast-forward-only
-  # pulls) that the ansible.builtin.git module cannot express.
-  - command-instead-of-module
 
 exclude_paths:
   - .github/

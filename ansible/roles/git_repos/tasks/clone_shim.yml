@@ -33,7 +33,7 @@
     git_repos_shim_version_effective: "{{ (shim_version | default('HEAD') | string | trim) }}"
     git_repos_shim_need_detect: "{{ (shim_version | default('HEAD') | string | trim) in ['', 'HEAD'] }}"
   block:
-    - name: "Detect remote default branch for '{{ shim_repo }}'"
+    - name: "Detect remote default branch for '{{ shim_repo }}'"  # noqa: command-instead-of-module
       ansible.builtin.shell:
         cmd: >-
           set -o pipefail;
@@ -55,12 +55,22 @@
              else (git_repos_shim_head.stdout | default('') | trim
                    | default(git_repos_default_branch, true)) }}
 
-    - name: "Initialise empty repository at '{{ shim_dest }}'"
+    - name: "Ensure destination directory '{{ shim_dest }}' exists"
+      ansible.builtin.file:
+        path: "{{ shim_dest }}"
+        state: directory
+        owner: "{{ shim_owner }}"
+        group: "{{ shim_group | default(shim_owner) }}"
+        mode: "0755"
+      become: true
+      become_user: root
+
+    - name: "Initialise empty repository at '{{ shim_dest }}'"  # noqa: command-instead-of-module
       ansible.builtin.command:
         cmd: "git init -q {{ shim_dest | quote }}"
         creates: "{{ shim_dest }}/.git"
 
-    - name: "Configure remote and branch tracking for '{{ shim_dest }}'"
+    - name: "Configure remote and branch tracking for '{{ shim_dest }}'"  # noqa: command-instead-of-module
       ansible.builtin.command:
         cmd: "{{ item }}"
         chdir: "{{ shim_dest }}"
@@ -97,7 +107,7 @@
     # and the repository is left as an empty shim. Once the user has run
     # `git pull` (populating the repo), the checked-out branch gains an upstream
     # and is fast-forwarded to the latest commit on subsequent runs.
-    - name: "Check whether '{{ shim_dest }}' tracks an upstream branch"
+    - name: "Check whether '{{ shim_dest }}' tracks an upstream branch"  # noqa: command-instead-of-module
       ansible.builtin.command:
         cmd: git rev-parse --abbrev-ref --symbolic-full-name @{u}
         chdir: "{{ shim_dest }}"
@@ -105,14 +115,15 @@
       changed_when: false
       failed_when: false
 
-    - name: "Fast-forward '{{ shim_dest }}' to the latest upstream commit"
+    - name: "Fast-forward '{{ shim_dest }}' to the latest upstream commit"  # noqa: command-instead-of-module
       ansible.builtin.command:
         cmd: git pull --ff-only
         chdir: "{{ shim_dest }}"
       register: git_repos_shim_pull
       when: git_repos_shim_upstream.rc == 0
       changed_when: >-
-        ('up to date' not in (git_repos_shim_pull.stdout | lower))
+        git_repos_shim_pull.rc == 0
+        and ('up to date' not in (git_repos_shim_pull.stdout | lower))
         and ('up-to-date' not in (git_repos_shim_pull.stdout | lower))
       failed_when:
         - git_repos_shim_pull.rc != 0

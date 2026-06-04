@@ -51,7 +51,10 @@ git_repos: []
 # 'version' set and the remote default branch could not be detected). Each
 # repository is created as an empty "shim" (initialised repo with the remote and
 # branch tracking configured but no content fetched); running `git pull` inside
-# the directory populates it. Already-cloned repositories are left untouched.
+# the directory populates it. Once populated, a repository is fast-forwarded to
+# the latest upstream commit on subsequent runs (only when its checked-out
+# branch tracks an upstream and can fast-forward, so local work is never
+# disturbed); un-pulled shims have no upstream yet and are left untouched.
 git_repos_default_branch: main
 
 # Base URL for the GitHub REST API (override for GitHub Enterprise).
