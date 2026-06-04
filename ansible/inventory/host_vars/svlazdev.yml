@@ -30,6 +30,23 @@ devcontainer_prebuild_user: jean-paul
 # their referenced images are also protected from image prune
 maintenance_docker_prune_containers_enabled: false
 
+# Docker version handling for Debian Trixie (arm64 Azure VM).
+# The docker_servers group pins specific Docker versions that exist in the
+# bookworm repository, but Docker's arm64 trixie repository does not publish
+# all of them (e.g. containerd.io 2.3.0, docker-buildx-plugin 0.34.0 and
+# docker-compose-plugin 5.1.3 are absent there). Install whatever trixie
+# offers (latest available) and let the apt_hold role freeze the installed
+# versions afterwards so unattended upgrades won't move them. This keeps the
+# dev box self-healing without per-release version maintenance.
+docker_packages:
+  - docker-ce
+  - docker-ce-cli
+  - docker-ce-rootless-extras
+  - containerd.io
+  - docker-buildx-plugin
+  - docker-compose-plugin
+docker_compose_package: docker-compose-plugin
+
 # Server features to enable
 server_features:
   - system_setup
