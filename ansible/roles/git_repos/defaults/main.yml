@@ -1,7 +1,7 @@
 ---
 # Default variables for Git Repos role
 
-# List of repositories to clone. Two formats are supported:
+# List of repositories to clone. Three formats are supported:
 #
 # Single-repo format (repo cloned directly into dest):
 # git_repos:
@@ -20,4 +20,36 @@
 #     version: main  # optional, defaults to HEAD (remote default branch)
 #     user: myuser
 #     group: myuser
+#
+# GitHub-user format (enumerate a handle's repos via the GitHub API and clone
+# each non-archived public repo into dest/<repo-name>):
+# git_repos:
+#   - github_user: "octocat"
+#     dest: "/home/myuser/projects"
+#     user: myuser
+#     group: myuser
+#     # Optional: also clone archived public repos (default: false).
+#     include_archived: false
+#     # Optional: move already-cloned archived repos into dest/.archive
+#     # (default: false). Takes precedence over include_archived for archived
+#     # repos, so they are relocated rather than (re)cloned.
+#     archive_mode: false
+#     # Optional: personal access token for authenticated API requests
+#     # (raises the rate limit). Falls back to git_repos_github_token.
+#     token: ""
+#     # Optional: cap the number of repositories cloned (0 = no limit,
+#     # default). Useful for testing.
+#     limit: 0
 git_repos: []
+
+# Base URL for the GitHub REST API (override for GitHub Enterprise).
+git_repos_github_api_url: "https://api.github.com"
+
+# Maximum number of API result pages (100 repos each) to fetch per github_user
+# entry. Increase if a user owns more than this many repositories.
+git_repos_github_max_pages: 5
+
+# Default token used for authenticated GitHub API requests when a github_user
+# entry does not define its own 'token'. Leave empty for unauthenticated
+# requests (subject to a lower rate limit).
+git_repos_github_token: ""
