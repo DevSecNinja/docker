@@ -1,6 +1,6 @@
 {
   "name": "Docker Infrastructure (Ansible)",
-  "image": "ghcr.io/devsecninja/dotfiles-devcontainer:latest@sha256:e9a1a52c88deaf742a6e119b359a8ee8d9fb6a2c135d3de8913bc017d167cd18",
+  "image": "ghcr.io/devsecninja/dotfiles-devcontainer:latest@sha256:8fac043adcf50b034a1cea6e5b3fd59f1140731c4bfb75e1a3b54ac3b5f7b392",
   "features": {
     "ghcr.io/devcontainers/features/git:1": {},
     "ghcr.io/devcontainers/features/git-lfs:1": {},
