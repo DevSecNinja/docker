@@ -51,35 +51,11 @@ packages_apt:
 
 # Git repositories to clone and keep up to date
 git_repos:
-  - repos:
-      - "https://github.com/DevSecNinja/.github"
-      - "https://github.com/DevSecNinja/about-me"
-      - "https://github.com/DevSecNinja/blog"
-      - "https://github.com/DevSecNinja/cleaning-coach"
-      - "https://github.com/DevSecNinja/deck-engine"
-      - "https://github.com/DevSecNinja/deckio-digital-security"
-      - "https://github.com/DevSecNinja/deckio-starter"
-      - "https://github.com/DevSecNinja/docker"
-      - "https://github.com/DevSecNinja/dotfiles"
-      - "https://github.com/DevSecNinja/ESPHome-Zehnder-RF"
-      - "https://github.com/DevSecNinja/gatus-sidecar"
-      - "https://github.com/DevSecNinja/github-compliance"
-      - "https://github.com/DevSecNinja/gpt-prompts"
-      - "https://github.com/DevSecNinja/hadiscover"
-      - "https://github.com/DevSecNinja/home-assistant-config"
-      - "https://github.com/DevSecNinja/m365-consolidation"
-      - "https://github.com/DevSecNinja/Office365AliasModule"
-      - "https://github.com/DevSecNinja/python-bandit-scan"
-      - "https://github.com/DevSecNinja/repo-starter"
-      - "https://github.com/DevSecNinja/subgrid"
-      - "https://github.com/DevSecNinja/travel-prep"
-      - "https://github.com/DevSecNinja/truenas-apps"
-      - "https://github.com/DevSecNinja/v60-recipe"
-      - "https://github.com/DevSecNinja/vidaud"
-      - "https://github.com/DevSecNinja/wazzup"
+  - github_user: DevSecNinja
     dest: "/home/jean-paul/projects"
     user: jean-paul
     group: jean-paul
+    archive_mode: true
 
 # Docker Compose modules to deploy
 compose_modules: []
