@@ -16,8 +16,6 @@
   "customizations": {
     "vscode": {
       "extensions": [
-        "GitHub.copilot",
-        "GitHub.copilot-chat",
         "redhat.ansible",
         "redhat.vscode-yaml",
         "ms-azuretools.vscode-docker"
