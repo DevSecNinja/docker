@@ -22,7 +22,7 @@ docker_pinned_packages:
     # renovate: datasource=deb depName=docker-ce registryUrl=https://download.docker.com/linux/debian?suite=trixie&components=stable&binaryArch=amd64
     docker_ce: "5:29.5.3-1~debian.13~trixie"
     # renovate: datasource=deb depName=containerd.io registryUrl=https://download.docker.com/linux/debian?suite=trixie&components=stable&binaryArch=amd64
-    containerd_io: "2.2.4-1~debian.13~trixie"
+    containerd_io: "2.2.5-1~debian.13~trixie"
     # renovate: datasource=deb depName=docker-buildx-plugin registryUrl=https://download.docker.com/linux/debian?suite=trixie&components=stable&binaryArch=amd64
     docker_buildx_plugin: "0.34.1-1~debian.13~trixie"
     # renovate: datasource=deb depName=docker-compose-plugin registryUrl=https://download.docker.com/linux/debian?suite=trixie&components=stable&binaryArch=amd64
@@ -31,7 +31,7 @@ docker_pinned_packages:
     # renovate: datasource=deb depName=docker-ce registryUrl=https://download.docker.com/linux/debian?suite=trixie&components=stable&binaryArch=arm64
     docker_ce: "5:29.5.3-1~debian.13~trixie"
     # renovate: datasource=deb depName=containerd.io registryUrl=https://download.docker.com/linux/debian?suite=trixie&components=stable&binaryArch=arm64
-    containerd_io: "2.2.4-1~debian.13~trixie"
+    containerd_io: "2.2.5-1~debian.13~trixie"
     # renovate: datasource=deb depName=docker-buildx-plugin registryUrl=https://download.docker.com/linux/debian?suite=trixie&components=stable&binaryArch=arm64
     docker_buildx_plugin: "0.34.1-1~debian.13~trixie"
     # renovate: datasource=deb depName=docker-compose-plugin registryUrl=https://download.docker.com/linux/debian?suite=trixie&components=stable&binaryArch=arm64
