@@ -60,8 +60,13 @@ setup() {
 }
 
 @test "git-repos-test: GitHub repos API is accessible for test user" {
-	# Verify the public repositories endpoint responds
-	run curl -f -s "https://api.github.com/users/${GH_TEST_USER}/repos?per_page=1"
+	# Verify the public repositories endpoint responds; use a token when
+	# available to avoid the unauthenticated rate limit on shared CI runners.
+	local curl_args=(-f -s)
+	if [ -n "${GITHUB_TOKEN:-}" ]; then
+		curl_args+=(-H "Authorization: Bearer ${GITHUB_TOKEN}")
+	fi
+	run curl "${curl_args[@]}" "https://api.github.com/users/${GH_TEST_USER}/repos?per_page=1"
 	[ "$status" -eq 0 ]
 	# Response must be a JSON array
 	[[ "$output" =~ ^\[ ]]
@@ -85,6 +90,7 @@ setup() {
   become: true
   vars:
     ansible_user: runner
+    git_repos_github_token: "${GITHUB_TOKEN:-}"
     git_repos:
       - github_user: ${GH_TEST_USER}
         dest: ${dest}
