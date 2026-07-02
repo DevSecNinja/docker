@@ -1,0 +1,6 @@
+# {{ ansible_managed }}
+# Allow specific client-forwarded environment variables (SSH SendEnv) into the
+# session. Used so GitHub Copilot CLI can authenticate on headless servers via a
+# token forwarded from the workstation (see the dotfiles `copilot-ssh` helper).
+# No secret is stored here; sshd only permits the client to set these variables.
+AcceptEnv {{ sshd_accept_env_vars | join(' ') }}

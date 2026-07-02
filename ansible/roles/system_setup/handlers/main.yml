@@ -4,3 +4,9 @@
     name: systemd-resolved
     state: restarted
   tags: [system_setup, dns, systemd_resolved]
+
+- name: Reload SSH service
+  ansible.builtin.service:
+    name: "{{ ssh_service_name }}"
+    state: reloaded
+  tags: [system_setup, ssh, copilot]
