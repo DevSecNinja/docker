@@ -125,8 +125,21 @@
         git_repos_shim_pull.rc == 0
         and ('up to date' not in (git_repos_shim_pull.stdout | lower))
         and ('up-to-date' not in (git_repos_shim_pull.stdout | lower))
-      failed_when:
-        - git_repos_shim_pull.rc != 0
-        - "'fast-forward' not in (git_repos_shim_pull.stderr | default('') | lower)"
-        - "'would be overwritten' not in (git_repos_shim_pull.stderr | default('') | lower)"
-        - "'local changes' not in (git_repos_shim_pull.stderr | default('') | lower)"
+      # Never fail provisioning on a fast-forward that cannot proceed. These are
+      # user-owned working copies that may have diverged, carry local commits, or
+      # have uncommitted changes; skipping the update is non-destructive and must
+      # not break the (often unattended, ansible-pull) run. The outcome is
+      # surfaced as a warning below instead.
+      failed_when: false
+
+    - name: "Warn when '{{ shim_dest }}' could not be fast-forwarded"
+      ansible.builtin.debug:
+        msg: >-
+          WARNING: skipped fast-forward of '{{ shim_dest }}' (git pull --ff-only
+          exited {{ git_repos_shim_pull.rc }}). The local clone likely diverged
+          or has local/uncommitted changes; resolve it manually. Details:
+          {{ (git_repos_shim_pull.stderr | default('') | trim) | truncate(300) }}
+      when:
+        - git_repos_shim_upstream.rc == 0
+        - git_repos_shim_pull.rc | default(0) != 0
+      tags: [git_repos]
