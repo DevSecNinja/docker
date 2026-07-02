@@ -13,15 +13,17 @@ ensure_ssh_service: true
 ssh_service_name: "ssh" # Use "sshd" for RedHat-based systems
 
 # SSH: client-forwarded environment variables to accept (sshd AcceptEnv).
-# This lets a workstation forward `COPILOT_GITHUB_TOKEN` via `ssh -o SendEnv=...`
-# so GitHub Copilot CLI can authenticate on these headless servers without a
-# local secret store (no gnome-keyring needed). No secret is written to the
-# server: the token only exists in the forwarded session's environment. The
-# workstation side is the `copilot-ssh` helper in the dotfiles repo, which reads
-# the token from a 1Password Environment via `op run`.
+# This lets a workstation forward GitHub tokens via `ssh -o SendEnv=...` so
+# GitHub Copilot CLI (COPILOT_GITHUB_TOKEN) and the GitHub CLI (GH_TOKEN) can
+# authenticate on these headless servers without a local secret store (no
+# gnome-keyring needed). No secret is written to the server: only the variable
+# names are configured; the tokens only exist in the forwarded session's
+# environment. The workstation side is the `copilot-ssh` helper in the dotfiles
+# repo, which reads the tokens from a 1Password Environment via `op run`.
 sshd_accept_env_enabled: true
 sshd_accept_env_vars:
   - COPILOT_GITHUB_TOKEN
+  - GH_TOKEN
 # Directory sshd reads drop-in *.conf fragments from (Debian/Ubuntu default).
 sshd_config_dir: "/etc/ssh/sshd_config.d"
 # Ensure the main sshd_config actually includes the drop-in directory. Ubuntu
