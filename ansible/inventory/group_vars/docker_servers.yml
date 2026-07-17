@@ -20,7 +20,7 @@ ansible_python_interpreter: auto_silent
 docker_pinned_packages:
   trixie-amd64:
     # renovate: datasource=deb depName=docker-ce registryUrl=https://download.docker.com/linux/debian?suite=trixie&components=stable&binaryArch=amd64
-    docker_ce: "5:29.6.1-1~debian.13~trixie"
+    docker_ce: "5:29.6.2-1~debian.13~trixie"
     # renovate: datasource=deb depName=containerd.io registryUrl=https://download.docker.com/linux/debian?suite=trixie&components=stable&binaryArch=amd64
     containerd_io: "2.2.6-1~debian.13~trixie"
     # renovate: datasource=deb depName=docker-buildx-plugin registryUrl=https://download.docker.com/linux/debian?suite=trixie&components=stable&binaryArch=amd64
@@ -29,7 +29,7 @@ docker_pinned_packages:
     docker_compose_plugin: "5.3.1-1~debian.13~trixie"
   trixie-arm64:
     # renovate: datasource=deb depName=docker-ce registryUrl=https://download.docker.com/linux/debian?suite=trixie&components=stable&binaryArch=arm64
-    docker_ce: "5:29.6.1-1~debian.13~trixie"
+    docker_ce: "5:29.6.2-1~debian.13~trixie"
     # renovate: datasource=deb depName=containerd.io registryUrl=https://download.docker.com/linux/debian?suite=trixie&components=stable&binaryArch=arm64
     containerd_io: "2.2.6-1~debian.13~trixie"
     # renovate: datasource=deb depName=docker-buildx-plugin registryUrl=https://download.docker.com/linux/debian?suite=trixie&components=stable&binaryArch=arm64
