@@ -20,25 +20,52 @@
     - chezmoi_binary.stat.exists
     - chezmoi_existing_check.rc != 0
 
+- name: Determine currently installed Chezmoi version
+  ansible.builtin.set_fact:
+    chezmoi_installed_version: >-
+      {{ chezmoi_existing_check.stdout
+         | regex_search('[0-9]+\.[0-9]+\.[0-9]+')
+         | default('', true) }}
+  when:
+    - chezmoi_binary.stat.exists
+    - chezmoi_existing_check.rc | default(1) == 0
+
 - name: Get latest Chezmoi release version from GitHub API
   ansible.builtin.uri:
     url: "https://api.github.com/repos/twpayne/chezmoi/releases/latest"
     return_content: true
   register: chezmoi_release_info
-  when: not chezmoi_binary.stat.exists or (chezmoi_existing_check.rc is defined and chezmoi_existing_check.rc != 0)
+  when: chezmoi_version == 'latest'
 
-- name: Set Chezmoi resolved version fact
+- name: Set Chezmoi resolved version fact (latest)
   ansible.builtin.set_fact:
     chezmoi_resolved_version: "{{ chezmoi_release_info.json.tag_name | regex_replace('^v', '') }}"
-  when: chezmoi_release_info is not skipped
+  when: chezmoi_version == 'latest'
+
+- name: Set Chezmoi resolved version fact (pinned)
+  ansible.builtin.set_fact:
+    chezmoi_resolved_version: "{{ chezmoi_version | regex_replace('^v', '') }}"
+  when: chezmoi_version != 'latest'
+
+# Reinstall not just when Chezmoi is missing or the wrong arch, but also when
+# the installed version differs from the resolved one. Otherwise a stale
+# binary is kept forever and `chezmoi init` fails once the dotfiles source
+# raises its .chezmoiversion (e.g. 2.70.5 vs a source requiring >= 2.71.0).
+- name: Determine whether Chezmoi needs installing or upgrading
+  ansible.builtin.set_fact:
+    chezmoi_needs_install: >-
+      {{ (not chezmoi_binary.stat.exists)
+         or (chezmoi_existing_check.rc | default(1) != 0)
+         or (chezmoi_installed_version | default('') != chezmoi_resolved_version) }}
 
 - name: Download Chezmoi binary (amd64)
   ansible.builtin.get_url:
     url: "https://github.com/twpayne/chezmoi/releases/download/v{{ chezmoi_resolved_version }}/chezmoi-linux-amd64"
     dest: "{{ chezmoi_install_path }}"
     mode: "0755"
+    force: true
   when:
-    - chezmoi_resolved_version is defined
+    - chezmoi_needs_install | bool
     - chezmoi_arch == 'amd64'
 
 - name: Download Chezmoi archive (arm64)
@@ -46,8 +73,9 @@
     url: "https://github.com/twpayne/chezmoi/releases/download/v{{ chezmoi_resolved_version }}/chezmoi_{{ chezmoi_resolved_version }}_linux_arm64.tar.gz"
     dest: "/tmp/chezmoi_linux_arm64.tar.gz"
     mode: "0644"
+    force: true
   when:
-    - chezmoi_resolved_version is defined
+    - chezmoi_needs_install | bool
     - chezmoi_arch == 'arm64'
 
 - name: Extract Chezmoi binary from archive (arm64)
@@ -56,7 +84,7 @@
     dest: "{{ chezmoi_install_path | dirname }}"
     remote_src: true
   when:
-    - chezmoi_resolved_version is defined
+    - chezmoi_needs_install | bool
     - chezmoi_arch == 'arm64'
 
 - name: Ensure Chezmoi binary is executable (arm64)
@@ -64,7 +92,7 @@
     path: "{{ chezmoi_install_path }}"
     mode: "0755"
   when:
-    - chezmoi_resolved_version is defined
+    - chezmoi_needs_install | bool
     - chezmoi_arch == 'arm64'
 
 - name: Remove Chezmoi archive (arm64)
@@ -72,7 +100,7 @@
     path: "/tmp/chezmoi_linux_arm64.tar.gz"
     state: absent
   when:
-    - chezmoi_resolved_version is defined
+    - chezmoi_needs_install | bool
     - chezmoi_arch == 'arm64'
 
 - name: Verify Chezmoi installation
