@@ -87,6 +87,9 @@
   retries: 3
   delay: 5
   changed_when: false
+  # Resolve the version even during --check runs so downstream logic is
+  # reliable; the actual install steps below are skipped in check mode.
+  check_mode: false
   when:
     - not chezmoi_use_brew | bool
     - chezmoi_version == 'latest'
@@ -124,6 +127,7 @@
     force: true
   when:
     - not chezmoi_use_brew | bool
+    - not ansible_check_mode
     - chezmoi_needs_install | default(false) | bool
     - chezmoi_arch == 'amd64'
 
@@ -135,6 +139,7 @@
     force: true
   when:
     - not chezmoi_use_brew | bool
+    - not ansible_check_mode
     - chezmoi_needs_install | default(false) | bool
     - chezmoi_arch == 'arm64'
 
@@ -145,6 +150,7 @@
     remote_src: true
   when:
     - not chezmoi_use_brew | bool
+    - not ansible_check_mode
     - chezmoi_needs_install | default(false) | bool
     - chezmoi_arch == 'arm64'
 
@@ -154,6 +160,7 @@
     mode: "0755"
   when:
     - not chezmoi_use_brew | bool
+    - not ansible_check_mode
     - chezmoi_needs_install | default(false) | bool
     - chezmoi_arch == 'arm64'
 
@@ -163,6 +170,7 @@
     state: absent
   when:
     - not chezmoi_use_brew | bool
+    - not ansible_check_mode
     - chezmoi_needs_install | default(false) | bool
     - chezmoi_arch == 'arm64'
 
