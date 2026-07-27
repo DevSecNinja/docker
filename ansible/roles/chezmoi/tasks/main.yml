@@ -1,44 +1,134 @@
 ---
 # Tasks for Chezmoi role
+# --- Decide install method -------------------------------------------------
+# Homebrew is used only when it is present, the caller wants it, a brew user
+# is resolvable, AND chezmoi_version is 'latest'. Homebrew always tracks the
+# latest formula, so a pinned chezmoi_version must fall through to the
+# version-aware direct-download path below to be honored.
+- name: Detect Homebrew for Chezmoi installation
+  ansible.builtin.stat:
+    path: "{{ chezmoi_brew_binary }}"
+  register: chezmoi_brew_stat
+
+- name: Decide whether to manage Chezmoi via Homebrew
+  ansible.builtin.set_fact:
+    chezmoi_use_brew: >-
+      {{ chezmoi_prefer_brew | bool
+         and chezmoi_brew_stat.stat.exists
+         and chezmoi_version == 'latest'
+         and (ansible_user is defined or homebrew_user is defined) }}
+
+# --- Homebrew-managed install (preferred when brew is available) -----------
+# Homebrew tracks and upgrades Chezmoi itself, so no manual version handling
+# is needed here. brew must run as the (non-root) user that owns the prefix.
+- name: Install or upgrade Chezmoi via Homebrew
+  community.general.homebrew:
+    name: chezmoi
+    state: latest
+    path: "{{ chezmoi_brew_binary | dirname }}"
+  become: true
+  become_user: "{{ chezmoi_brew_user }}"
+  when: chezmoi_use_brew | bool
+
+- name: Set Chezmoi binary path (Homebrew)
+  ansible.builtin.set_fact:
+    chezmoi_effective_bin: "{{ chezmoi_brew_binary | dirname }}/chezmoi"
+  when: chezmoi_use_brew | bool
+
+# --- Direct binary download (fallback when Homebrew is unavailable) --------
+# Reinstall not just when Chezmoi is missing or the wrong arch, but also when
+# the installed version differs from the resolved one. Otherwise a stale
+# binary is kept forever and `chezmoi init` fails once the dotfiles source
+# raises its .chezmoiversion (e.g. 2.70.5 vs a source requiring >= 2.71.0).
 - name: Check if Chezmoi is already installed
   ansible.builtin.stat:
     path: "{{ chezmoi_install_path }}"
   register: chezmoi_binary
+  when: not chezmoi_use_brew | bool
 
 - name: Verify existing Chezmoi binary is executable (correct arch)
   ansible.builtin.command: "{{ chezmoi_install_path }} --version"
   register: chezmoi_existing_check
   changed_when: false
   failed_when: false
-  when: chezmoi_binary.stat.exists
+  when:
+    - not chezmoi_use_brew | bool
+    - chezmoi_binary.stat.exists | default(false)
 
 - name: Remove incompatible Chezmoi binary
   ansible.builtin.file:
     path: "{{ chezmoi_install_path }}"
     state: absent
   when:
-    - chezmoi_binary.stat.exists
-    - chezmoi_existing_check.rc != 0
+    - not chezmoi_use_brew | bool
+    - chezmoi_binary.stat.exists | default(false)
+    - chezmoi_existing_check.rc | default(0) != 0
+
+- name: Determine currently installed Chezmoi version
+  ansible.builtin.set_fact:
+    chezmoi_installed_version: >-
+      {{ chezmoi_existing_check.stdout
+         | regex_search('[0-9]+\.[0-9]+\.[0-9]+')
+         | default('', true) }}
+  when:
+    - not chezmoi_use_brew | bool
+    - chezmoi_binary.stat.exists | default(false)
+    - chezmoi_existing_check.rc | default(1) == 0
 
 - name: Get latest Chezmoi release version from GitHub API
   ansible.builtin.uri:
     url: "https://api.github.com/repos/twpayne/chezmoi/releases/latest"
+    method: GET
     return_content: true
+    headers:
+      Accept: "application/vnd.github+json"
   register: chezmoi_release_info
-  when: not chezmoi_binary.stat.exists or (chezmoi_existing_check.rc is defined and chezmoi_existing_check.rc != 0)
+  until: chezmoi_release_info is succeeded
+  retries: 3
+  delay: 5
+  changed_when: false
+  # Resolve the version even during --check runs so downstream logic is
+  # reliable; the actual install steps below are skipped in check mode.
+  check_mode: false
+  when:
+    - not chezmoi_use_brew | bool
+    - chezmoi_version == 'latest'
 
-- name: Set Chezmoi resolved version fact
+- name: Set Chezmoi resolved version fact (latest)
   ansible.builtin.set_fact:
     chezmoi_resolved_version: "{{ chezmoi_release_info.json.tag_name | regex_replace('^v', '') }}"
-  when: chezmoi_release_info is not skipped
+  when:
+    - not chezmoi_use_brew | bool
+    - chezmoi_version == 'latest'
+    - chezmoi_release_info is not skipped
+
+- name: Set Chezmoi resolved version fact (pinned)
+  ansible.builtin.set_fact:
+    chezmoi_resolved_version: "{{ chezmoi_version | regex_replace('^v', '') }}"
+  when:
+    - not chezmoi_use_brew | bool
+    - chezmoi_version != 'latest'
+
+- name: Determine whether Chezmoi needs installing or upgrading
+  ansible.builtin.set_fact:
+    chezmoi_needs_install: >-
+      {{ (not chezmoi_binary.stat.exists | default(false))
+         or (chezmoi_existing_check.rc | default(1) != 0)
+         or (chezmoi_installed_version | default('') != chezmoi_resolved_version | default('')) }}
+  when:
+    - not chezmoi_use_brew | bool
+    - chezmoi_resolved_version is defined
 
 - name: Download Chezmoi binary (amd64)
   ansible.builtin.get_url:
     url: "https://github.com/twpayne/chezmoi/releases/download/v{{ chezmoi_resolved_version }}/chezmoi-linux-amd64"
     dest: "{{ chezmoi_install_path }}"
     mode: "0755"
+    force: true
   when:
-    - chezmoi_resolved_version is defined
+    - not chezmoi_use_brew | bool
+    - not ansible_check_mode
+    - chezmoi_needs_install | default(false) | bool
     - chezmoi_arch == 'amd64'
 
 - name: Download Chezmoi archive (arm64)
@@ -46,8 +136,11 @@
     url: "https://github.com/twpayne/chezmoi/releases/download/v{{ chezmoi_resolved_version }}/chezmoi_{{ chezmoi_resolved_version }}_linux_arm64.tar.gz"
     dest: "/tmp/chezmoi_linux_arm64.tar.gz"
     mode: "0644"
+    force: true
   when:
-    - chezmoi_resolved_version is defined
+    - not chezmoi_use_brew | bool
+    - not ansible_check_mode
+    - chezmoi_needs_install | default(false) | bool
     - chezmoi_arch == 'arm64'
 
 - name: Extract Chezmoi binary from archive (arm64)
@@ -56,7 +149,9 @@
     dest: "{{ chezmoi_install_path | dirname }}"
     remote_src: true
   when:
-    - chezmoi_resolved_version is defined
+    - not chezmoi_use_brew | bool
+    - not ansible_check_mode
+    - chezmoi_needs_install | default(false) | bool
     - chezmoi_arch == 'arm64'
 
 - name: Ensure Chezmoi binary is executable (arm64)
@@ -64,7 +159,9 @@
     path: "{{ chezmoi_install_path }}"
     mode: "0755"
   when:
-    - chezmoi_resolved_version is defined
+    - not chezmoi_use_brew | bool
+    - not ansible_check_mode
+    - chezmoi_needs_install | default(false) | bool
     - chezmoi_arch == 'arm64'
 
 - name: Remove Chezmoi archive (arm64)
@@ -72,11 +169,19 @@
     path: "/tmp/chezmoi_linux_arm64.tar.gz"
     state: absent
   when:
-    - chezmoi_resolved_version is defined
+    - not chezmoi_use_brew | bool
+    - not ansible_check_mode
+    - chezmoi_needs_install | default(false) | bool
     - chezmoi_arch == 'arm64'
 
+- name: Set Chezmoi binary path (direct download)
+  ansible.builtin.set_fact:
+    chezmoi_effective_bin: "{{ chezmoi_install_path }}"
+  when: not chezmoi_use_brew | bool
+
+# --- Verify + display (both methods) ---------------------------------------
 - name: Verify Chezmoi installation
-  ansible.builtin.command: "{{ chezmoi_install_path }} --version"
+  ansible.builtin.command: "{{ chezmoi_effective_bin }} --version"
   register: chezmoi_version_output
   changed_when: false
 
@@ -97,7 +202,7 @@
 - name: Initialize Chezmoi with dotfiles repository
   become: true
   become_user: "{{ chezmoi_user }}"
-  ansible.builtin.command: "{{ chezmoi_install_path }} init --no-tty {{ chezmoi_repo_url }}"
+  ansible.builtin.command: "{{ chezmoi_effective_bin }} init --no-tty {{ chezmoi_repo_url }}"
   args:
     creates: >-
       {{ chezmoi_getent_passwd.ansible_facts.getent_passwd[chezmoi_user][4] }}/
@@ -135,7 +240,7 @@
 - name: Apply Chezmoi dotfiles
   become: true
   become_user: "{{ chezmoi_user }}"
-  ansible.builtin.command: "{{ chezmoi_install_path }} apply --no-tty --force"
+  ansible.builtin.command: "{{ chezmoi_effective_bin }} apply --no-tty --force"
   when:
     - chezmoi_user is defined
     - chezmoi_repo_url | length > 0
