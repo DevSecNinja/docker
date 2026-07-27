@@ -70,8 +70,15 @@
 - name: Get latest Chezmoi release version from GitHub API
   ansible.builtin.uri:
     url: "https://api.github.com/repos/twpayne/chezmoi/releases/latest"
+    method: GET
     return_content: true
+    headers:
+      Accept: "application/vnd.github+json"
   register: chezmoi_release_info
+  until: chezmoi_release_info is succeeded
+  retries: 3
+  delay: 5
+  changed_when: false
   when:
     - not chezmoi_use_brew | bool
     - chezmoi_version == 'latest'
