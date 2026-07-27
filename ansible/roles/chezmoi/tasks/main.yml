@@ -1,6 +1,10 @@
 ---
 # Tasks for Chezmoi role
 # --- Decide install method -------------------------------------------------
+# Homebrew is used only when it is present, the caller wants it, a brew user
+# is resolvable, AND chezmoi_version is 'latest'. Homebrew always tracks the
+# latest formula, so a pinned chezmoi_version must fall through to the
+# version-aware direct-download path below to be honored.
 - name: Detect Homebrew for Chezmoi installation
   ansible.builtin.stat:
     path: "{{ chezmoi_brew_binary }}"
@@ -8,7 +12,11 @@
 
 - name: Decide whether to manage Chezmoi via Homebrew
   ansible.builtin.set_fact:
-    chezmoi_use_brew: "{{ chezmoi_prefer_brew | bool and chezmoi_brew_stat.stat.exists }}"
+    chezmoi_use_brew: >-
+      {{ chezmoi_prefer_brew | bool
+         and chezmoi_brew_stat.stat.exists
+         and chezmoi_version == 'latest'
+         and (ansible_user is defined or homebrew_user is defined) }}
 
 # --- Homebrew-managed install (preferred when brew is available) -----------
 # Homebrew tracks and upgrades Chezmoi itself, so no manual version handling
@@ -89,6 +97,7 @@
   when:
     - not chezmoi_use_brew | bool
     - chezmoi_version == 'latest'
+    - chezmoi_release_info is not skipped
 
 - name: Set Chezmoi resolved version fact (pinned)
   ansible.builtin.set_fact:
@@ -102,8 +111,10 @@
     chezmoi_needs_install: >-
       {{ (not chezmoi_binary.stat.exists | default(false))
          or (chezmoi_existing_check.rc | default(1) != 0)
-         or (chezmoi_installed_version | default('') != chezmoi_resolved_version) }}
-  when: not chezmoi_use_brew | bool
+         or (chezmoi_installed_version | default('') != chezmoi_resolved_version | default('')) }}
+  when:
+    - not chezmoi_use_brew | bool
+    - chezmoi_resolved_version is defined
 
 - name: Download Chezmoi binary (amd64)
   ansible.builtin.get_url:
@@ -113,7 +124,7 @@
     force: true
   when:
     - not chezmoi_use_brew | bool
-    - chezmoi_needs_install | bool
+    - chezmoi_needs_install | default(false) | bool
     - chezmoi_arch == 'amd64'
 
 - name: Download Chezmoi archive (arm64)
@@ -124,7 +135,7 @@
     force: true
   when:
     - not chezmoi_use_brew | bool
-    - chezmoi_needs_install | bool
+    - chezmoi_needs_install | default(false) | bool
     - chezmoi_arch == 'arm64'
 
 - name: Extract Chezmoi binary from archive (arm64)
@@ -134,7 +145,7 @@
     remote_src: true
   when:
     - not chezmoi_use_brew | bool
-    - chezmoi_needs_install | bool
+    - chezmoi_needs_install | default(false) | bool
     - chezmoi_arch == 'arm64'
 
 - name: Ensure Chezmoi binary is executable (arm64)
@@ -143,7 +154,7 @@
     mode: "0755"
   when:
     - not chezmoi_use_brew | bool
-    - chezmoi_needs_install | bool
+    - chezmoi_needs_install | default(false) | bool
     - chezmoi_arch == 'arm64'
 
 - name: Remove Chezmoi archive (arm64)
@@ -152,7 +163,7 @@
     state: absent
   when:
     - not chezmoi_use_brew | bool
-    - chezmoi_needs_install | bool
+    - chezmoi_needs_install | default(false) | bool
     - chezmoi_arch == 'arm64'
 
 - name: Set Chezmoi binary path (direct download)
