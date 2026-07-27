@@ -7,3 +7,10 @@ chezmoi_install_path: "/usr/local/bin/chezmoi"
 chezmoi_repo_url: "https://github.com/DevSecNinja/dotfiles.git"
 chezmoi_user: "{{ ansible_user }}"
 chezmoi_init_apply: true
+# Prefer installing/upgrading Chezmoi via Homebrew when brew is present.
+# Set to false to always use the direct GitHub binary download instead.
+chezmoi_prefer_brew: true
+# Homebrew brew binary and the user that owns the Homebrew prefix. Defaults
+# mirror the package_managers role so both use the same brew installation.
+chezmoi_brew_binary: "/home/linuxbrew/.linuxbrew/bin/brew"
+chezmoi_brew_user: "{{ homebrew_user | default(ansible_user) }}"
