@@ -8,6 +8,9 @@
   loop: "{{ apt_hold_packages }}"
   when: apt_hold_packages | length > 0
   register: apt_hold_result
+  until: apt_hold_result is not failed
+  retries: "{{ apt_hold_lock_retries }}"
+  delay: "{{ apt_hold_lock_delay }}"
   failed_when:
     - apt_hold_result.failed
     - "'Failed to find package' not in (apt_hold_result.msg | default(''))"

@@ -13,3 +13,9 @@ ansible_pull_workdir: "/var/lib/ansible/local"
 
 # Service user (for systemd)
 ansible_pull_user: "root"
+
+# Seconds to wait for the dpkg/apt lock before starting the playbook run.
+# Boot-time apt-daily/unattended-upgrades jobs hold this lock for a while.
+# Exported to the service as ANSIBLE_PULL_APT_LOCK_TIMEOUT, which both
+# ansible-pull.sh and the playbook's apt lock_timeout derive from.
+ansible_pull_apt_lock_timeout: 600

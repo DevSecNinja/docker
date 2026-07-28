@@ -5,11 +5,20 @@
   hosts: "{{ target_host | default('all') }}"
   become: true
 
+  vars:
+    # Boot-time apt-daily/unattended-upgrades jobs can hold the apt and dpkg
+    # locks for several minutes. Wait for them instead of failing the run.
+    # Sourced from the same knob the ansible-pull service exports
+    # (ansible_pull_apt_lock_timeout), so both stay in sync; the fallback
+    # applies to manual runs where the variable is not exported.
+    apt_lock_timeout: "{{ lookup('ansible.builtin.env', 'ANSIBLE_PULL_APT_LOCK_TIMEOUT') | default(600, true) | int }}"
+
   pre_tasks:
     - name: Update apt cache (Debian/Ubuntu)
       ansible.builtin.apt:
         update_cache: true
         cache_valid_time: 3600
+        lock_timeout: "{{ apt_lock_timeout }}"
       when: ansible_os_family == "Debian"
       tags: always
 
@@ -30,6 +39,7 @@
     - name: Refresh apt cache so an existing Docker repository is indexed
       ansible.builtin.apt:
         update_cache: true
+        lock_timeout: "{{ apt_lock_timeout }}"
       when:
         - ansible_os_family == "Debian"
         - docker_apt_repo_file.stat.exists | default(false)
