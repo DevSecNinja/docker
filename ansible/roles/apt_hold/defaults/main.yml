@@ -3,3 +3,8 @@
 # Held packages are skipped by apt-get upgrade and dist-upgrade
 # Define this list in group_vars or host_vars — empty by default
 apt_hold_packages: []
+
+# dpkg refuses to run while another process (apt-daily, unattended-upgrades)
+# holds the frontend lock, so retry instead of failing the whole run.
+apt_hold_lock_retries: 30
+apt_hold_lock_delay: 10
