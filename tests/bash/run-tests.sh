@@ -85,7 +85,7 @@ if ! command -v bats >/dev/null 2>&1; then
 	if [ "$CI_MODE" = true ]; then
 		# Install in CI mode
 		echo "Installing Bats from GitHub..."
-		BATS_VERSION="1.13.0"
+		BATS_VERSION="1.14.0"
 		git clone --depth 1 --branch "v${BATS_VERSION}" https://github.com/bats-core/bats-core.git /tmp/bats-core
 		cd /tmp/bats-core
 		sudo ./install.sh /usr/local
