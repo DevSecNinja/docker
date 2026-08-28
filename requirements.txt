@@ -2,7 +2,7 @@
 # Install with: pip install -r requirements.txt
 
 # Ansible and related tools
-ansible==14.2.0
+ansible==14.3.0
 ansible-lint==26.6.0
 # Jinja2 is installed as an Ansible dependency; no direct pin needed.
 
