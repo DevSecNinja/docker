@@ -1,8 +1,8 @@
 ---
 # Default variables for Ansible Pull Setup role
-ansible_pull_scheduler: "systemd"  # Options: cron, systemd
-ansible_pull_interval: "1h"  # For systemd timer (e.g., 1h, 30m)
-ansible_pull_cron_schedule: "0 * * * *"  # For cron (hourly)
+ansible_pull_scheduler: "systemd" # Options: cron, systemd
+ansible_pull_interval: "1h" # For systemd timer (e.g., 1h, 30m)
+ansible_pull_cron_schedule: "0 * * * *" # For cron (hourly)
 
 # Repository settings
 ansible_pull_repo_url: "https://github.com/DevSecNinja/docker.git"

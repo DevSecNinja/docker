@@ -9,7 +9,8 @@
   retries: 10
   delay: 30
   until: cron_apt_result is succeeded
-  tags: [cron_jobs]
+  tags:
+    - cron_jobs
 
 - name: Configure cron jobs
   ansible.builtin.cron:
@@ -23,4 +24,5 @@
     user: "{{ item.user | default(ansible_user) }}"
     state: "{{ item.state | default('present') }}"
   loop: "{{ cron_jobs }}"
-  tags: [cron_jobs]
+  tags:
+    - cron_jobs

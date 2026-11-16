@@ -47,7 +47,7 @@ echo "🚀 Setting up Docker Infrastructure development environment..."
 # Set Docker socket permissions
 echo "🐳 Configuring Docker permissions..."
 sudo groupadd -f docker --gid 780 # Note: this group ID aligns with the docker_group role
-sudo groupmod -g 780 docker # In case the group already existed with a different GID
+sudo groupmod -g 780 docker       # In case the group already existed with a different GID
 sudo usermod -aG docker vscode
 check_docker_sock || exit 1
 
@@ -85,11 +85,11 @@ echo ""
 
 # Check if Docker is usable without sudo in THIS session
 if ! docker info >/dev/null 2>&1; then
-  echo "⚠️  Docker is not accessible in this session."
-  echo "   You were likely added to the 'docker' group after this shell started."
-  echo "   Run: sudo su - \$USER"
-  echo "   (or reopen the terminal) to refresh group membership."
-  echo ""
+    echo "⚠️  Docker is not accessible in this session."
+    echo "   You were likely added to the 'docker' group after this shell started."
+    echo "   Run: sudo su - \$USER"
+    echo "   (or reopen the terminal) to refresh group membership."
+    echo ""
 fi
 
 echo "Quick commands:"

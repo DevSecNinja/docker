@@ -9,7 +9,8 @@
   retries: 10
   delay: 30
   until: git_apt_result is succeeded
-  tags: [git_repos]
+  tags:
+    - git_repos
 
 - name: Create git repository shims (single-repo format)
   ansible.builtin.include_tasks: clone_shim.yml
@@ -23,12 +24,12 @@
     shim_version: "{{ shim_item.version | default('HEAD') }}"
     shim_owner: "{{ shim_item.user | default(ansible_user) }}"
     shim_group: "{{ shim_item.group | default(shim_item.user | default(ansible_user)) }}"
-  tags: [git_repos]
+  tags:
+    - git_repos
 
 - name: Create git repository shims (multi-repo format)
   ansible.builtin.include_tasks: clone_shim.yml
-  loop: "{{ git_repos | selectattr('repos', 'defined') | list |
-    subelements('repos') }}"
+  loop: "{{ git_repos | selectattr('repos', 'defined') | list | subelements('repos') }}"
   loop_control:
     loop_var: shim_item
     label: "{{ shim_item.1 }}"
@@ -38,7 +39,8 @@
     shim_version: "{{ shim_item.0.version | default('HEAD') }}"
     shim_owner: "{{ shim_item.0.user | default(ansible_user) }}"
     shim_group: "{{ shim_item.0.group | default(shim_item.0.user | default(ansible_user)) }}"
-  tags: [git_repos]
+  tags:
+    - git_repos
 
 - name: Synchronise repositories for GitHub users
   ansible.builtin.include_tasks: github_user.yml
@@ -46,4 +48,5 @@
   loop_control:
     loop_var: git_repos_entry
     label: "{{ git_repos_entry.github_user }}"
-  tags: [git_repos]
+  tags:
+    - git_repos

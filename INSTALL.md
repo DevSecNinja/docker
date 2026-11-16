@@ -120,6 +120,7 @@ For svlazext, ensure the following:
 For svldev (Development/Management Server), the following steps are largely automated:
 
 **Automated Steps:**
+
 - ✅ Ansible user creation with sudo privileges (`system_setup` role)
 - ✅ Docker group membership for specified users (`geerlingguy.docker` role)
 - ✅ SSH service configuration (`system_setup` role)

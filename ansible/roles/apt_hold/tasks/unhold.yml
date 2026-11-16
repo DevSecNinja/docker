@@ -14,4 +14,5 @@
   failed_when:
     - apt_unhold_result.failed
     - "'Failed to find package' not in (apt_unhold_result.msg | default(''))"
-  tags: [apt_hold]
+  tags:
+    - apt_hold

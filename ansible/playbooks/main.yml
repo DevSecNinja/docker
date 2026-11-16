@@ -55,15 +55,21 @@
   roles:
     - role: github_ssh_keys
       when: "'github_ssh_keys' in server_features"
-      tags: [github_ssh_keys, ssh]
+      tags:
+        - github_ssh_keys
+        - ssh
 
     - role: system_setup
       when: "'system_setup' in server_features"
-      tags: [system_setup, base]
+      tags:
+        - system_setup
+        - base
 
     - role: docker_group
       when: "'docker' in server_features"
-      tags: [docker, docker_group]
+      tags:
+        - docker
+        - docker_group
 
     - role: geerlingguy.docker
       when: "'docker' in server_features"
@@ -71,15 +77,20 @@
 
     - role: apt_hold
       when: ansible_os_family == "Debian"
-      tags: [apt_hold]
+      tags:
+        - apt_hold
 
     - role: ufw
       when: "'ufw' in server_features or 'firewall' in server_features"
-      tags: [ufw, firewall]
+      tags:
+        - ufw
+        - firewall
 
     - role: package_managers
       when: "'package_managers' in server_features"
-      tags: [package_managers, homebrew]
+      tags:
+        - package_managers
+        - homebrew
 
     - role: chezmoi
       when: "'chezmoi' in server_features"
@@ -87,28 +98,38 @@
 
     - role: docker_compose_modules
       when: "compose_modules is defined and compose_modules | length > 0"
-      tags: [docker_compose, services]
+      tags:
+        - docker_compose
+        - services
 
     - role: ansible_pull_setup
       when: "'ansible_pull_setup' in server_features"
-      tags: [ansible_pull, automation]
+      tags:
+        - ansible_pull
+        - automation
 
     - role: maintenance
       when: "'maintenance' in server_features"
-      tags: [maintenance, automation]
+      tags:
+        - maintenance
+        - automation
 
     - role: packages
       when: "'packages' in server_features"
-      tags: [packages]
+      tags:
+        - packages
 
     - role: git_repos
       when: "'git_repos' in server_features and git_repos | default([]) | length > 0"
-      tags: [git_repos]
+      tags:
+        - git_repos
 
     - role: devcontainer_prebuild
       when: "'devcontainer_prebuild' in server_features"
-      tags: [devcontainer_prebuild]
+      tags:
+        - devcontainer_prebuild
 
     - role: cron_jobs
       when: "'cron_jobs' in server_features and cron_jobs | default([]) | length > 0"
-      tags: [cron_jobs]
+      tags:
+        - cron_jobs

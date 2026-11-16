@@ -133,7 +133,8 @@
 
 - name: Download Chezmoi archive (arm64)
   ansible.builtin.get_url:
-    url: "https://github.com/twpayne/chezmoi/releases/download/v{{ chezmoi_resolved_version }}/chezmoi_{{ chezmoi_resolved_version }}_linux_arm64.tar.gz"
+    url: "https://github.com/twpayne/chezmoi/releases/download/v{{ chezmoi_resolved_version }}/chezmoi_{{ chezmoi_resolved_version
+      }}_linux_arm64.tar.gz"
     dest: "/tmp/chezmoi_linux_arm64.tar.gz"
     mode: "0644"
     force: true

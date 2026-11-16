@@ -12,8 +12,8 @@ ufw_ssh_port: 22
 
 # Common service ports
 ufw_allowed_ports:
-  - 80    # HTTP
-  - 443   # HTTPS
+  - 80 # HTTP
+  - 443 # HTTPS
 
 # Custom rules (list of dicts with port, protocol, rule)
 ufw_rules: []

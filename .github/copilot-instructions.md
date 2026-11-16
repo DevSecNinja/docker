@@ -18,10 +18,13 @@ This is an Ansible-based infrastructure automation repository that manages Docke
 ## Key Commands
 
 ### Important: Always Use Task Runner
+
 When suggesting commands to the user, **always prefer `task` commands** from `Taskfile.yml` over raw commands. Only fall back to raw commands if no equivalent task exists. Run `task --list` to discover available tasks.
 
 ### Important: Always Use mise for Tool Management
+
 When installing or managing tool versions (Python, Ansible, ansible-lint, yamllint, Bats, Task, etc.), **always use `mise`** instead of `pip install`, `apt install`, or other package managers. Tool versions are defined in `.mise.toml` and must stay in sync.
+
 ```bash
 # Install all tools at versions defined in .mise.toml
 mise install
@@ -34,6 +37,7 @@ mise use pipx:ansible-lint@26.5.0
 ```
 
 ### Task Runner (Recommended)
+
 ```bash
 # Show all available tasks
 task --list
@@ -58,6 +62,7 @@ task help
 ```
 
 ### Testing
+
 ```bash
 # Run all Bats tests (with Task)
 task test
@@ -78,6 +83,7 @@ task test:docker
 ```
 
 ### Running Ansible
+
 ```bash
 # Dry-run with Task
 task ansible:check
@@ -97,6 +103,7 @@ sudo ansible-pull \
 ```
 
 ### Local Development
+
 ```bash
 # Install all dependencies (with Task)
 task install
@@ -139,6 +146,7 @@ tests/
 ## Code Conventions
 
 ### Ansible Playbooks and Roles
+
 - Use YAML with 2-space indentation
 - Follow Ansible best practices for role structure
 - All playbooks must start with `---`
@@ -149,6 +157,7 @@ tests/
 - Use `handlers/main.yml` for service restarts
 
 ### YAML Style
+
 - Use 2-space indentation (never tabs)
 - No trailing whitespace
 - End files with a single newline
@@ -157,12 +166,14 @@ tests/
 - Use lowercase for booleans: `true`, `false`
 
 ### Naming Conventions
+
 - Roles: lowercase with underscores (e.g., `ansible_pull_setup`)
 - Variables: lowercase with underscores (e.g., `server_features`)
 - Host names: lowercase (e.g., `svlazext`)
 - Tags: lowercase (e.g., `docker`, `traefik`)
 
 ### File Organization
+
 - Group related tasks in role subdirectories
 - Use `tasks/main.yml` as the entry point for roles
 - Split complex roles into separate task files
@@ -172,6 +183,7 @@ tests/
 ## Testing Requirements
 
 ### Before Making Changes
+
 1. **ALWAYS run tests first**: `./tests/bash/run-tests.sh`
    - This is a required step before committing any Ansible or YAML changes
    - Fix all test failures before proceeding
@@ -182,6 +194,7 @@ tests/
    - GitHub SSH Keys: `./tests/bash/run-tests.sh --test github-ssh-keys-test.bats`
 
 ### After Making Changes
+
 - **All YAML files must pass yamllint** (no errors, warnings acceptable)
 - **All Ansible files must pass ansible-lint** (no errors, warnings acceptable)
 - Playbooks must pass syntax-check
@@ -189,7 +202,9 @@ tests/
 - **Run linting again before final commit** to ensure all issues are resolved
 
 ### CI/CD Pipeline
+
 The repository uses the [Bats testing framework](https://github.com/bats-core/bats-core) for comprehensive testing:
+
 - Lint checks (yamllint, ansible-lint)
 - Syntax validation (Ansible playbooks and shell scripts)
 - Docker provisioning tests
@@ -199,6 +214,7 @@ The repository uses the [Bats testing framework](https://github.com/bats-core/ba
 All tests are located in `tests/bash/` and use the Bats test format.
 
 Workflows trigger on:
+
 - Push to `main` or `copilot/**` branches
 - Pull requests
 - Manual workflow dispatch
@@ -208,17 +224,20 @@ See [tests/bash/README.md](../tests/bash/README.md) for detailed testing documen
 ## Important Boundaries
 
 ### DO NOT Modify
+
 - `.git/` directory or git history
 - LICENSE file (MIT License)
 - Production server configurations without explicit approval
 - Secrets or credentials (use Ansible Vault if needed)
 
 ### DO Modify Carefully
+
 - `ansible/inventory/hosts.yml` - Server inventory (only with clear understanding)
 - `ansible/playbooks/main.yml` - Main playbook (ensure backward compatibility)
 - GitHub Actions workflows - Test thoroughly before merging
 
 ### ALWAYS
+
 - Follow existing code structure and patterns
 - Test changes using provided test scripts
 - Maintain backward compatibility with existing servers
@@ -229,6 +248,7 @@ See [tests/bash/README.md](../tests/bash/README.md) for detailed testing documen
 ## Example Workflows
 
 ### Adding a New Ansible Role
+
 1. Create role structure:
    ```bash
    cd ansible/roles
@@ -253,6 +273,7 @@ See [tests/bash/README.md](../tests/bash/README.md) for detailed testing documen
 5. Test with CI pipeline
 
 ### Adding a New Server
+
 1. Add to `ansible/inventory/hosts.yml`:
    ```yaml
    NEWSERVER:
@@ -266,6 +287,7 @@ See [tests/bash/README.md](../tests/bash/README.md) for detailed testing documen
 3. Test the configuration
 
 ### Modifying Docker Compose Modules
+
 1. Edit module definition in `ansible/roles/docker_compose_modules/vars/modules/`
 2. Update role tasks if needed in `ansible/roles/docker_compose_modules/tasks/`
 3. Test with: `bash ansible/scripts/tests/docker-test.sh`

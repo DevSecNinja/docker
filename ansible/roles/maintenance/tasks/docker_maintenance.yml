@@ -122,6 +122,6 @@
 
 - name: Display Docker disk usage
   ansible.builtin.debug:
-    msg: |
+    msg: |-
       Docker disk usage:
       {{ maintenance_docker_disk_usage.stdout }}

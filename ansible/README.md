@@ -47,6 +47,7 @@ ansible/
 ### svlazext (Debian)
 
 Primary Docker host with the following features:
+
 - Docker Engine (via geerlingguy.docker role)
 - UFW firewall with HTTP/HTTPS/SSH access
 - Chezmoi dotfiles management
@@ -62,27 +63,33 @@ See [INSTALL.md](INSTALL.md) for detailed installation instructions.
 The maintenance role provides automated server maintenance with three types of tasks:
 
 ### 1. Configuration and Docker Image Updates
+
 **Playbook**: `maintenance-update.yml`
 
 Pulls the latest Ansible configuration and updates Docker images:
+
 - Pulls latest changes from Git repository
 - Updates chezmoi dotfiles
 - Pulls and restarts Docker Compose services with updated images
 
 ### 2. Daily OS Patches (Non-disturbing)
+
 **Playbook**: `maintenance-daily.yml`
 **Schedule**: Daily at 8 PM
 
 Applies safe OS updates without disrupting services:
+
 - Updates packages except Docker Engine and kernel
 - Excludes updates requiring reboot
 - Safe to run on production systems
 
 ### 3. Weekly Full Patches
+
 **Playbook**: `maintenance-weekly.yml`
 **Schedule**: Saturday at 8 AM
 
 Performs comprehensive system updates:
+
 - Applies all available OS updates
 - Includes Docker Engine and kernel updates
 - Automatically reboots if required
