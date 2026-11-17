@@ -6,11 +6,15 @@
   ansible.builtin.stat:
     path: "/home/{{ mise_user }}/.local/bin/mise"
   register: mise_binary
-  tags: [package_managers, mise]
+  tags:
+    - package_managers
+    - mise
 
 - name: Install mise
   when: not mise_binary.stat.exists
-  tags: [package_managers, mise]
+  tags:
+    - package_managers
+    - mise
   block:
     - name: Download mise install script
       ansible.builtin.get_url:
@@ -40,10 +44,14 @@
   when: >
     mise_binary.stat.exists or
     (mise_install_result is defined and mise_install_result.rc == 0)
-  tags: [package_managers, mise]
+  tags:
+    - package_managers
+    - mise
 
 - name: Display mise version
   ansible.builtin.debug:
     msg: "Mise version: {{ mise_version_output.stdout }}"
   when: mise_version_output is not skipped
-  tags: [package_managers, mise]
+  tags:
+    - package_managers
+    - mise

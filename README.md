@@ -72,6 +72,7 @@ For Ansible documentation and structure, see [ansible/README.md](ansible/README.
 ### svlazext (Debian)
 
 Primary Docker host configured with:
+
 - ✅ Docker Engine (geerlingguy.docker)
 - ✅ UFW Firewall (HTTP, HTTPS, SSH)
 - ✅ Chezmoi dotfiles management
@@ -81,6 +82,7 @@ Primary Docker host configured with:
 ### svldev (Debian)
 
 Development/management server configured with:
+
 - ✅ Automated system setup (ansible user, sudo, SSH)
 - ✅ Docker Engine with user group management (geerlingguy.docker)
 - ✅ UFW Firewall (SSH)
@@ -143,18 +145,18 @@ task help
 
 ### Common Task Commands
 
-| Command | Description |
-|---------|-------------|
-| `task install` | Install all dependencies (Python, Ansible, Bats) |
-| `task test` | Run all tests |
-| `task test:lint` | Run linting tests only |
-| `task test:syntax` | Run syntax validation tests |
-| `task lint` | Run yamllint and ansible-lint |
-| `task ansible:check` | Dry-run ansible-pull (no changes) |
-| `task ansible:pull` | Run ansible-pull (apply configuration) |
-| `task ci:local` | Run full CI pipeline locally |
-| `task info` | Display environment information |
-| `task help` | Show detailed help and examples |
+| Command              | Description                                      |
+| -------------------- | ------------------------------------------------ |
+| `task install`       | Install all dependencies (Python, Ansible, Bats) |
+| `task test`          | Run all tests                                    |
+| `task test:lint`     | Run linting tests only                           |
+| `task test:syntax`   | Run syntax validation tests                      |
+| `task lint`          | Run yamllint and ansible-lint                    |
+| `task ansible:check` | Dry-run ansible-pull (no changes)                |
+| `task ansible:pull`  | Run ansible-pull (apply configuration)           |
+| `task ci:local`      | Run full CI pipeline locally                     |
+| `task info`          | Display environment information                  |
+| `task help`          | Show detailed help and examples                  |
 
 See [Taskfile.yml](Taskfile.yml) for all available tasks.
 
@@ -165,6 +167,7 @@ The repository includes comprehensive testing using the [Bats testing framework]
 ### Running Tests Locally
 
 With Task (recommended):
+
 ```bash
 # Run all tests
 task test
@@ -176,6 +179,7 @@ task test:docker
 ```
 
 Without Task:
+
 ```bash
 # Run all tests
 ./tests/bash/run-tests.sh
@@ -190,6 +194,7 @@ Without Task:
 ### Test Suite
 
 Tests include:
+
 - **Linting**: yamllint and ansible-lint checks
 - **Syntax validation**: Ansible playbooks and shell scripts
 - **Docker provisioning**: Installation and configuration
@@ -201,6 +206,7 @@ See [tests/bash/README.md](tests/bash/README.md) for detailed testing documentat
 ### CI/CD Pipeline
 
 Tests are automatically run via GitHub Actions on:
+
 - Push to `main` or `copilot/**` branches
 - Pull requests
 - Manual workflow dispatch

@@ -17,7 +17,8 @@
       {{ git_repos_entry.token | default(git_repos_github_token) }}
     git_repos_limit: >-
       {{ git_repos_entry.limit | default(0) | int }}
-  tags: [git_repos]
+  tags:
+    - git_repos
 
 - name: "Query GitHub API for repositories of '{{ git_repos_entry.github_user }}'"
   ansible.builtin.uri:
@@ -37,7 +38,8 @@
   check_mode: false
   changed_when: false
   no_log: "{{ git_repos_resolved_token | length > 0 }}"
-  tags: [git_repos]
+  tags:
+    - git_repos
 
 - name: "Build repository lists for '{{ git_repos_entry.github_user }}'"
   ansible.builtin.set_fact:
@@ -45,7 +47,8 @@
       {{ git_repos_api_pages.results
          | map(attribute='json') | flatten
          | rejectattr('private') | list }}
-  tags: [git_repos]
+  tags:
+    - git_repos
 
 - name: "Select archived and clone targets for '{{ git_repos_entry.github_user }}'"
   ansible.builtin.set_fact:
@@ -55,7 +58,8 @@
       {{ git_repos_public
          if (git_repos_include_archived and not git_repos_archive_mode)
          else (git_repos_public | rejectattr('archived') | list) }}
-  tags: [git_repos]
+  tags:
+    - git_repos
 
 - name: "Apply clone limit for '{{ git_repos_entry.github_user }}'"
   ansible.builtin.set_fact:
@@ -63,7 +67,8 @@
       {{ git_repos_clone_candidates[:git_repos_limit]
          if git_repos_limit > 0
          else git_repos_clone_candidates }}
-  tags: [git_repos]
+  tags:
+    - git_repos
 
 - name: "Ensure projects directory exists for '{{ git_repos_entry.github_user }}'"
   ansible.builtin.file:
@@ -73,7 +78,8 @@
     group: "{{ git_repos_group }}"
     mode: "0755"
   become: true
-  tags: [git_repos]
+  tags:
+    - git_repos
 
 - name: "Create git repository shims for '{{ git_repos_entry.github_user }}'"
   ansible.builtin.include_tasks: clone_shim.yml
@@ -87,11 +93,13 @@
     shim_version: "{{ shim_item.default_branch }}"
     shim_owner: "{{ git_repos_owner }}"
     shim_group: "{{ git_repos_group }}"
-  tags: [git_repos]
+  tags:
+    - git_repos
 
 - name: "Relocate archived repositories for '{{ git_repos_entry.github_user }}'"
   when: git_repos_archive_mode
-  tags: [git_repos]
+  tags:
+    - git_repos
   block:
     - name: "Ensure .archive directory exists in '{{ git_repos_dest }}'"
       ansible.builtin.file:

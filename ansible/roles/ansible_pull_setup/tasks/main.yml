@@ -58,7 +58,7 @@
 
 - name: Display setup information
   ansible.builtin.debug:
-    msg: >
+    msg: >-
       Ansible pull automation configured with {{ ansible_pull_scheduler }}.
       {% if ansible_pull_scheduler == 'systemd' %}
       Check status: sudo systemctl status ansible-pull.timer

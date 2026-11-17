@@ -5,6 +5,7 @@ This project uses [mise](https://mise.jdx.dev/) (formerly rtx) for managing tool
 ## What is mise?
 
 mise is a polyglot tool version manager that:
+
 - Manages versions of Python, Node.js, and other tools
 - Automatically activates the correct versions when entering the project directory
 - Loads environment variables from `.env`

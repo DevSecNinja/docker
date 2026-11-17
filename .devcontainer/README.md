@@ -36,6 +36,7 @@ This devcontainer provides a complete development environment for the Docker Inf
 3. Use Command Palette: `Remote-Containers: Reopen in Container`
 
 The initial setup will take a few minutes to:
+
 - Pull the base Debian image
 - Install all required tools and dependencies
 - Configure the development environment
@@ -111,6 +112,7 @@ The devcontainer has access to the entire repository:
 ### VS Code Settings
 
 The devcontainer configures:
+
 - Format on save
 - LF line endings
 - YAML indentation (2 spaces)
@@ -120,6 +122,7 @@ The devcontainer configures:
 ### Docker-in-Docker
 
 The container runs Docker-in-Docker to support:
+
 - Testing Docker installations
 - Running Docker Compose modules
 - Container-based testing
@@ -156,6 +159,7 @@ ls /usr/local/lib/bats/
 ### Slow Container Startup
 
 First-time setup takes longer due to:
+
 - Installing Ansible and dependencies
 - Downloading Ansible collections/roles
 - Installing Bats framework

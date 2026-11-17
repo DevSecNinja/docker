@@ -31,7 +31,7 @@ log() {
 # repairs a broken package state. Non-lock failures are logged verbatim rather
 # than silently reported as lock contention.
 wait_for_apt_locks() {
-    if ! command -v apt-get &> /dev/null; then
+    if ! command -v apt-get &>/dev/null; then
         return 0
     fi
 
@@ -42,7 +42,7 @@ wait_for_apt_locks() {
 
     if [ "$rc" -eq 0 ]; then
         log "apt/dpkg locks are available"
-    elif grep -qiE 'could not get lock|unable to acquire|frontend lock|temporarily unavailable' <<< "$output"; then
+    elif grep -qiE 'could not get lock|unable to acquire|frontend lock|temporarily unavailable' <<<"$output"; then
         log "WARNING: apt/dpkg still locked after ${APT_LOCK_TIMEOUT}s, continuing anyway"
     else
         log "WARNING: 'apt-get check' failed for a non-lock reason (rc=$rc), continuing anyway:"
@@ -53,7 +53,7 @@ wait_for_apt_locks() {
 log "Starting ansible-pull run"
 
 # Install Ansible if not present
-if ! command -v ansible-pull &> /dev/null; then
+if ! command -v ansible-pull &>/dev/null; then
     log "Ansible not found, installing..."
     # Check if running as root
     if [ "$EUID" -ne 0 ]; then

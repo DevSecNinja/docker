@@ -8,7 +8,9 @@
     create_home: "{{ ansible_user_create_home }}"
     append: true
     state: present
-  tags: [system_setup, ansible_user]
+  tags:
+    - system_setup
+    - ansible_user
 
 - name: Configure passwordless sudo for ansible user
   ansible.builtin.template:
@@ -17,7 +19,10 @@
     mode: "0440"
     validate: "visudo -cf %s"
   when: ansible_user_passwordless_sudo
-  tags: [system_setup, ansible_user, sudo]
+  tags:
+    - system_setup
+    - ansible_user
+    - sudo
 
 - name: Ensure SSH service is enabled and running
   ansible.builtin.systemd:
@@ -25,7 +30,9 @@
     enabled: true
     state: started
   when: ensure_ssh_service
-  tags: [system_setup, ssh]
+  tags:
+    - system_setup
+    - ssh
 
 - name: Ensure sshd includes its drop-in configuration directory
   ansible.builtin.lineinfile:
@@ -40,7 +47,10 @@
     - sshd_ensure_include_dropins | bool
     - sshd_accept_env_vars | length > 0
   notify: Reload SSH service
-  tags: [system_setup, ssh, copilot]
+  tags:
+    - system_setup
+    - ssh
+    - copilot
 
 - name: Ensure the sshd drop-in configuration directory exists
   ansible.builtin.file:
@@ -53,7 +63,10 @@
     - ensure_ssh_service | bool
     - sshd_accept_env_enabled | bool
     - sshd_accept_env_vars | length > 0
-  tags: [system_setup, ssh, copilot]
+  tags:
+    - system_setup
+    - ssh
+    - copilot
 
 - name: Accept client-forwarded environment variables (e.g. Copilot CLI token)
   ansible.builtin.template:
@@ -68,7 +81,10 @@
     - sshd_accept_env_enabled | bool
     - sshd_accept_env_vars | length > 0
   notify: Reload SSH service
-  tags: [system_setup, ssh, copilot]
+  tags:
+    - system_setup
+    - ssh
+    - copilot
 
 - name: Remove the accepted-env drop-in when disabled
   ansible.builtin.file:
@@ -78,7 +94,10 @@
     - ensure_ssh_service | bool
     - not (sshd_accept_env_enabled | bool) or (sshd_accept_env_vars | length == 0)
   notify: Reload SSH service
-  tags: [system_setup, ssh, copilot]
+  tags:
+    - system_setup
+    - ssh
+    - copilot
 
 - name: Point /etc/resolv.conf to upstream resolver (non-stub)
   ansible.builtin.file:
@@ -87,7 +106,10 @@
     state: link
     force: true
   when: disable_systemd_resolved_stub
-  tags: [system_setup, dns, systemd_resolved]
+  tags:
+    - system_setup
+    - dns
+    - systemd_resolved
 
 - name: Disable systemd-resolved DNS stub listener
   ansible.builtin.lineinfile:
@@ -97,11 +119,15 @@
     create: false
   when: disable_systemd_resolved_stub
   notify: Restart systemd-resolved
-  tags: [system_setup, dns, systemd_resolved]
+  tags:
+    - system_setup
+    - dns
+    - systemd_resolved
 
 - name: Display system setup information
   ansible.builtin.debug:
     msg: >
       System setup completed.
       Ansible user: {{ ansible_user_name }}
-  tags: [system_setup]
+  tags:
+    - system_setup

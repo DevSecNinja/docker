@@ -6,11 +6,15 @@
   ansible.builtin.stat:
     path: "{{ homebrew_prefix }}/bin/brew"
   register: homebrew_binary
-  tags: [package_managers, homebrew]
+  tags:
+    - package_managers
+    - homebrew
 
 - name: Install Homebrew
   when: not homebrew_binary.stat.exists
-  tags: [package_managers, homebrew]
+  tags:
+    - package_managers
+    - homebrew
   block:
     - name: Install Homebrew system dependencies
       ansible.builtin.apt:
@@ -76,7 +80,9 @@
     group: "{{ homebrew_user }}"
     recurse: true
   when: homebrew_binary.stat.exists or (homebrew_install_result is defined and homebrew_install_result.rc == 0)
-  tags: [package_managers, homebrew]
+  tags:
+    - package_managers
+    - homebrew
 
 - name: Verify Homebrew installation
   become: true
@@ -85,10 +91,14 @@
   register: homebrew_version_output
   changed_when: false
   when: homebrew_binary.stat.exists or (homebrew_install_result is defined and homebrew_install_result.rc == 0)
-  tags: [package_managers, homebrew]
+  tags:
+    - package_managers
+    - homebrew
 
 - name: Display Homebrew version
   ansible.builtin.debug:
     msg: "Homebrew version: {{ homebrew_version_output.stdout | default('not installed') }}"
   when: homebrew_version_output is defined and homebrew_version_output is not skipped
-  tags: [package_managers, homebrew]
+  tags:
+    - package_managers
+    - homebrew

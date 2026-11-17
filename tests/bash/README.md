@@ -5,6 +5,7 @@ This directory contains the test suite for the Ansible Docker infrastructure usi
 ## Overview
 
 The test suite validates:
+
 - Ansible configuration syntax and linting
 - Ansible playbook execution
 - Docker provisioning
@@ -61,6 +62,7 @@ This installs dependencies automatically and generates JUnit XML output:
 - Bats (will be auto-installed if not present)
 
 The test runner will automatically:
+
 - Install Bats if not found (via npm, homebrew, or from source in CI mode)
 - Install required Python packages (ansible, ansible-lint, yamllint)
 - Install required Ansible collections
@@ -68,6 +70,7 @@ The test runner will automatically:
 ### CI/CD
 
 In CI mode (`--ci` flag), the script will:
+
 - Install Bats from GitHub releases
 - Generate JUnit XML test results (`test-results.xml`)
 - Exit with non-zero status on failures
@@ -97,6 +100,7 @@ setup() {
 ### Linting Tests (`lint-test.bats`)
 
 Validates code quality and style:
+
 - yamllint checks on YAML files
 - ansible-lint checks on Ansible roles
 - Excludes external roles (e.g., geerlingguy.docker)
@@ -104,6 +108,7 @@ Validates code quality and style:
 ### Syntax Tests (`syntax-test.bats`)
 
 Validates syntax without execution:
+
 - Ansible playbook syntax
 - Shell script syntax (bash and sh)
 - Verifies required files exist
@@ -111,6 +116,7 @@ Validates syntax without execution:
 ### Docker Tests (`docker-test.bats`)
 
 Tests Docker provisioning:
+
 - Ansible can install required collections
 - Test inventory can be created
 - Playbook passes in check mode
@@ -120,6 +126,7 @@ Tests Docker provisioning:
 ### Ansible Pull Tests (`ansible-pull-test.bats`)
 
 Tests ansible-pull functionality:
+
 - ansible-pull script exists and is valid
 - ansible-pull can run from local repository
 - Inventory files are in correct locations
@@ -127,6 +134,7 @@ Tests ansible-pull functionality:
 ### Git Repos Tests (`git-repos-test.bats`)
 
 Tests the `git_repos` role `github_user` enumeration format:
+
 - Role task and defaults files exist (including `clone_shim.yml`)
 - `github_user.yml` and `clone_shim.yml` task files are valid YAML
 - `main.yml` wires in the `github_user` sub-tasks
@@ -143,11 +151,13 @@ Tests the `git_repos` role `github_user` enumeration format:
 ### GitHub Actions Workflow
 
 The CI workflow (`.github/workflows/ci.yml`) runs the test suite on:
+
 - Push to `main` or `copilot/**` branches
 - Pull requests
 - Manual workflow dispatch
 
 Features:
+
 - Automatic dependency installation
 - Test result publishing
 - Test artifacts upload
@@ -156,6 +166,7 @@ Features:
 ### Test Results
 
 Test results are published using the `EnricoMi/publish-unit-test-result-action` which provides:
+
 - Test summary in PR checks
 - Failed test details
 - Test trends over time
@@ -222,6 +233,7 @@ The test runner will attempt to install Bats automatically. If this fails:
 ### Tests Fail Locally But Pass in CI
 
 This usually indicates environment differences. Common causes:
+
 - Missing system packages
 - Different Python/Ansible versions
 - File permissions issues

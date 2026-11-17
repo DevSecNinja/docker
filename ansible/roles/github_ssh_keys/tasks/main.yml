@@ -21,7 +21,9 @@
   ansible.builtin.uri:
     url: "https://github.com/{{ github_ssh_keys_username }}.keys"
     return_content: true
-    status_code: [200, 404]
+    status_code:
+      - 200
+      - 404
   register: github_keys_response
   check_mode: false
   tags: github_ssh_keys
