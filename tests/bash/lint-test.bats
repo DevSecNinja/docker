@@ -1,20 +1,6 @@
 #!/usr/bin/env bats
 # Tests for Ansible linting
 
-# Runs once before the tests in this file. ansible-lint runs offline and must
-# resolve the Galaxy roles that our roles depend on (geerlingguy.docker), so
-# install them here rather than rely on another test file having run first:
-# run-tests.sh passes the files in `find` order, which differs between runners.
-setup_file() {
-	local requirements
-	requirements="$(cd "${BATS_TEST_DIRNAME}/../.." && pwd)/ansible/requirements.yml"
-	if command -v ansible-galaxy >/dev/null 2>&1; then
-		if ! ansible-galaxy role install -r "$requirements" >/dev/null 2>&1; then
-			echo "# warning: could not install the roles in ${requirements}" >&3
-		fi
-	fi
-}
-
 # Setup function runs before each test
 setup() {
 	# Get repository root
