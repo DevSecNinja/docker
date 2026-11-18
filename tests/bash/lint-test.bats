@@ -64,6 +64,17 @@ setup() {
 	fi
 
 	cd "$ANSIBLE_DIR"
+	# ansible-lint runs offline (.ansible-lint), so the Galaxy roles our roles
+	# depend on (geerlingguy.docker) must be installed first. Install them here
+	# rather than rely on another test file having run first: run-tests.sh passes
+	# the files in `find` order, which differs between runners.
+	run ansible-galaxy role install -r requirements.yml
+	if [ "$status" -ne 0 ]; then
+		echo "ansible-galaxy role install failed (exit $status):" >&2
+		echo "$output" >&2
+	fi
+	[ "$status" -eq 0 ]
+
 	run ansible-lint -c .ansible-lint roles/
 
 	# Print output on failure to aid CI debugging
