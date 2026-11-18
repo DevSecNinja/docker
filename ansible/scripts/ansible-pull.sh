@@ -13,7 +13,7 @@ TARGET_HOST="${ANSIBLE_PULL_TARGET:-$(hostname | tr '[:upper:]' '[:lower:]')}"
 APT_LOCK_TIMEOUT="${ANSIBLE_PULL_APT_LOCK_TIMEOUT:-600}"
 # Applied to every apt-get invocation so apt waits for the lock instead of
 # failing outright when another package manager is running.
-APT_LOCK_OPTS=(-o "DPkg::Lock::Timeout=$APT_LOCK_TIMEOUT")
+APT_LOCK_OPTS=(-o "DPkg::Lock::Timeout=${APT_LOCK_TIMEOUT}")
 
 # Function to log messages (output goes to journalctl)
 log() {
@@ -40,13 +40,13 @@ wait_for_apt_locks() {
     log "Waiting up to ${APT_LOCK_TIMEOUT}s for apt/dpkg locks to be released..."
     output=$(apt-get "${APT_LOCK_OPTS[@]}" check 2>&1) || rc=$?
 
-    if [ "$rc" -eq 0 ]; then
+    if [ "${rc}" -eq 0 ]; then
         log "apt/dpkg locks are available"
-    elif grep -qiE 'could not get lock|unable to acquire|frontend lock|temporarily unavailable' <<<"$output"; then
+    elif grep -qiE 'could not get lock|unable to acquire|frontend lock|temporarily unavailable' <<<"${output}"; then
         log "WARNING: apt/dpkg still locked after ${APT_LOCK_TIMEOUT}s, continuing anyway"
     else
-        log "WARNING: 'apt-get check' failed for a non-lock reason (rc=$rc), continuing anyway:"
-        log "$output"
+        log "WARNING: 'apt-get check' failed for a non-lock reason (rc=${rc}), continuing anyway:"
+        log "${output}"
     fi
 }
 
@@ -56,7 +56,7 @@ log "Starting ansible-pull run"
 if ! command -v ansible-pull &>/dev/null; then
     log "Ansible not found, installing..."
     # Check if running as root
-    if [ "$EUID" -ne 0 ]; then
+    if [ "${EUID}" -ne 0 ]; then
         echo "Error: Script must be run as root or with sudo" >&2
         exit 1
     fi
@@ -67,21 +67,21 @@ fi
 
 # Clone or update the repository first so requirements.yml is available
 # before running ansible-pull (which would fail on missing roles otherwise)
-if [ -d "$WORKDIR/.git" ]; then
+if [ -d "${WORKDIR}/.git" ]; then
     log "Updating existing repository..."
-    git -C "$WORKDIR" fetch origin
-    git -C "$WORKDIR" reset --hard origin/main
+    git -C "${WORKDIR}" fetch origin
+    git -C "${WORKDIR}" reset --hard origin/main
 else
     log "Cloning repository..."
-    git clone --branch main "$REPO_URL" "$WORKDIR"
+    git clone --branch main "${REPO_URL}" "${WORKDIR}"
 fi
 
 # Install all required collections and roles from requirements.yml upfront
-if [ -f "$WORKDIR/ansible/requirements.yml" ]; then
+if [ -f "${WORKDIR}/ansible/requirements.yml" ]; then
     log "Ensuring required Ansible collections are installed..."
-    ansible-galaxy collection install -r "$WORKDIR/ansible/requirements.yml" 2>&1
+    ansible-galaxy collection install -r "${WORKDIR}/ansible/requirements.yml" 2>&1
     log "Ensuring required Ansible roles are installed..."
-    ansible-galaxy role install -r "$WORKDIR/ansible/requirements.yml" 2>&1
+    ansible-galaxy role install -r "${WORKDIR}/ansible/requirements.yml" 2>&1
 fi
 
 # Run ansible-pull to enforce configuration state
@@ -90,11 +90,11 @@ fi
 wait_for_apt_locks
 
 ansible-pull \
-    --url "$REPO_URL" \
+    --url "${REPO_URL}" \
     --checkout main \
-    --directory "$WORKDIR" \
-    --inventory "$INVENTORY_PATH" \
-    --extra-vars "target_host=$TARGET_HOST" \
-    "$PLAYBOOK_PATH"
+    --directory "${WORKDIR}" \
+    --inventory "${INVENTORY_PATH}" \
+    --extra-vars "target_host=${TARGET_HOST}" \
+    "${PLAYBOOK_PATH}"
 
 log "Ansible-pull completed successfully"

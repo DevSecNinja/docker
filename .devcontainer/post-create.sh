@@ -5,35 +5,35 @@ check_docker_sock() {
     local sock="/var/run/docker.sock"
 
     # Exists?
-    if [[ ! -S "$sock" ]]; then
-        echo "❌ Docker socket not found at $sock"
+    if [[ ! -S "${sock}" ]]; then
+        echo "❌ Docker socket not found at ${sock}"
         return 1
     fi
 
     # Read actual values
     local owner group perms
-    owner=$(stat -c '%U' "$sock")
-    group=$(stat -c '%G' "$sock")
-    perms=$(stat -c '%a' "$sock")
+    owner=$(stat -c '%U' "${sock}")
+    group=$(stat -c '%G' "${sock}")
+    perms=$(stat -c '%a' "${sock}")
 
     local ok=true
 
-    if [[ "$owner" != "root" ]]; then
-        echo "❌ Owner is '$owner' (expected: root)"
+    if [[ "${owner}" != "root" ]]; then
+        echo "❌ Owner is '${owner}' (expected: root)"
         ok=false
     fi
 
-    if [[ "$group" != "docker" ]]; then
-        echo "❌ Group is '$group' (expected: docker)"
+    if [[ "${group}" != "docker" ]]; then
+        echo "❌ Group is '${group}' (expected: docker)"
         ok=false
     fi
 
-    if [[ "$perms" != "660" ]]; then
-        echo "❌ Permissions are '$perms' (expected: 660)"
+    if [[ "${perms}" != "660" ]]; then
+        echo "❌ Permissions are '${perms}' (expected: 660)"
         ok=false
     fi
 
-    if [[ "$ok" == true ]]; then
+    if [[ "${ok}" == true ]]; then
         echo "✅ Docker socket permissions are correct"
         return 0
     else
