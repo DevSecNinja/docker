@@ -48,7 +48,7 @@ jobs:
 
       - name: Publish test results
         # Pre-release trial of DevSecNinja/.github#604; pin a release before merging.
-        uses: DevSecNinja/.github/actions/test-report@7046a8eade60b1acdac3e3df6d39b122e007eed8 # test-report trial
+        uses: DevSecNinja/.github/actions/test-report@70e5c20882c5763cd3939e5d33d8be7eb2ae9bc2 # test-report trial
         if: always()
         with:
           paths: tests/bash/test-results.xml
