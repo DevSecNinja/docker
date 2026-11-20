@@ -173,8 +173,9 @@ if [ "${CI_MODE}" = true ]; then
         # Run with pretty terminal output and a separate JUnit report file
         # --report-formatter writes JUnit XML to --output directory
         REPORT_DIR="$(dirname "${OUTPUT_FILE}")"
-        bats --formatter tap --report-formatter junit --output "${REPORT_DIR}" "${TEST_FILES[@]}"
-        EXIT_CODE=$?
+        # set -e would exit on failing tests before the report is renamed.
+        EXIT_CODE=0
+        bats --formatter tap --report-formatter junit --output "${REPORT_DIR}" "${TEST_FILES[@]}" || EXIT_CODE=$?
         # Rename the report file to the expected output filename
         if [ -f "${REPORT_DIR}/report.xml" ]; then
             mv "${REPORT_DIR}/report.xml" "${OUTPUT_FILE}"

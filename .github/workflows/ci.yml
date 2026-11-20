@@ -19,7 +19,6 @@ concurrency:
 
 permissions:
   contents: read
-  checks: write
 
 jobs:
   test:
@@ -48,13 +47,11 @@ jobs:
           ./tests/bash/run-tests.sh --ci
 
       - name: Publish test results
-        uses: mikepenz/action-junit-report@4a26df3e2ae132254ba12a53f65a388d0961e786 # v6.7.0
+        uses: DevSecNinja/.github/actions/test-report@5452dbd33d61b4fc58b1780f57e0b60ff131be75 # v4.10.0
         if: always()
         with:
-          report_paths: "tests/bash/test-results.xml"
-          check_name: Bats Test Results
-          detailed_summary: true
-          include_passed: true
+          paths: tests/bash/test-results.xml
+          title: Bats tests
 
       - name: Upload test results artifact
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
