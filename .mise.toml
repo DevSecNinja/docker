@@ -3,15 +3,15 @@
 
 [tools]
 # Python version management
-python = "3.15.1"
+python = "3.15.2"
 
 # Task runner (taskfile.dev)
 # Using aqua backend as recommended by Task docs for direct GitHub releases
 "aqua:go-task/task" = "3.54.0"
 
 # Ansible and related tools
-"pipx:ansible" = "14.5.0"
-"pipx:ansible-lint" = "26.10.1"
+"pipx:ansible" = "14.6.0"
+"pipx:ansible-lint" = "26.11.0"
 "pipx:yamllint" = "1.38.0"
 # Lint tools run by .github/workflows/lint.yml (Renovate keeps them current).
 dprint = "0.64.3"
@@ -20,9 +20,9 @@ actionlint = "1.7.12"
 gitleaks = "8.30.1"
 shellcheck = "0.11.0"
 shfmt = "3.14.1"
-trivy = "0.76.1"
-zizmor = "1.31.1"
-"pipx:checkov" = "3.4.0"
+trivy = "0.76.2"
+zizmor = "1.32.0"
+"pipx:checkov" = "3.4.3"
 
 # Bats testing framework
 bats = "1.14.0"
