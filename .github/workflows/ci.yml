@@ -47,8 +47,7 @@ jobs:
           ./tests/bash/run-tests.sh --ci
 
       - name: Publish test results
-        # Pre-release trial of DevSecNinja/.github#604; pin a release before merging.
-        uses: DevSecNinja/.github/actions/test-report@b558c78a4d9e175874ebf5bf953e60da27d5215e # test-report trial
+        uses: DevSecNinja/.github/actions/test-report@5452dbd33d61b4fc58b1780f57e0b60ff131be75 # v4.10.0
         if: always()
         with:
           paths: tests/bash/test-results.xml
