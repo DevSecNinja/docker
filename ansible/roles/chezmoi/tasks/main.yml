@@ -80,13 +80,16 @@
     url: "https://api.github.com/repos/twpayne/chezmoi/releases/latest"
     method: GET
     return_content: true
-    headers:
-      Accept: "application/vnd.github+json"
+    headers: >-
+      {{ {'Accept': 'application/vnd.github+json'}
+         | combine({'Authorization': 'Bearer ' + chezmoi_github_token}
+                   if chezmoi_github_token | length > 0 else {}) }}
   register: chezmoi_release_info
   until: chezmoi_release_info is succeeded
   retries: 3
   delay: 5
   changed_when: false
+  no_log: "{{ chezmoi_github_token | length > 0 }}"
   # Resolve the version even during --check runs so downstream logic is
   # reliable; the actual install steps below are skipped in check mode.
   check_mode: false
