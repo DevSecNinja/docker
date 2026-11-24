@@ -21,6 +21,7 @@
     - git_repos
 
 - name: "Query GitHub API for repositories of '{{ git_repos_entry.github_user }}'"
+  # checkov:skip=CKV2_ANSIBLE_1: git_repos_github_api_url defaults to https://api.github.com; checkov can't resolve the template.
   ansible.builtin.uri:
     url: >-
       {{ git_repos_github_api_url }}/users/{{ git_repos_entry.github_user }}/repos?per_page=100&page={{ item }}&type=owner&sort=full_name

@@ -1,0 +1,8 @@
+---
+# checkov reads this file from the repository root (DevSecNinja/.github
+# scripts/lint/checkov.sh runs `checkov -d .`).
+skip-check:
+  # CKV2_ANSIBLE_3 wants a rescue section on every block. The roles use blocks
+  # only to share when/become/tags across tasks, and a failed task must fail
+  # the play: a rescue would hide the error or just re-raise it.
+  - CKV2_ANSIBLE_3
