@@ -42,6 +42,9 @@ jobs:
       - name: Run Bats tests
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Read-only (workflow permissions: contents: read). The chezmoi role
+          # reads only this variable, for its GitHub API release lookup.
+          CHEZMOI_GITHUB_TOKEN: ${{ github.token }}
         run: |
           chmod +x tests/bash/run-tests.sh
           ./tests/bash/run-tests.sh --ci

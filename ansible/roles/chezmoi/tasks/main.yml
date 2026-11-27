@@ -80,16 +80,21 @@
     url: "https://api.github.com/repos/twpayne/chezmoi/releases/latest"
     method: GET
     return_content: true
+    # Authenticated (5,000 requests/hour instead of 60 per IP) when the
+    # controller environment sets CHEZMOI_GITHUB_TOKEN, anonymous otherwise.
+    # The token is read inline here so it never becomes a variable, fact or
+    # hostvar; no_log (set whenever a token is present) keeps it out of output
+    # at any verbosity and out of the module's syslog invocation record.
     headers: >-
       {{ {'Accept': 'application/vnd.github+json'}
-         | combine({'Authorization': 'Bearer ' + chezmoi_github_token}
-                   if chezmoi_github_token | length > 0 else {}) }}
+         | combine({'Authorization': 'Bearer ' + lookup('ansible.builtin.env', 'CHEZMOI_GITHUB_TOKEN', default='')}
+                   if lookup('ansible.builtin.env', 'CHEZMOI_GITHUB_TOKEN', default='') | length > 0 else {}) }}
   register: chezmoi_release_info
   until: chezmoi_release_info is succeeded
   retries: 3
   delay: 5
   changed_when: false
-  no_log: "{{ chezmoi_github_token | length > 0 }}"
+  no_log: "{{ lookup('ansible.builtin.env', 'CHEZMOI_GITHUB_TOKEN', default='') | length > 0 }}"
   # Resolve the version even during --check runs so downstream logic is
   # reliable; the actual install steps below are skipped in check mode.
   check_mode: false
