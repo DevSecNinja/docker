@@ -1,6 +1,10 @@
 ---
 # Default variables for Chezmoi role
 chezmoi_version: "latest"
+# Resolving 'latest' calls the GitHub API. Set CHEZMOI_GITHUB_TOKEN in the
+# controller environment (e.g. CI) to authenticate that request; it's read
+# inline by the task, never stored in a variable. Unset means anonymous
+# requests, limited to 60/hour per IP.
 # Architecture mapping for Chezmoi binary download
 chezmoi_arch: "{{ 'arm64' if ansible_architecture == 'aarch64' else 'amd64' }}"
 chezmoi_install_path: "/usr/local/bin/chezmoi"
