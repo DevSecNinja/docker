@@ -22,7 +22,7 @@ shellcheck = "0.11.0"
 shfmt = "3.14.1"
 trivy = "0.76.2"
 zizmor = "1.32.0"
-"pipx:checkov" = "3.4.3"
+"pipx:checkov" = "3.4.5"
 
 # Bats testing framework
 bats = "1.14.0"
